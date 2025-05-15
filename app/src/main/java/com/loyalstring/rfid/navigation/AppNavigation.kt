@@ -1,0 +1,43 @@
+package com.loyalstring.rfid.navigation
+
+import androidx.compose.material3.DrawerState
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.loyalstring.rfid.ui.screens.AddProductScreen
+import com.loyalstring.rfid.ui.screens.BulkProductScreen
+import com.loyalstring.rfid.ui.screens.HomeScreen
+import com.loyalstring.rfid.ui.screens.ProductManagementScreen
+import kotlinx.coroutines.CoroutineScope
+
+
+@Composable
+fun AppNavigation(
+    navController: NavHostController,
+    drawerState: DrawerState,
+    scope: CoroutineScope
+) {
+    NavHost(navController = navController, startDestination = Screens.HomeScreen.route) {
+        composable(Screens.HomeScreen.route) {
+            HomeScreen(
+                onBack = { navController.popBackStack() },
+                navController,
+                drawerState,
+                scope
+            )
+        }
+        composable(Screens.ProductManagementScreen.route) {
+            ProductManagementScreen(onBack = { navController.popBackStack() },navController)
+        }
+        composable(Screens.AddProductScreen.route) {
+            AddProductScreen(onBack = { navController.popBackStack() },navController)
+
+        }
+        composable(Screens.BulkProductScreen.route) {
+            BulkProductScreen(onBack = { navController.popBackStack() }, navController)
+        }
+
+    }
+}
+
