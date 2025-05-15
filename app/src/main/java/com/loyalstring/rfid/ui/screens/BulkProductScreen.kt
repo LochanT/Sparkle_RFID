@@ -1,6 +1,6 @@
 package com.loyalstring.rfid.ui.screens
 
-import android.R
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -24,28 +24,21 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.navigation.GradientTopBar
-import com.loyalstring.rfid.navigation.Screens
+import com.loyalstring.rfid.viewmodel.BulkViewModel
 
-data class ProductItem(val srNo: Int, val itemCode: String, val rfidCode: String)
-
-val sampleData = listOf(
-    ProductItem(1, "159878", "857462258"),
-    ProductItem(2, "145789", "45453433"),
-    ProductItem(3, "145758", "757524822"),
-    ProductItem(4, "477896", "787885454"),
-    ProductItem(5, "475586", "775877676"),
-    ProductItem(6, "148589", "45789546"),
-    ProductItem(7, "457572", "64494949"),
-    ProductItem(8, "454542", "155999954"),
-    ProductItem(9, "445442", "4999494949"),
-    ProductItem(10, "445424", "888484884")
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
+    val viewModel: BulkViewModel = hiltViewModel()
+
+    val tags by viewModel.scannedTags.collectAsState()
+
+    // Trigger scanning once when screen appears
+
     // Sample dynamic options
     val categoryOptions = listOf("Shirts", "Pants", "Jackets")
     val productOptions = listOf("Formal", "Casual", "Partywear")
@@ -76,8 +69,11 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                 onSave  = { /*...*/ },
                 onList  = { /*...*/ },
                 onScan  = { /*...*/ },
-                onGscan = { /*...*/ },
-                onReset = { /*...*/ }
+                onGscan = {
+                    viewModel.startScanning() },
+                onReset = {
+                  viewModel.resetData()
+                }
             )
         }
         // Ensure Scaffold takes full screen
@@ -111,7 +107,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.Start), // Align to start with even spacing
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                listOf("Sr No", "Itemcode", "RFIDCode").forEach {
+                listOf("EPC", "rssi", "Count").forEach {
                     Text(it, color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
                 }
             }
@@ -122,7 +118,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     .weight(1f)
                     .background(Color(0xFFF0F0F0))
             ) {
-                items(sampleData) { item ->
+                items(tags) { item ->
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier
@@ -131,11 +127,11 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.Start), // Align to start with even spacing
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(item.srNo.toString(), color = Color.DarkGray,modifier = Modifier
+                            Text(item.epc.toString(), color = Color.DarkGray,modifier = Modifier
                                 .width(100.dp))
-                            Text(item.itemCode, color = Color.DarkGray,modifier = Modifier
+                            Text(item.rssi, color = Color.DarkGray,modifier = Modifier
                                 .width(100.dp))
-                            Text(item.rfidCode, color = Color.DarkGray,modifier = Modifier
+                            Text(item.count.toString(), color = Color.DarkGray,modifier = Modifier
                                 .width(100.dp))
                         }
                         Spacer(

@@ -142,8 +142,9 @@ import kotlinx.coroutines.launch
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(150.dp)
                     .aspectRatio(1f),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
@@ -154,7 +155,7 @@ import kotlinx.coroutines.launch
                         .clickable {
                             navController.navigate(item.route)
                         }
-                        .padding(16.dp),
+                        .padding(5.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -162,7 +163,7 @@ import kotlinx.coroutines.launch
                             painter = painterResource(id = item.selectedIcon),
                             tint = Color.Unspecified,
                             contentDescription = item.title,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(40.dp)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -170,12 +171,12 @@ import kotlinx.coroutines.launch
                                 brush = Brush.linearGradient(
                                     colors = listOf(Color(0xFF5231A7), Color(0xFFD32940))
                                 ),
-                                fontSize = 32.sp
+
                             ),
                             text = item.title,
 
                             color = Color.Blue,
-                            fontSize = 14.sp,
+                            fontSize = 18.sp,
                             textAlign = TextAlign.Center
                         )
                     }

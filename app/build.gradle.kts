@@ -45,6 +45,8 @@ android {
 }
 
 dependencies {
+    implementation(files("libs/DeviceAPI_ver20231208_release.aar"))
+
     // Core + Lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

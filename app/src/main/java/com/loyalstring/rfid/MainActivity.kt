@@ -7,6 +7,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -58,15 +59,17 @@ import androidx.navigation.compose.rememberNavController
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.navigation.AppNavigation
 import com.loyalstring.rfid.navigation.listOfNavItems
-import com.loyalstring.rfid.ui.screens.AppNavGraph
 import com.loyalstring.rfid.ui.theme.Purple40
 
 import com.loyalstring.rfid.ui.theme.SparkleRFIDTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 
-
+@AndroidEntryPoint
 class MainActivity  : ComponentActivity() {
+    //private val viewModel: BulkProductViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

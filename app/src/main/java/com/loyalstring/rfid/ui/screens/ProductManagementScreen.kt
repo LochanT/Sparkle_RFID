@@ -87,7 +87,7 @@ fun ProductManagementScreen(
                 modifier              = Modifier.fillMaxSize()
             ) {
                 val items = listOf(
-                    ProductGridItem("Add\nSingle Product", R.drawable.add_single_prod, true,"add products"),
+                    ProductGridItem("Add Single\nProduct", R.drawable.add_single_prod, true,"add products"),
                     ProductGridItem("Add Bulk\nProducts", R.drawable.add_bulk_prod, true,"bulk products"),
                     ProductGridItem("Import\nExcel", R.drawable.export_excel,false,""),
                     ProductGridItem("Export\nExcel", R.drawable.export_excel,false,""),
