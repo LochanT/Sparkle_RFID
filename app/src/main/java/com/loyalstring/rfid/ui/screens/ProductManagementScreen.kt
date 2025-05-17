@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -89,8 +88,8 @@ fun ProductManagementScreen(
                 val items = listOf(
                     ProductGridItem("Add Single\nProduct", R.drawable.add_single_prod, true,"add products"),
                     ProductGridItem("Add Bulk\nProducts", R.drawable.add_bulk_prod, true,"bulk products"),
-                    ProductGridItem("Import\nExcel", R.drawable.export_excel,false,""),
-                    ProductGridItem("Export\nExcel", R.drawable.export_excel,false,""),
+                    ProductGridItem("Import\nExcel", R.drawable.export_excel, true, "import excel"),
+                    ProductGridItem("Export\nExcel", R.drawable.export_excel, true, "export excel"),
                     ProductGridItem("Click to\nSync Data", R.drawable.ic_sync_data,false,""),
                     ProductGridItem("Scan to\nDesktop", R.drawable.ic_sync_sheet_data,false,""),
                     ProductGridItem("Click to\nSync Sheet Data", R.drawable.barcode_reader,false,""),
@@ -122,7 +121,7 @@ fun ProductGridCard(item: ProductGridItem, navController: NavHostController) {
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(5.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {

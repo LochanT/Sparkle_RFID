@@ -1,1 +1,0 @@
--keep,allowobfuscation,allowshrinking class com.loyalstring.rfid.viewmodel.BulkViewModel

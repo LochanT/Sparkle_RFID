@@ -44,9 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import com.loyalstring.rfid.R
 import com.loyalstring.rfid.navigation.NavItems
 import com.loyalstring.rfid.navigation.listOfNavItems
-import com.loyalstring.rfid.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -100,7 +100,9 @@ import kotlinx.coroutines.launch
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .weight(1f)
                         ) {
                             items(items) { item ->
                                 HomeGridCard(item,navController)
@@ -112,7 +114,7 @@ import kotlinx.coroutines.launch
                             modifier = Modifier
                                 .fillMaxWidth() // Ensures the Box takes up the full width
                                 .padding(start = 8.dp, top = 5.dp, bottom = 8.dp) // Adds padding to the Box
-                                .height(30.dp) // Optional: You can set a specific height or remove this if you want it to adjust to the image's size
+                                .height(40.dp) // Optional: You can set a specific height or remove this if you want it to adjust to the image's size
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.drawer_icon), // Replace with your actual image name
@@ -142,7 +144,7 @@ import kotlinx.coroutines.launch
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp)
+                    .height(100.dp)
                     .aspectRatio(1f),
                 shape = RoundedCornerShape(8.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -176,7 +178,7 @@ import kotlinx.coroutines.launch
                             text = item.title,
 
                             color = Color.Blue,
-                            fontSize = 18.sp,
+                            fontSize = 16.sp,
                             textAlign = TextAlign.Center
                         )
                     }

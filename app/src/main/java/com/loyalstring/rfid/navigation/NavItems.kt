@@ -13,6 +13,8 @@ enum class Screens(val route: String) {
     ProductManagementScreen("products"),
     AddProductScreen("add products"),
     BulkProductScreen("bulk products"),
+    ImportExcelScreen("import excel"),
+    ExportExcelScreen("export excel"),
 
 
 }

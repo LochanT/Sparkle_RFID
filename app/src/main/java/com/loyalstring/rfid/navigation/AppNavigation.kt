@@ -7,7 +7,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.loyalstring.rfid.ui.screens.AddProductScreen
 import com.loyalstring.rfid.ui.screens.BulkProductScreen
+import com.loyalstring.rfid.ui.screens.ExportExcelScreen
 import com.loyalstring.rfid.ui.screens.HomeScreen
+import com.loyalstring.rfid.ui.screens.ImportExcelScreen
 import com.loyalstring.rfid.ui.screens.ProductManagementScreen
 import kotlinx.coroutines.CoroutineScope
 
@@ -36,6 +38,12 @@ fun AppNavigation(
         }
         composable(Screens.BulkProductScreen.route) {
             BulkProductScreen(onBack = { navController.popBackStack() }, navController)
+        }
+        composable(Screens.ImportExcelScreen.route) {
+            ImportExcelScreen(onBack = { navController.popBackStack() }, navController)
+        }
+        composable(Screens.ExportExcelScreen.route) {
+            ExportExcelScreen(onBack = { navController.popBackStack() }, navController)
         }
 
     }
