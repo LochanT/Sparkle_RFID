@@ -1,3 +1,4 @@
+
 package com.loyalstring.rfid.ui.screens
 
 import androidx.compose.foundation.background
@@ -30,6 +31,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,28 +49,33 @@ import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.AddItemDialog
 import com.loyalstring.rfid.viewmodel.BulkViewModel
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
     val viewModel: BulkViewModel = hiltViewModel()
 
+    // Observe barcode and tag data
     val tags by viewModel.scannedTags.collectAsState()
-    val items = viewModel.scannedItems
+    val items by viewModel.scannedItems.collectAsState()
 
-    // Trigger scanning once when screen appears
-
+    // Dropdown options
     val categories by viewModel.categories.collectAsState()
     val products by viewModel.products.collectAsState()
     val designs by viewModel.designs.collectAsState()
+
     var selectedCategory by remember { mutableStateOf("") }
     var selectedProduct by remember { mutableStateOf("") }
     var selectedDesign by remember { mutableStateOf("") }
 
-
     var showAddDialogFor by remember { mutableStateOf<String?>(null) }
-    var newValue by remember { mutableStateOf("") }
     var firstPress by remember { mutableStateOf(false) }
+
+    // ✅ Set barcode scan callback ONCE
+    LaunchedEffect(Unit) {
+        viewModel.barcodeReader.setOnBarcodeScanned { scanned ->
+            viewModel.onBarcodeScanned(scanned)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -87,67 +94,56 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
         },
         bottomBar = {
             ScanBottomBar(
-                onSave  = { /*...*/ },
-                onList  = { /*...*/ },
-                onScan  = { /*...*/ },
+                onSave = { /* TODO */ },
+                onList = { /* TODO */ },
+                onScan = { /* TODO */ },
                 onGscan = {
-                    if (firstPress) {
+                    if (!firstPress) {
+                        firstPress = true
                         viewModel.startScanning()
                         viewModel.startBarcodeScanning()
-                        viewModel.barcodeReader.setOnBarcodeScanned { scanned ->
-                            viewModel.onBarcodeScanned(scanned)
-                        }
                     } else {
                         viewModel.stopScanning()
                         viewModel.startBarcodeScanning()
                     }
                 },
                 onReset = {
-                  viewModel.resetData()
+                    firstPress = false
+                    viewModel.resetData()
+                    viewModel.stopBarcodeScanner()
                 }
             )
         }
-        // Ensure Scaffold takes full screen
-    ){ innerPadding ->
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .background(Color.White)
         ) {
-            // Filter Dropdowns
             Row(
                 modifier = Modifier
                     .padding(8.dp)
                     .fillMaxWidth()
-                    .background(Color.White)
-                    .horizontalScroll(rememberScrollState()), // Enable horizontal scrolling
-                horizontalArrangement = Arrangement.spacedBy(8.dp) // Consistent spacing
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                var firstSelectionMade by remember { mutableStateOf(false) }
-
                 FilterDropdown(
                     label = "Category",
                     options = categories.map { it.name },
                     selectedOption = selectedCategory,
                     onOptionSelected = {
                         selectedCategory = it
-                        if (!firstSelectionMade) {
-                            firstSelectionMade = true
-                            // ✅ Do first-time logic
-                            println("Category selected for the first time: $it")
-                        }
                     },
                     onAddOption = { showAddDialogFor = "Category" }
                 )
 
                 FilterDropdown(
                     label = "Product",
-                    options = products.map { it.name }, // your dynamic list
+                    options = products.map { it.name },
                     selectedOption = selectedProduct,
                     onOptionSelected = {
                         selectedProduct = it
-                        // First time logic if needed
                     },
                     onAddOption = { showAddDialogFor = "Product" }
                 )
@@ -159,44 +155,40 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     onOptionSelected = { selectedDesign = it },
                     onAddOption = { showAddDialogFor = "Design" }
                 )
-
-
-                if (showAddDialogFor != null) {
-                    AddItemDialog(
-                        title = showAddDialogFor!!,
-                        onAdd = { newItem ->
-                            when (showAddDialogFor) {
-                                "Category" -> {
-                                    selectedCategory = newItem
-                                    viewModel.saveDropdownCategory(newItem, "Category")
-                                }
-
-                                "Product" -> {
-                                    selectedProduct = newItem
-                                    viewModel.saveDropdownProduct(newItem, "Product")
-                                }
-
-                                "Design" -> {
-                                    selectedDesign = newItem
-                                    viewModel.saveDropdownDesign(newItem, "Design")
-                                }
-                            }
-                            showAddDialogFor = null
-                        },
-                        onDismiss = { showAddDialogFor = null }
-                    )
-                }
-
-
             }
 
-            // Table Header
+            if (showAddDialogFor != null) {
+                AddItemDialog(
+                    title = showAddDialogFor!!,
+                    onAdd = { newItem ->
+                        when (showAddDialogFor) {
+                            "Category" -> {
+                                selectedCategory = newItem
+                                viewModel.saveDropdownCategory(newItem, "Category")
+                            }
+
+                            "Product" -> {
+                                selectedProduct = newItem
+                                viewModel.saveDropdownProduct(newItem, "Product")
+                            }
+
+                            "Design" -> {
+                                selectedDesign = newItem
+                                viewModel.saveDropdownDesign(newItem, "Design")
+                            }
+                        }
+                        showAddDialogFor = null
+                    },
+                    onDismiss = { showAddDialogFor = null }
+                )
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.DarkGray)
                     .padding(vertical = 8.dp, horizontal = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.Start), // Align to start with even spacing
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 listOf("Sr No.", "Item Code", "RFID Code").forEach {
@@ -204,7 +196,6 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                 }
             }
 
-            // Table Rows
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -216,19 +207,12 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp, horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.Start), // Align to start with even spacing
-                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                item.id, color = Color.DarkGray, modifier = Modifier
-                                    .width(100.dp)
-                            )
-                            Text(
-                                item.itemCode, color = Color.DarkGray, modifier = Modifier
-                                .width(100.dp))
-                            Text(
-                                item.barcode, color = Color.DarkGray, modifier = Modifier
-                                .width(100.dp))
+                            Text(item.id, Modifier.width(100.dp), color = Color.DarkGray)
+                            Text(item.itemCode, Modifier.width(100.dp), color = Color.DarkGray)
+                            Text(item.barcode, Modifier.width(100.dp), color = Color.DarkGray)
                         }
                         Spacer(
                             modifier = Modifier
@@ -239,10 +223,8 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                         )
                     }
                 }
-
             }
 
-            // Bottom Summary
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier
@@ -251,14 +233,14 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Exist Items: 1,256", color = Color.White)
-                Text("Total Items: 1,256", color = Color.White)
+                Text("Exist Items: ${items.size}", color = Color.White)
+                Text("Total Items: ${items.size}", color = Color.White)
             }
         }
     }
 }
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterDropdown(
     label: String,

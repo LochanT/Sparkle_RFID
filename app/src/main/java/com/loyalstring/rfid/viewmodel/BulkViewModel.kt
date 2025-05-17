@@ -1,9 +1,6 @@
 package com.loyalstring.rfid.viewmodel
 
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
@@ -34,27 +31,21 @@ class BulkViewModel @Inject constructor(
     private val success = readerManager.initReader()
     private val barcodeDecoder = barcodeReader.barcodeDecoder
 
-
     private val _scannedTags = MutableStateFlow<List<UHFTAGInfo>>(emptyList())
     val scannedTags: StateFlow<List<UHFTAGInfo>> = _scannedTags
-    var scannedItems by mutableStateOf(listOf<ScannedItem>())
-        private set
+
+    private val _scannedItems = MutableStateFlow<List<ScannedItem>>(emptyList())
+    val scannedItems: StateFlow<List<ScannedItem>> = _scannedItems
 
     val categories =
         repository.categories.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val products = repository.products.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val designs = repository.designs.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    fun addCategory(name: String) = viewModelScope.launch { repository.addCategory(name) }
-    fun addProduct(name: String) = viewModelScope.launch { repository.addProduct(name) }
-    fun addDesign(name: String) = viewModelScope.launch { repository.addDesign(name) }
-
-
     private var scanJob: Job? = null
 
-
     fun startScanning() {
-        if (success){
+        if (success) {
             readerManager.startInventoryTag()
             if (scanJob?.isActive == true) return
 
@@ -65,60 +56,55 @@ class BulkViewModel @Inject constructor(
                         val gson = Gson()
                         val json = gson.toJson(tag)
                         println(json)
-                        Log.e("RFID", "Tag read: ${json}")
+                        Log.e("RFID", "Tag read: $json")
                         _scannedTags.update { currentList ->
                             if (currentList.any { it.epc == tag.epc }) currentList
                             else currentList + tag
-
-
                         }
                     } else {
                         Log.e("RFID", "No tag in buffer")
                     }
-
                 }
             }
         }
-
     }
 
     fun startBarcodeScanning() {
         barcodeDecoder.startScan()
     }
 
-
     fun onBarcodeScanned(barcode: String) {
-        // Check if barcode is already scanned (optional)
-        if (scannedItems.any { it.barcode == barcode }) return
+        if (_scannedItems.value.any { it.barcode == barcode }) return
 
-        val nextIndex = scannedItems.size + 1
+        val nextIndex = _scannedItems.value.size + 1
         val itemCode = generateItemCode(nextIndex)
-        val srNo = generateSerialNumner(nextIndex)
+        val srNo = generateSerialNumber(nextIndex)
 
         val newItem = ScannedItem(id = srNo, itemCode = itemCode, barcode = barcode)
-        scannedItems = scannedItems + newItem
+        _scannedItems.update { it + newItem }
+        println("Scanned barcode: $barcode")
     }
 
     private fun generateItemCode(index: Int): String {
         return "ITEM" + index.toString().padStart(4, '0')
     }
 
-    private fun generateSerialNumner(index: Int): String {
+    private fun generateSerialNumber(index: Int): String {
         return index.toString()
     }
 
     fun stopScanning() {
         scanJob?.cancel()
         readerManager.stopInventory()
-
     }
+
     fun stopBarcodeScanner() {
         barcodeDecoder.close()
-
     }
 
-    fun resetData(){
+    fun resetData() {
         _scannedTags.value = emptyList()
+        _scannedItems.value = emptyList()
     }
 
     override fun onCleared() {

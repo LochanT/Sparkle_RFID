@@ -21,6 +21,7 @@ class BarcodeReader @Inject constructor(
     }
 
     fun setOnBarcodeScanned(callback: (String) -> Unit) {
+
         barcodeDecoder.setDecodeCallback { entity ->
             if (entity.resultCode == BarcodeDecoder.DECODE_SUCCESS) {
                 callback(entity.barcodeData)
