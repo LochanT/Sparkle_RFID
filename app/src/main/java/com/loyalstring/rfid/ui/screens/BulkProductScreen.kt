@@ -1,10 +1,17 @@
 package com.loyalstring.rfid.ui.screens
 
-import android.util.Log
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -12,21 +19,32 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.navigation.GradientTopBar
+import com.loyalstring.rfid.ui.utils.AddItemDialog
 import com.loyalstring.rfid.viewmodel.BulkViewModel
 
 
@@ -36,18 +54,21 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
     val viewModel: BulkViewModel = hiltViewModel()
 
     val tags by viewModel.scannedTags.collectAsState()
+    val items = viewModel.scannedItems
 
     // Trigger scanning once when screen appears
 
-    // Sample dynamic options
-    val categoryOptions = listOf("Shirts", "Pants", "Jackets")
-    val productOptions = listOf("Formal", "Casual", "Partywear")
-    val designOptions = listOf("Striped", "Plain", "Checked")
+    val categories by viewModel.categories.collectAsState()
+    val products by viewModel.products.collectAsState()
+    val designs by viewModel.designs.collectAsState()
+    var selectedCategory by remember { mutableStateOf("") }
+    var selectedProduct by remember { mutableStateOf("") }
+    var selectedDesign by remember { mutableStateOf("") }
 
-    // Selected states
-    var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
-    var selectedProduct by remember { mutableStateOf(productOptions.first()) }
-    var selectedDesign by remember { mutableStateOf(designOptions.first()) }
+
+    var showAddDialogFor by remember { mutableStateOf<String?>(null) }
+    var newValue by remember { mutableStateOf("") }
+    var firstPress by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -70,7 +91,17 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                 onList  = { /*...*/ },
                 onScan  = { /*...*/ },
                 onGscan = {
-                    viewModel.startScanning() },
+                    if (firstPress) {
+                        viewModel.startScanning()
+                        viewModel.startBarcodeScanning()
+                        viewModel.barcodeReader.setOnBarcodeScanned { scanned ->
+                            viewModel.onBarcodeScanned(scanned)
+                        }
+                    } else {
+                        viewModel.stopScanning()
+                        viewModel.startBarcodeScanning()
+                    }
+                },
                 onReset = {
                   viewModel.resetData()
                 }
@@ -93,9 +124,70 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     .horizontalScroll(rememberScrollState()), // Enable horizontal scrolling
                 horizontalArrangement = Arrangement.spacedBy(8.dp) // Consistent spacing
             ) {
-                FilterDropdown("Category", categoryOptions, selectedCategory) { selectedCategory = it }
-                FilterDropdown("Product", productOptions, selectedProduct) { selectedProduct = it }
-                FilterDropdown("Design", designOptions, selectedDesign) { selectedDesign = it }
+                var firstSelectionMade by remember { mutableStateOf(false) }
+
+                FilterDropdown(
+                    label = "Category",
+                    options = categories.map { it.name },
+                    selectedOption = selectedCategory,
+                    onOptionSelected = {
+                        selectedCategory = it
+                        if (!firstSelectionMade) {
+                            firstSelectionMade = true
+                            // ✅ Do first-time logic
+                            println("Category selected for the first time: $it")
+                        }
+                    },
+                    onAddOption = { showAddDialogFor = "Category" }
+                )
+
+                FilterDropdown(
+                    label = "Product",
+                    options = products.map { it.name }, // your dynamic list
+                    selectedOption = selectedProduct,
+                    onOptionSelected = {
+                        selectedProduct = it
+                        // First time logic if needed
+                    },
+                    onAddOption = { showAddDialogFor = "Product" }
+                )
+
+                FilterDropdown(
+                    label = "Design",
+                    options = designs.map { it.name },
+                    selectedOption = selectedDesign,
+                    onOptionSelected = { selectedDesign = it },
+                    onAddOption = { showAddDialogFor = "Design" }
+                )
+
+
+                if (showAddDialogFor != null) {
+                    AddItemDialog(
+                        title = showAddDialogFor!!,
+                        onAdd = { newItem ->
+                            when (showAddDialogFor) {
+                                "Category" -> {
+                                    selectedCategory = newItem
+                                    viewModel.saveDropdownCategory(newItem, "Category")
+                                }
+
+                                "Product" -> {
+                                    selectedProduct = newItem
+                                    viewModel.saveDropdownProduct(newItem, "Product")
+                                }
+
+                                "Design" -> {
+                                    selectedDesign = newItem
+                                    viewModel.saveDropdownDesign(newItem, "Design")
+                                }
+                            }
+                            showAddDialogFor = null
+                        },
+                        onDismiss = { showAddDialogFor = null }
+                    )
+                }
+
+
             }
 
             // Table Header
@@ -107,7 +199,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.Start), // Align to start with even spacing
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                listOf("EPC", "rssi", "Count").forEach {
+                listOf("Sr No.", "Item Code", "RFID Code").forEach {
                     Text(it, color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
                 }
             }
@@ -118,7 +210,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     .weight(1f)
                     .background(Color(0xFFF0F0F0))
             ) {
-                items(tags) { item ->
+                items(items) { item ->
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier
@@ -127,11 +219,15 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.Start), // Align to start with even spacing
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(item.epc.toString(), color = Color.DarkGray,modifier = Modifier
+                            Text(
+                                item.id, color = Color.DarkGray, modifier = Modifier
+                                    .width(100.dp)
+                            )
+                            Text(
+                                item.itemCode, color = Color.DarkGray, modifier = Modifier
                                 .width(100.dp))
-                            Text(item.rssi, color = Color.DarkGray,modifier = Modifier
-                                .width(100.dp))
-                            Text(item.count.toString(), color = Color.DarkGray,modifier = Modifier
+                            Text(
+                                item.barcode, color = Color.DarkGray, modifier = Modifier
                                 .width(100.dp))
                         }
                         Spacer(
@@ -143,6 +239,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                         )
                     }
                 }
+
             }
 
             // Bottom Summary
@@ -161,110 +258,75 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun GradientTopBar(
-    title: String,
-    navigationIcon: @Composable () -> Unit,
-    onSave: () -> Unit,
-    onList: () -> Unit,
-    onScan: () -> Unit,
-    onGscan: () -> Unit,
-    onReset: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(Color(0xFF5231A7), Color(0xFFD32940))
-                )
-            ),
-        color = Color.Transparent
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            navigationIcon()
-            Text(
-                text = title,
-                color = Color.White,
-                style = TextStyle(fontSize = 20.sp),
-                modifier = Modifier.weight(1f)
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                IconButton(onClick = onSave) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Save",
-                        tint = Color.White
-                    )
-                }
-            }
-        }
-    }
-}
+
 @Composable
 fun FilterDropdown(
     label: String,
     options: List<String>,
     selectedOption: String,
-    onOptionSelected: (String) -> Unit
+    onOptionSelected: (String) -> Unit,
+    onAddOption: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Box {
-        Button(
-            onClick = { expanded = true },
-            shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, Color.Gray),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            modifier = Modifier
-                .widthIn(min = 120.dp) // Set a minimum width
-                .padding(horizontal = 4.dp)
-                .background(Color.White)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+        Text(text = label, fontSize = 14.sp, color = Color.Gray)
+
+        Box {
+            OutlinedButton(
+                onClick = { expanded = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.Black
+                )
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (selectedOption.isEmpty()) "Select $label" else selectedOption,
+                        fontSize = 16.sp
+                    )
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "Dropdown arrow"
+                    )
+                }
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "$label: $selectedOption",
-                    color = Color.DarkGray,
-                    fontSize = 14.sp,
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = "Expand $label dropdown",
-                    tint = Color.DarkGray
-                )
-            }
-        }
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = {
+                            onOptionSelected(option)
+                            expanded = false
+                        }
+                    )
+                }
 
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .width(IntrinsicSize.Max)
-                .background(Color.White)
-        ) {
-            options.forEach { option ->
+                HorizontalDivider()
+
                 DropdownMenuItem(
-                    text = { Text(option, fontSize = 14.sp, color = Color.DarkGray) },
+                    text = {
+                        Text(
+                            "➕ Add New",
+                            color = Color.DarkGray,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    },
                     onClick = {
-                        onOptionSelected(option)
                         expanded = false
+                        onAddOption()
                     }
                 )
             }

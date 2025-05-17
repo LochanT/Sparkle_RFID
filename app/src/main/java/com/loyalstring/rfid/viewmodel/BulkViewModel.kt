@@ -1,16 +1,24 @@
 package com.loyalstring.rfid.viewmodel
 
-import android.R.attr.tag
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
+import com.loyalstring.rfid.data.model.ScannedItem
+import com.loyalstring.rfid.data.reader.BarcodeReader
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
+import com.loyalstring.rfid.repository.DropdownRepository
 import com.rscja.deviceapi.entity.UHFTAGInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -19,13 +27,28 @@ import javax.inject.Inject
 @HiltViewModel
 class BulkViewModel @Inject constructor(
     private val readerManager: RFIDReaderManager,
+    internal val barcodeReader: BarcodeReader,
+    private val repository: DropdownRepository
 ) : ViewModel() {
 
-        val success = readerManager.initReader()
+    private val success = readerManager.initReader()
+    private val barcodeDecoder = barcodeReader.barcodeDecoder
 
 
     private val _scannedTags = MutableStateFlow<List<UHFTAGInfo>>(emptyList())
     val scannedTags: StateFlow<List<UHFTAGInfo>> = _scannedTags
+    var scannedItems by mutableStateOf(listOf<ScannedItem>())
+        private set
+
+    val categories =
+        repository.categories.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val products = repository.products.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val designs = repository.designs.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    fun addCategory(name: String) = viewModelScope.launch { repository.addCategory(name) }
+    fun addProduct(name: String) = viewModelScope.launch { repository.addProduct(name) }
+    fun addDesign(name: String) = viewModelScope.launch { repository.addDesign(name) }
+
 
     private var scanJob: Job? = null
 
@@ -39,7 +62,10 @@ class BulkViewModel @Inject constructor(
                 while (isActive) {
                     val tag = readerManager.readTagFromBuffer()
                     if (tag != null) {
-                        Log.e("RFID", "Tag read: $tag")
+                        val gson = Gson()
+                        val json = gson.toJson(tag)
+                        println(json)
+                        Log.e("RFID", "Tag read: ${json}")
                         _scannedTags.update { currentList ->
                             if (currentList.any { it.epc == tag.epc }) currentList
                             else currentList + tag
@@ -56,9 +82,38 @@ class BulkViewModel @Inject constructor(
 
     }
 
+    fun startBarcodeScanning() {
+        barcodeDecoder.startScan()
+    }
+
+
+    fun onBarcodeScanned(barcode: String) {
+        // Check if barcode is already scanned (optional)
+        if (scannedItems.any { it.barcode == barcode }) return
+
+        val nextIndex = scannedItems.size + 1
+        val itemCode = generateItemCode(nextIndex)
+        val srNo = generateSerialNumner(nextIndex)
+
+        val newItem = ScannedItem(id = srNo, itemCode = itemCode, barcode = barcode)
+        scannedItems = scannedItems + newItem
+    }
+
+    private fun generateItemCode(index: Int): String {
+        return "ITEM" + index.toString().padStart(4, '0')
+    }
+
+    private fun generateSerialNumner(index: Int): String {
+        return index.toString()
+    }
+
     fun stopScanning() {
         scanJob?.cancel()
         readerManager.stopInventory()
+
+    }
+    fun stopBarcodeScanner() {
+        barcodeDecoder.close()
 
     }
 
@@ -69,5 +124,23 @@ class BulkViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         stopScanning()
+    }
+
+    fun saveDropdownCategory(name: String, type: String) {
+        viewModelScope.launch {
+            repository.addCategory(name)
+        }
+    }
+
+    fun saveDropdownProduct(name: String, type: String) {
+        viewModelScope.launch {
+            repository.addProduct(name)
+        }
+    }
+
+    fun saveDropdownDesign(name: String, type: String) {
+        viewModelScope.launch {
+            repository.addDesign(name)
+        }
     }
 }
