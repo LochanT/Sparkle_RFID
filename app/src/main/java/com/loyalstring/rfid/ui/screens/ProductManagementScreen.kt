@@ -4,17 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -34,11 +32,13 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.navigation.GradientTopBar
+import com.loyalstring.rfid.navigation.Screens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,65 +63,92 @@ fun ProductManagementScreen(
         },
         bottomBar = {
             ScanBottomBar(
-                onSave  = { /*...*/ },
-                onList  = { /*...*/ },
-                onScan  = { /*...*/ },
-                onGscan = { /*...*/ },
-                onReset = { /*...*/ }
+                onSave = { /* TODO */ },
+                onList = { navController.navigate(Screens.ProductListScreen.route) },
+                onScan = { /* TODO */ },
+                onGscan = { /* TODO */ },
+                onReset = { /* TODO */ }
             )
         }
     ) { innerPadding ->
-        // Apply BOTH the topBar + bottomBar insets
-        Box(
+        val items = listOf(
+            ProductGridItem("Add Single\nProduct", R.drawable.add_single_prod, true, "add product"),
+            ProductGridItem("Add Bulk\nProducts", R.drawable.add_bulk_prod, true, "bulk products"),
+            ProductGridItem("Import\nExcel", R.drawable.export_excel, true, "import_excel"),
+            ProductGridItem("Export\nExcel", R.drawable.export_excel, true, "export_excel"),
+            ProductGridItem("Click to\nSync Data", R.drawable.ic_sync_data, false, ""),
+            ProductGridItem("Scan to\nDesktop", R.drawable.ic_sync_sheet_data, false, ""),
+            ProductGridItem("Sync Sheet\nData", R.drawable.barcode_reader, false, ""),
+            ProductGridItem("Upload\nData", R.drawable.upload_data, false, "")
+        )
+
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)    // <-- this is crucial!
-                .background(Color.White)
+                .padding(innerPadding)
         ) {
-            LazyVerticalGrid(
-                columns               = GridCells.Fixed(2),
-                contentPadding       = PaddingValues(16.dp),
-                verticalArrangement   = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier              = Modifier.fillMaxSize()
+            val columns = 2
+            val rows = 4
+            val spacing = 16.dp
+            val totalVerticalSpacing = spacing * (rows + 1)
+            val totalHorizontalSpacing = spacing * (columns + 1)
+            val itemWidth = (maxWidth - totalHorizontalSpacing) / columns
+            val itemHeight = (maxHeight - totalVerticalSpacing) / rows
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(spacing),
+                verticalArrangement = Arrangement.spacedBy(spacing),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val items = listOf(
-                    ProductGridItem("Add Single\nProduct", R.drawable.add_single_prod, true,"add products"),
-                    ProductGridItem("Add Bulk\nProducts", R.drawable.add_bulk_prod, true,"bulk products"),
-                    ProductGridItem("Import\nExcel", R.drawable.export_excel, true, "import excel"),
-                    ProductGridItem("Export\nExcel", R.drawable.export_excel, true, "export excel"),
-                    ProductGridItem("Click to\nSync Data", R.drawable.ic_sync_data,false,""),
-                    ProductGridItem("Scan to\nDesktop", R.drawable.ic_sync_sheet_data,false,""),
-                    ProductGridItem("Click to\nSync Sheet Data", R.drawable.barcode_reader,false,""),
-                    ProductGridItem("Click to Upload\nData to Server", R.drawable.upload_data,false,"")
-                )
-                items(items) { item ->
-                    ProductGridCard(item, navController)
+                for (row in 0 until rows) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(spacing),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        for (col in 0 until columns) {
+                            val index = row * columns + col
+                            if (index < items.size) {
+                                ProductGridCard(
+                                    item = items[index],
+                                    navController = navController,
+                                    width = itemWidth,
+                                    height = itemHeight
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.size(itemWidth, itemHeight))
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-
-
-
-
 @Composable
-fun ProductGridCard(item: ProductGridItem, navController: NavHostController) {
+fun ProductGridCard(
+    item: ProductGridItem,
+    navController: NavHostController,
+    width: Dp,
+    height: Dp
+) {
     val cardColors = if (item.isGradient) {
-        Brush.linearGradient(
-            colors = listOf(Color(0xFF5231A7), Color(0xFFD32940))
-        )
+        Brush.linearGradient(colors = listOf(Color(0xFF5231A7), Color(0xFFD32940)))
     } else {
         SolidColor(Color.DarkGray)
-
     }
 
     Card(
         modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(5.dp),
+            .size(width, height)
+            .clickable {
+                if (item.route.isNotBlank()) {
+                    navController.navigate(item.route)
+                }
+            },
+        shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -129,10 +156,7 @@ fun ProductGridCard(item: ProductGridItem, navController: NavHostController) {
             modifier = Modifier
                 .background(cardColors)
                 .fillMaxSize()
-                .clickable {
-                    navController.navigate(item.route)
-                }
-                .padding(16.dp, 40.dp, 16.dp, 16.dp),
+                .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -140,14 +164,14 @@ fun ProductGridCard(item: ProductGridItem, navController: NavHostController) {
                     painter = painterResource(id = item.iconRes),
                     contentDescription = item.label,
                     tint = if (item.isGradient) Color.Unspecified else Color.White,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(28.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = item.label,
                     color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center
                 )
             }
@@ -155,12 +179,10 @@ fun ProductGridCard(item: ProductGridItem, navController: NavHostController) {
     }
 }
 
-
-
 // Data class
 data class ProductGridItem(
     val label: String,
     val iconRes: Int,
     val isGradient: Boolean = false,
-    val route: String,
+    val route: String
 )

@@ -7,7 +7,6 @@ import android.media.AudioManager
 import android.media.SoundPool
 import android.util.Log
 import com.loyalstring.rfid.R
-import com.rscja.custom.UHFCSYX
 import com.rscja.deviceapi.RFIDWithUHFUART
 import com.rscja.deviceapi.entity.UHFTAGInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -25,6 +24,7 @@ class RFIDReaderManager @Inject constructor(
     private val reader: RFIDWithUHFUART? = RFIDWithUHFUART.getInstance()
 
     fun initReader(): Boolean {
+        initSounds()
         val success = reader?.init() ?: false
         if (success) {
             Log.d("RFID", "Reader initialized successfully")
@@ -32,6 +32,7 @@ class RFIDReaderManager @Inject constructor(
             Log.e("RFID", "Reader initialization failed")
         }
         return success
+
     }
 
     fun readTagFromBuffer(): UHFTAGInfo? {
@@ -57,6 +58,10 @@ class RFIDReaderManager @Inject constructor(
         soundPool = SoundPool(10, AudioManager.STREAM_MUSIC, 5)
         soundMap[1] = soundPool?.load(context, R.raw.barcodebeep, 1)
         soundMap[2] = soundPool?.load(context, R.raw.sixty, 1)
+        soundMap[2] = soundPool!!.load(context, R.raw.sixty, 1)
+        soundMap[3] = soundPool!!.load(context, R.raw.seventy, 1)
+        soundMap[4] = soundPool!!.load(context, R.raw.fourty, 1)
+        soundMap[5] = soundPool!!.load(context, R.raw.found1, 1)
         // ... add others
         am = context.getSystemService(AUDIO_SERVICE) as AudioManager
     }
@@ -70,13 +75,10 @@ class RFIDReaderManager @Inject constructor(
         }
     }
 
-    fun playSound(success: Boolean) {
-        soundPool = SoundPool(10, AudioManager.STREAM_MUSIC, 5)
-        soundPool?.let { soundMap.put(1, it.load(context, R.raw.barcodebeep, 1)) }
-        soundPool?.let { soundMap.put(2, it.load(context, R.raw.sixty, 1)) }
-        soundPool?.let { soundMap.put(3, it.load(context, R.raw.seventy, 1)) }
-        soundPool?.let { soundMap.put(4, it.load(context, R.raw.fourty, 1)) }
-        soundPool?.let { soundMap.put(5, it.load(context, R.raw.found1, 1)) }
-        am = context.getSystemService(AUDIO_SERVICE) as AudioManager
+    fun stopSound(id: Int) {
+
+        soundPool!!.stop(id) // Stop the sound using the stored stream ID
+        // Remove the stream ID from the map
+
     }
 }

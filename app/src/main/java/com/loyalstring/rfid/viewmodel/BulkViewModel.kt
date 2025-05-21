@@ -4,9 +4,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
+import com.loyalstring.rfid.data.local.dao.BulkItemDao
+import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.model.ScannedItem
 import com.loyalstring.rfid.data.reader.BarcodeReader
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
+import com.loyalstring.rfid.repository.BulkRepositoryImpl
 import com.loyalstring.rfid.repository.DropdownRepository
 import com.rscja.deviceapi.entity.UHFTAGInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,7 +28,9 @@ import javax.inject.Inject
 class BulkViewModel @Inject constructor(
     private val readerManager: RFIDReaderManager,
     internal val barcodeReader: BarcodeReader,
-    private val repository: DropdownRepository
+    private val repository: DropdownRepository,
+    private val bulkItemDao: BulkItemDao,
+    private val bulkRepository: BulkRepositoryImpl
 ) : ViewModel() {
 
     private val success = readerManager.initReader()
@@ -36,6 +41,10 @@ class BulkViewModel @Inject constructor(
 
     private val _scannedItems = MutableStateFlow<List<ScannedItem>>(emptyList())
     val scannedItems: StateFlow<List<ScannedItem>> = _scannedItems
+
+    private val _rfidMap = MutableStateFlow<Map<Int, String>>(emptyMap())
+    val rfidMap: StateFlow<Map<Int, String>> = _rfidMap
+
 
     val categories =
         repository.categories.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -52,6 +61,7 @@ class BulkViewModel @Inject constructor(
             scanJob = viewModelScope.launch(Dispatchers.IO) {
                 while (isActive) {
                     val tag = readerManager.readTagFromBuffer()
+                    readerManager.playSound(1)
                     if (tag != null) {
                         val gson = Gson()
                         val json = gson.toJson(tag)
@@ -71,7 +81,20 @@ class BulkViewModel @Inject constructor(
 
     fun startBarcodeScanning() {
         barcodeDecoder.startScan()
+
     }
+
+    fun assignRfidCode(index: Int, rfid: String) {
+        val currentMap = _rfidMap.value
+
+        // Skip if already assigned elsewhere
+        if (currentMap.containsValue(rfid)) return
+
+        _rfidMap.value = currentMap.toMutableMap().apply {
+            put(index, rfid)
+        }
+    }
+
 
     fun onBarcodeScanned(barcode: String) {
         if (_scannedItems.value.any { it.barcode == barcode }) return
@@ -96,15 +119,18 @@ class BulkViewModel @Inject constructor(
     fun stopScanning() {
         scanJob?.cancel()
         readerManager.stopInventory()
+        readerManager.stopSound(1)
     }
 
     fun stopBarcodeScanner() {
         barcodeDecoder.close()
+        readerManager.stopSound(2)
     }
 
     fun resetData() {
         _scannedTags.value = emptyList()
         _scannedItems.value = emptyList()
+        _rfidMap.value = emptyMap()
     }
 
     override fun onCleared() {
@@ -129,4 +155,37 @@ class BulkViewModel @Inject constructor(
             repository.addDesign(name)
         }
     }
+
+    fun saveBulkItems(
+        category: String,
+        itemCode: String,
+        product: String,
+        design: String,
+        uhftagInfo: UHFTAGInfo
+    ) {
+        viewModelScope.launch {
+            val itemList = _rfidMap.value.mapNotNull { (index, rfid) ->
+                rfid.let {
+                    BulkItem(
+                        category = category,
+                        product = product,
+                        design = design,
+                        itemCode = itemCode,
+                        rfidCode = it,
+                        uhftagInfo = uhftagInfo
+                    )
+                }
+            }
+            if (itemList.isNotEmpty()) {
+                bulkRepository.insertBulkItems(itemList)
+                // ✅ Print confirmation
+                println("SAVED: Saved ${itemList.size} items to DB successfully.")
+                //  ToastUtils.showToast(c,"Saved ${itemList.size} items successfully")
+            } else {
+                println("SAVED: No items to save.")
+            }
+        }
+    }
+
+
 }

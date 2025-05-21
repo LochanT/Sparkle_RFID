@@ -2,6 +2,7 @@ package com.loyalstring.rfid.di
 
 import android.content.Context
 import androidx.room.Room
+import com.loyalstring.rfid.data.local.dao.BulkItemDao
 import com.loyalstring.rfid.data.local.dao.DropdownDao
 import com.loyalstring.rfid.data.local.db.AppDatabase
 import dagger.Module
@@ -28,5 +29,10 @@ object DatabaseModule {
     @Provides
     fun provideDropdownDao(db: AppDatabase): DropdownDao {
         return db.dropdownDao()
+    }
+
+    @Provides
+    fun provideBulkItemDao(db: AppDatabase): BulkItemDao {
+        return db.bulkItemDao()
     }
 }

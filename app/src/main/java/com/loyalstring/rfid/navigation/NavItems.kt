@@ -11,10 +11,11 @@ import com.loyalstring.rfid.R
 enum class Screens(val route: String) {
     HomeScreen("home"),
     ProductManagementScreen("products"),
-    AddProductScreen("add products"),
+    AddProductScreen("add product"),
     BulkProductScreen("bulk products"),
     ImportExcelScreen("import excel"),
     ExportExcelScreen("export excel"),
+    ProductListScreen("product list"),
 
 
 }

@@ -10,6 +10,7 @@ import com.loyalstring.rfid.ui.screens.BulkProductScreen
 import com.loyalstring.rfid.ui.screens.ExportExcelScreen
 import com.loyalstring.rfid.ui.screens.HomeScreen
 import com.loyalstring.rfid.ui.screens.ImportExcelScreen
+import com.loyalstring.rfid.ui.screens.ProductListScreen
 import com.loyalstring.rfid.ui.screens.ProductManagementScreen
 import kotlinx.coroutines.CoroutineScope
 
@@ -44,6 +45,9 @@ fun AppNavigation(
         }
         composable(Screens.ExportExcelScreen.route) {
             ExportExcelScreen(onBack = { navController.popBackStack() }, navController)
+        }
+        composable(Screens.ProductListScreen.route) {
+            ProductListScreen(onBack = { navController.popBackStack() }, navController)
         }
 
     }
