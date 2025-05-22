@@ -12,6 +12,11 @@ class UserPreferences(context: Context) {
         private const val KEY_EMPLOYEE = "employee"
         // private const val KEY_USERNAME = "username"
 
+        private const val KEY_USERNAME = "remember_username"
+        private const val KEY_PASSWORD = "remember_password"
+        private const val KEY_REMEMBER_ME = "remember_me"
+        private const val KEY_LOGGED_IN = "logged_in"
+
         private val gson = Gson()
 
     }
@@ -43,6 +48,34 @@ class UserPreferences(context: Context) {
     }
 
     fun clear() {
+        prefs.edit().clear().apply()
+    }
+
+    fun saveLoginCredentials(username: String, password: String, rememberMe: Boolean) {
+        prefs.edit().apply {
+            putBoolean(KEY_REMEMBER_ME, rememberMe)
+            if (rememberMe) {
+                putString(KEY_USERNAME, username)
+                putString(KEY_PASSWORD, password)
+            } else {
+                remove(KEY_USERNAME)
+                remove(KEY_PASSWORD)
+            }
+            apply()
+        }
+    }
+
+    fun getSavedUsername(): String = prefs.getString(KEY_USERNAME, "") ?: ""
+    fun getSavedPassword(): String = prefs.getString(KEY_PASSWORD, "") ?: ""
+    fun isRememberMe(): Boolean = prefs.getBoolean(KEY_REMEMBER_ME, false)
+
+    fun setLoggedIn(loggedIn: Boolean) {
+        prefs.edit().putBoolean(KEY_LOGGED_IN, loggedIn).apply()
+    }
+
+    fun isLoggedIn(): Boolean = prefs.getBoolean(KEY_LOGGED_IN, false)
+
+    fun logout() {
         prefs.edit().clear().apply()
     }
 }

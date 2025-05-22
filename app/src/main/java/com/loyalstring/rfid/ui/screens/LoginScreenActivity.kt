@@ -76,6 +76,15 @@ import dagger.hilt.android.AndroidEntryPoint
 class LoginScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val userPrefs = UserPreferences(this)
+
+        // ✅ If already logged in and rememberMe is enabled, go to MainActivity
+        if (userPrefs.isLoggedIn() && userPrefs.isRememberMe()) {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            return
+        }
         enableEdgeToEdge()
         setContent {
             Column(
@@ -107,7 +116,9 @@ class LoginScreenActivity : ComponentActivity() {
         val errorMessage = (loginResponse as? Resource.Error<*>)?.message
         val loginSuccess = loginResponse is Resource.Success<*>
 
+
         val context = LocalContext.current
+        val userPrefs = remember { UserPreferences(context) }
 
         LaunchedEffect(errorMessage) {
             errorMessage?.let {
@@ -127,6 +138,7 @@ class LoginScreenActivity : ComponentActivity() {
                     userPrefs.saveEmployee(
                         employee = response.employee,
                     )
+                    userPrefs.setLoggedIn(true)
 
                     val intent = Intent(context, MainActivity::class.java)
                     context.startActivity(intent)
@@ -216,6 +228,8 @@ class LoginScreenActivity : ComponentActivity() {
                             ).show()
                             return@clickable
                         }
+
+                        userPrefs.saveLoginCredentials(username, password, rememberMe)
                         viewModel.login(LoginRequest(username = username, password = password))
                     },
                 contentAlignment = Alignment.Center
