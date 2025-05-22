@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.androidx.foundation) // or latest stable
 
 
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -106,6 +107,8 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose) // For Compose Navigation integration
     kapt(libs.hilt.compiler)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.compose.runtime.livedata)
 
     //LiveData
     implementation(libs.androidx.lifecycle.livedata.ktx)// or latest

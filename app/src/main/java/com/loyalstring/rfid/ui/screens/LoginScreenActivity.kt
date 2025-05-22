@@ -1,91 +1,75 @@
 
 package com.loyalstring.rfid.ui.screens
 
+//import androidx.compose.ui.graphics.drawscope.drawPath
+
+
 import android.app.Activity
 import android.content.Intent
-import android.graphics.drawable.Icon
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.BottomCenter
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.loyalstring.rfid.R
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.ClickableText
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
-
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-//import androidx.compose.ui.graphics.drawscope.drawPath
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
-
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-import com.loyalstring.rfid.ui.theme.SparkleRFIDTheme
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.loyalstring.rfid.MainActivity
+import com.loyalstring.rfid.R
+import com.loyalstring.rfid.data.model.login.LoginRequest
+import com.loyalstring.rfid.data.model.login.LoginResponse
+import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.ui.utils.BackGroundLinerGradient
 import com.loyalstring.rfid.ui.utils.BackgroundGradient
-
-
-
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.runtime.*
-
-import androidx.compose.ui.text.input.VisualTransformation
-import com.loyalstring.rfid.MainActivity
+import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
+import com.loyalstring.rfid.viewmodel.LoginViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -108,16 +92,50 @@ class LoginScreenActivity : ComponentActivity() {
         }
     }
 
-
     @Composable
-    fun LoginScreen1() {
+    fun LoginScreen1(viewModel: LoginViewModel = hiltViewModel()) {
         var username by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
-        var isLoading by remember { mutableStateOf(false) }
+        var passwordVisible by remember { mutableStateOf(false) }
         var rememberMe by remember { mutableStateOf(false) }
 
-        var passwordVisible by remember { mutableStateOf(false) }
+        // Provide initial non-null Resource state to avoid nullability issues
+        val loginResponse by viewModel.loginResponse.observeAsState(initial = null)
 
+        val isLoading = loginResponse is Resource.Loading<*>
+
+        val errorMessage = (loginResponse as? Resource.Error<*>)?.message
+        val loginSuccess = loginResponse is Resource.Success<*>
+
+        val context = LocalContext.current
+
+        LaunchedEffect(errorMessage) {
+            errorMessage?.let {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        LaunchedEffect(loginSuccess) {
+            if (loginSuccess) {
+                val loginData = (loginResponse as? Resource.Success<LoginResponse>)?.data
+                loginData?.let { response ->
+                    val userPrefs = UserPreferences(context)
+                    userPrefs.saveToken(
+                        token = response.token.toString(),
+
+                        )
+                    userPrefs.saveEmployee(
+                        employee = response.employee,
+                    )
+
+                    val intent = Intent(context, MainActivity::class.java)
+                    context.startActivity(intent)
+                    if (context is Activity) {
+                        context.finish()
+                    }
+                }
+            }
+        }
 
         Column(
             modifier = Modifier
@@ -125,13 +143,6 @@ class LoginScreenActivity : ComponentActivity() {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            /* Text(
-                 text = "Login",
-                 fontSize = 24.sp,
-                 modifier = Modifier.padding(bottom = 8.dp)
-             )*/
-
-            // Username Field
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
@@ -142,7 +153,6 @@ class LoginScreenActivity : ComponentActivity() {
                 singleLine = true
             )
 
-            // Password Field
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -155,14 +165,13 @@ class LoginScreenActivity : ComponentActivity() {
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            painter = painterResource(id = if (passwordVisible) R.drawable.ic_action_eye else R.drawable.ic_action_eye_off), // Use drawable for visibility toggle
+                            painter = painterResource(id = if (passwordVisible) R.drawable.ic_action_eye else R.drawable.ic_action_eye_off),
                             contentDescription = if (passwordVisible) "Hide password" else "Show password"
                         )
                     }
-                },
+                }
             )
 
-            // Remember Me and Forgot Password Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -175,50 +184,39 @@ class LoginScreenActivity : ComponentActivity() {
                         checked = rememberMe,
                         onCheckedChange = { rememberMe = it }
                     )
-                    Text(/*"Remember Me"*/
+                    Text(
                         text = "Remember Me",
-                        fontFamily = poppins,
-                        fontWeight = FontWeight.SemiBold,)
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
                 }
 
                 Text(
                     text = "Forgot Password?",
                     color = Color.Blue,
-                    fontFamily = poppins,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.clickable {
-                        // Handle forgot password click
+                        // Handle forgot password click here
                     }
                 )
             }
 
-            // Gradient Login Button
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(BackgroundGradient)
-                    .clickable(
-                        enabled = !isLoading
-                    ) {
-                        if (username.isEmpty() || password.isEmpty()) {
+                    .clickable(enabled = !isLoading) {
+                        if (username.isBlank() || password.isBlank()) {
                             Toast.makeText(
-                                this@LoginScreenActivity,
+                                context,
                                 "Please enter username and password",
                                 Toast.LENGTH_SHORT
                             ).show()
                             return@clickable
                         }
-
-                        isLoading = true
-
-                        val intent = Intent(this@LoginScreenActivity, MainActivity::class.java)
-                        startActivity(intent)
-
-                        if (this@LoginScreenActivity is Activity) {
-                            finish()
-                        }
+                        viewModel.login(LoginRequest(username = username, password = password))
                     },
                 contentAlignment = Alignment.Center
             ) {
@@ -229,20 +227,19 @@ class LoginScreenActivity : ComponentActivity() {
                         "Login",
                         color = Color.White,
                         fontSize = 16.sp,
-                        fontFamily = poppins,
                         fontWeight = FontWeight.Bold,
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(15.dp))
+
             TroubleLoginText {
-                // Handle "Contact Us" click here
-                // Example: open support screen or email intent
-                Log.d("LoginScreen", "Contact Us clicked")
+                Toast.makeText(context, "Contact Us clicked", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
     @Composable
     fun TroubleLoginText(onContactClick: () -> Unit) {
         val annotatedText = buildAnnotatedString {
@@ -390,3 +387,5 @@ class LoginScreenActivity : ComponentActivity() {
         }
     }
 }
+
+
