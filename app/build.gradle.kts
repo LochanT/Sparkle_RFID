@@ -109,6 +109,7 @@ dependencies {
     kapt(libs.hilt.compiler)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.compose.runtime.livedata)
+    implementation("androidx.compose.material:material-icons-extended:1.6.0")
 
     //LiveData
     implementation(libs.androidx.lifecycle.livedata.ktx)// or latest

@@ -1,5 +1,6 @@
 package com.loyalstring.rfid.navigation
 
+import android.content.Context
 import androidx.compose.material3.DrawerState
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
@@ -19,7 +20,8 @@ import kotlinx.coroutines.CoroutineScope
 fun AppNavigation(
     navController: NavHostController,
     drawerState: DrawerState,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    context: Context
 ) {
     NavHost(navController = navController, startDestination = Screens.HomeScreen.route) {
         composable(Screens.HomeScreen.route) {
@@ -34,7 +36,7 @@ fun AppNavigation(
             ProductManagementScreen(onBack = { navController.popBackStack() },navController)
         }
         composable(Screens.AddProductScreen.route) {
-            AddProductScreen(onBack = { navController.popBackStack() },navController)
+            AddProductScreen(onBack = { navController.popBackStack() },navController,context)
 
         }
         composable(Screens.BulkProductScreen.route) {

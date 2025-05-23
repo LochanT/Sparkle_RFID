@@ -14,12 +14,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
@@ -129,40 +132,55 @@ private fun SetupNavigation( context: Context) {
                         }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    listOfNavItems.forEachIndexed { index, navigationItem ->
-                        NavigationDrawerItem(
-                            modifier = Modifier
-                                .padding(NavigationDrawerItemDefaults.ItemPadding)
-                                .fillMaxWidth(0.7f),
-                            label = { Text(text = navigationItem.title, fontSize = 16.sp, color = Color.DarkGray)},
-                            selected = index == selectedItemIndex,
+                    val scrollState = rememberScrollState()
 
-                            onClick = {
-                                selectedItemIndex = index
-                                if (selectedItemIndex >=2){
-                                    Toast.makeText(context,"Coming soon..", Toast.LENGTH_SHORT).show()
-                                }else{
-                                    scope.launch {
-                                        drawerState.close()
-                                        navController.navigate(navigationItem.route)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .verticalScroll(scrollState)
+                    ) {
+                        listOfNavItems.forEachIndexed { index, navigationItem ->
+                            NavigationDrawerItem(
+                                modifier = Modifier
+                                    .padding(NavigationDrawerItemDefaults.ItemPadding)
+                                    .fillMaxWidth(0.7f),
+                                label = {
+                                    Text(
+                                        text = navigationItem.title,
+                                        fontSize = 16.sp,
+                                        color = Color.DarkGray
+                                    )
+                                },
+                                selected = index == selectedItemIndex,
+
+                                onClick = {
+                                    selectedItemIndex = index
+                                    if (selectedItemIndex >= 2) {
+                                        Toast.makeText(context, "Coming soon..", Toast.LENGTH_SHORT)
+                                            .show()
+                                    } else {
+                                        scope.launch {
+                                            drawerState.close()
+                                            navController.navigate(navigationItem.route)
+                                        }
                                     }
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    modifier = Modifier.size(24.dp),
-                                    painter = painterResource(navigationItem.selectedIcon),
-                                    tint = Color.DarkGray,
-                                    contentDescription = navigationItem.title
+                                },
+                                icon = {
+                                    Icon(
+                                        modifier = Modifier.size(24.dp),
+                                        painter = painterResource(navigationItem.selectedIcon),
+                                        tint = Color.DarkGray,
+                                        contentDescription = navigationItem.title
+                                    )
+                                },
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    selectedContainerColor = Color.Transparent,
+                                    unselectedContainerColor = Color.Transparent
+                                ),
+
+
                                 )
-                            },
-                            colors = NavigationDrawerItemDefaults.colors(
-                                selectedContainerColor   = Color.Transparent,
-                                unselectedContainerColor = Color.Transparent
-                            ),
-
-
-                        )
+                        }
                     }
                 }
             }
@@ -186,7 +204,7 @@ private fun SetupNavigation( context: Context) {
                 }
             },
             content = { innerPadding ->
-                AppNavigation(navController, drawerState, scope)
+                AppNavigation(navController, drawerState, scope,context)
 
             }
         )

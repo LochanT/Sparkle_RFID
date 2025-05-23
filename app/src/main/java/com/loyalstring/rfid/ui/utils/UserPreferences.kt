@@ -19,6 +19,15 @@ class UserPreferences(context: Context) {
 
         private val gson = Gson()
 
+        @Volatile
+        private var instance: UserPreferences? = null
+
+        fun getInstance(context: Context): UserPreferences {
+            return instance ?: synchronized(this) {
+                instance ?: UserPreferences(context.applicationContext).also { instance = it }
+            }
+        }
+
     }
 
     private val prefs: SharedPreferences =

@@ -7,6 +7,7 @@ package com.loyalstring.rfid.ui.screens
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -62,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.loyalstring.rfid.MainActivity
 import com.loyalstring.rfid.R
+import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.model.login.LoginRequest
 import com.loyalstring.rfid.data.model.login.LoginResponse
 import com.loyalstring.rfid.data.remote.resource.Resource
@@ -138,6 +140,7 @@ class LoginScreenActivity : ComponentActivity() {
                     userPrefs.saveEmployee(
                         employee = response.employee,
                     )
+                    Log.d("@@","@@client code "+response.employee?.clientCode);
                     userPrefs.setLoggedIn(true)
 
                     val intent = Intent(context, MainActivity::class.java)
