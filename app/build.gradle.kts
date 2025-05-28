@@ -9,12 +9,12 @@ plugins {
 
 android {
     namespace = "com.loyalstring.rfid"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.loyalstring.rfid"
-        minSdk = 24
-        targetSdk = 34
+        minSdk = 26
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -58,12 +58,14 @@ dependencies {
 
     // Compose
     implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.material3)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.runtime.livedata)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -113,4 +115,9 @@ dependencies {
 
     //LiveData
     implementation(libs.androidx.lifecycle.livedata.ktx)// or latest
+
+    //Excel Read/Writw
+    implementation(libs.poi)           // For .xls files
+    implementation(libs.poi.ooxml)     // For .xlsx files
+    implementation(kotlin("reflect"))
 }

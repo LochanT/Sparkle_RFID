@@ -74,8 +74,8 @@ fun ProductManagementScreen(
         val items = listOf(
             ProductGridItem("Add Single\nProduct", R.drawable.add_single_prod, true, "add product"),
             ProductGridItem("Add Bulk\nProducts", R.drawable.add_bulk_prod, true, "bulk products"),
-            ProductGridItem("Import\nExcel", R.drawable.export_excel, true, "import_excel"),
-            ProductGridItem("Export\nExcel", R.drawable.export_excel, true, "export_excel"),
+            ProductGridItem("Import\nExcel", R.drawable.export_excel, true, "import excel"),
+            ProductGridItem("Export\nExcel", R.drawable.export_excel, true, "export excel"),
             ProductGridItem("Click to\nSync Data", R.drawable.ic_sync_data, false, ""),
             ProductGridItem("Scan to\nDesktop", R.drawable.ic_sync_sheet_data, false, ""),
             ProductGridItem("Sync Sheet\nData", R.drawable.barcode_reader, false, ""),
@@ -85,6 +85,7 @@ fun ProductManagementScreen(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color.White)
                 .padding(innerPadding)
         ) {
             val columns = 2

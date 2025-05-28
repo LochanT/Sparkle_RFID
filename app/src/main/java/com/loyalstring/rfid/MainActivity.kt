@@ -2,12 +2,11 @@ package com.loyalstring.rfid
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.nfc.NfcAdapter
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -55,15 +54,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.navigation.AppNavigation
+import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.navigation.listOfNavItems
 import com.loyalstring.rfid.ui.theme.Purple40
-
 import com.loyalstring.rfid.ui.theme.SparkleRFIDTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -80,6 +77,9 @@ class MainActivity  : ComponentActivity() {
                 SetupNavigation(baseContext)
             }
         }
+
+        val nfcAdapter = NfcAdapter.getDefaultAdapter(this)
+        nfcAdapter?.disableReaderMode(this)
     }
 }
 

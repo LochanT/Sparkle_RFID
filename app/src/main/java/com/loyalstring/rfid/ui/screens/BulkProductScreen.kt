@@ -110,15 +110,11 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                 onSave = {
 
                     if (selectedCategory.isNotBlank() && selectedProduct.isNotBlank() && selectedDesign.isNotBlank()) {
-                        if (itemCode.value.isNotBlank()) {
-                            viewModel.saveBulkItems(
+                        viewModel.saveBulkItems(
                                 selectedCategory,
                                 itemCode.toString(), selectedProduct, selectedDesign,
                                 clickedIndex?.let { tags.get(index = it) }!!
                             )
-                        } else {
-                            ToastUtils.showToast(context, "please enter item code")
-                        }
 
                     } else {
                         ToastUtils.showToast(context, "Category/Product/Design cannot be Empty")

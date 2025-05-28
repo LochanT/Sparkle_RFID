@@ -18,3 +18,4 @@ class BulkRepositoryImpl @Inject constructor(
     }
 }
 
+

@@ -168,19 +168,32 @@ class BulkViewModel @Inject constructor(
                 rfid.let {
                     BulkItem(
                         category = category,
-                        product = product,
+                        productName = product,
                         design = design,
                         itemCode = itemCode,
-                        rfidCode = it,
-                        uhftagInfo = uhftagInfo
+                        rfid = it,
+                        uhfTagInfo = uhftagInfo,
+                        grossWeight = "",
+                        stoneWeight = "",
+                        dustWeight = "",
+                        netWeight = "",
+                        purity = "",
+                        makingPerGram = "",
+                        makingPercent = "",
+                        fixMaking = "",
+                        fixWastage = "",
+                        stoneAmount = "",
+                        dustAmount = "",
+                        sku = "",
+                        epc = "",
+                        vendor = "",
+                        tid = ""
                     )
                 }
             }
             if (itemList.isNotEmpty()) {
                 bulkRepository.insertBulkItems(itemList)
-                // ✅ Print confirmation
                 println("SAVED: Saved ${itemList.size} items to DB successfully.")
-                //  ToastUtils.showToast(c,"Saved ${itemList.size} items successfully")
             } else {
                 println("SAVED: No items to save.")
             }
