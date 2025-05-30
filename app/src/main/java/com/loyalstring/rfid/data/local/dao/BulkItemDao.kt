@@ -9,9 +9,13 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface BulkItemDao {
+    @Query("DELETE FROM bulk_items")
+    suspend fun clearAllItems()
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBulkItem(item: List<BulkItem>)
 
     @Query("SELECT * FROM bulk_items")
-    fun getAllItems(): Flow<List<BulkItem>>
+    fun getAllItemsFlow(): Flow<List<BulkItem>>
+
 }

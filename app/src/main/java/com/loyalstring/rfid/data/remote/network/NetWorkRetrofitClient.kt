@@ -5,6 +5,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -16,17 +18,42 @@ object NetWorkRetrofitClient {
     @Provides
     fun provideBaseUrl() = "https://rrgold.loyalstring.co.in/"
 
+
     @Provides
-    @Singleton
-    fun provideRetrofit(baseUrl: String): Retrofit =
-        Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .addConverterFactory(GsonConverterFactory.create())
+    fun provideLoggingInterceptor(): HttpLoggingInterceptor {
+        return HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+
+        }
+    }
+
+    @Provides
+    fun provideOkHttpClient(
+        loggingInterceptor: HttpLoggingInterceptor
+    ): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
             .build()
+    }
 
     @Provides
     @Singleton
-    fun provideLoginApiService(retrofit: Retrofit): RetrofitInterface =
-        retrofit.create(RetrofitInterface::class.java)
+    fun provideRetrofit(
+        okHttpClient: OkHttpClient,
+        baseUrl: String
+    ): Retrofit {
+
+        return Retrofit.Builder()
+            .baseUrl(baseUrl) // replace with your URL
+            .addConverterFactory(GsonConverterFactory.create()) // or MoshiConverterFactory.create()
+            .client(okHttpClient)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideApiService(retrofit: Retrofit): RetrofitInterface {
+        return retrofit.create(RetrofitInterface::class.java)
+    }
 
 }

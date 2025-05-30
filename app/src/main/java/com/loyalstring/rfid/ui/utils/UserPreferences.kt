@@ -3,8 +3,13 @@ package com.loyalstring.rfid.ui.utils
 import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 
-class UserPreferences(context: Context) {
+class UserPreferences @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+
 
     companion object {
         private const val PREF_NAME = "user_prefs"

@@ -49,15 +49,14 @@ fun ImportExcelScreen(
     var excelColumns by remember { mutableStateOf(listOf<String>()) }
     var showMappingDialog by remember { mutableStateOf(false) }
     var showFilePicker by remember { mutableStateOf(true) }
+    var fileSelected by remember { mutableStateOf(false) }
     var showProgress by remember { mutableStateOf(false) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var showOverlay by remember { mutableStateOf(false) }
 
     val isImportDone by viewModel.isImportDone.collectAsState()
     val importProgress by viewModel.importProgress.collectAsState()
-    val progress by viewModel.importProgress.collectAsState()
     val isDone by viewModel.isImportDone.collectAsState()
-    val parsedItems by viewModel.parsedItems.collectAsState()
 
     LaunchedEffect(isImportDone) {
         if (isImportDone) {
@@ -111,6 +110,7 @@ fun ImportExcelScreen(
                     },
                     onFileSelected = {
                         showFilePicker = false
+                        fileSelected = true
                         launcher.launch(
                             arrayOf(
                                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -130,6 +130,7 @@ fun ImportExcelScreen(
                         showMappingDialog = false
                         navController.navigate(Screens.ProductManagementScreen.route)
                     },
+                    fileSelected = fileSelected,
                     onImport = { mapping ->
                         selectedUri?.let {
                             showOverlay = true

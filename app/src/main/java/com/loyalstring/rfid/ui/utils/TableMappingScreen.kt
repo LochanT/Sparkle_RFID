@@ -1,5 +1,6 @@
 package com.loyalstring.rfid.ui.utils
 
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,94 +37,100 @@ fun TableMappingScreen(
     excelColumns: List<String>,
     bulkItemFields: List<String>,
     onDismiss: () -> Unit,
-    onImport: (Map<String, String>) -> Unit
+    fileselected: Boolean,
+    onImport: (Map<String, String>) -> Unit // (ExcelCol -> DBField)
 ) {
     val mappings = remember { mutableStateMapOf<String, String>() }
-    var searchQuery by remember { mutableStateOf("") }
+    val context: Context = LocalContext.current
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Column {
                 Text("Table Mapping", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Text("Map each database field to a column from the Excel file.")
+                Text("Map each Excel column to a Database field.")
             }
         },
         text = {
-            Column {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    label = { Text("Search Excel Columns", fontSize = 14.sp) },
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 14.sp),
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Header Row
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 12.dp)
-                )
-
-                val filteredColumns = excelColumns.filter {
-                    it.contains(searchQuery, ignoreCase = true)
+                        .padding(bottom = 6.dp, top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Excel Column",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1.5f),
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        "Map to DB Field",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(2f),
+                        fontSize = 13.sp
+                    )
                 }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 400.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    bulkItemFields.forEach { dbField ->
-                        var expanded by remember { mutableStateOf(false) }
-                        var selected by remember { mutableStateOf(mappings[dbField] ?: "") }
+                excelColumns.forEach { excelColumn ->
+                    var expanded by remember { mutableStateOf(false) }
+                    var selected by remember { mutableStateOf(mappings[excelColumn] ?: "") }
 
-                        Row(
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = excelColumn,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = dbField,
+                                .weight(1.2f)
+                                .padding(end = 8.dp),
+                            fontSize = 14.sp
+                        )
+
+                        Box(modifier = Modifier.weight(2f)) {
+                            OutlinedTextField(
+                                value = selected,
+                                onValueChange = {},
+                                label = { Text("Select DB Field", fontSize = 12.sp) },
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 12.sp),
                                 modifier = Modifier
-                                    .weight(1.2f)
-                                    .padding(end = 8.dp),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium
+                                    .fillMaxWidth()
+                                    .clickable { expanded = true },
+                                readOnly = true,
+                                trailingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = null,
+                                        modifier = Modifier.clickable { expanded = !expanded }
+                                    )
+                                }
                             )
 
-                            Box(modifier = Modifier.weight(2f)) {
-                                OutlinedTextField(
-                                    value = selected,
-                                    onValueChange = {},
-                                    label = { Text("Select Column", fontSize = 12.sp) },
-                                    textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 12.sp),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { expanded = true },
-                                    readOnly = true,
-                                    trailingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.ArrowDropDown,
-                                            contentDescription = null,
-                                            modifier = Modifier.clickable { expanded = !expanded }
-                                        )
-                                    }
-                                )
-
-                                DropdownMenu(
-                                    expanded = expanded,
-                                    onDismissRequest = { expanded = false },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    filteredColumns.forEach { column ->
-                                        DropdownMenuItem(
-                                            text = { Text(column, fontSize = 12.sp) },
-                                            onClick = {
-                                                selected = column
-                                                mappings[dbField] = column
-                                                expanded = false
-                                            }
-                                        )
-                                    }
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                bulkItemFields.forEach { dbField ->
+                                    DropdownMenuItem(
+                                        text = { Text(dbField, fontSize = 12.sp, maxLines = 1) },
+                                        onClick = {
+                                            selected = dbField
+                                            mappings[excelColumn] = dbField
+                                            expanded = false
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -131,9 +139,17 @@ fun TableMappingScreen(
             }
         },
         confirmButton = {
-            GradientButton(text = "Import", onClick = { onImport(mappings) })
+            GradientButton(
+                text = "Import",
+                onClick = {
+                    if (fileselected) {
+                        onImport(mappings)
 
-
+                    } else {
+                        ToastUtils.showToast(context, "Please Select file first")
+                    }
+                }, // Call with ExcelCol → DBField
+            )
         },
         dismissButton = {
             GradientButton(text = "Cancel", onClick = onDismiss)

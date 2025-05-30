@@ -185,6 +185,8 @@ class ImportExcelViewModel @Inject constructor(
                         )
                     }
 
+
+                    repository.clearAllItems()
                     repository.insertBulkItems(items)
                     _parsedItems.value = items
                     _isImportDone.value = true

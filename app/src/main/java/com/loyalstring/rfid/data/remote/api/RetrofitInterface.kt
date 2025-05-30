@@ -9,6 +9,8 @@ import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.model.login.LoginRequest
 import com.loyalstring.rfid.data.model.login.LoginResponse
+import com.loyalstring.rfid.data.remote.data.AlllabelResponse
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -42,6 +44,10 @@ interface RetrofitInterface {
     /*Get all purity*/
     @POST("api/ProductMaster/GetAllPurity")
     suspend fun getAllPurityDetails(@Body request: ClientCodeRequest): Response<List<PurityModel>>
+
+    //Get all products
+    @POST("api/ProductMaster/GetAllLabeledStock")
+    suspend fun getAllLabeledStock(@Body request: RequestBody): Response<List<AlllabelResponse.LabelItem>>
 
 
 

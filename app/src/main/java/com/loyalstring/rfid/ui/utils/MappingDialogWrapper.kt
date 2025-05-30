@@ -17,6 +17,7 @@ fun MappingDialogWrapper(
     excelColumns: List<String>,
     bulkItemFields: List<String>,
     onDismiss: () -> Unit,
+    fileSelected: Boolean,
     onImport: (Map<String, String>) -> Unit
 ) {
     val mapping = remember { mutableStateMapOf<String, String>() }
@@ -33,6 +34,7 @@ fun MappingDialogWrapper(
                 excelColumns = excelColumns,
                 bulkItemFields = bulkItemFields,
                 onDismiss = onDismiss,
+                fileselected = fileSelected,
                 onImport = onImport
             )
         }
