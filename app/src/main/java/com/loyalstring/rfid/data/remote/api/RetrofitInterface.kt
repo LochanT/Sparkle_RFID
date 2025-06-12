@@ -3,6 +3,7 @@ package com.loyalstring.rfid.data.remote.api
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
 import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
+import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
 import com.loyalstring.rfid.data.model.addSingleItem.ProductModel
 import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
@@ -48,6 +49,10 @@ interface RetrofitInterface {
     //Get all products
     @POST("api/ProductMaster/GetAllLabeledStock")
     suspend fun getAllLabeledStock(@Body request: RequestBody): Response<List<AlllabelResponse.LabelItem>>
+
+    /*Get all insert stock*/
+    @POST("api/ProductMaster/InsertLabelledStock")
+    suspend fun insertStock(@Body request: InsertProductRequest): Response<List<PurityModel>>
 
 
 
