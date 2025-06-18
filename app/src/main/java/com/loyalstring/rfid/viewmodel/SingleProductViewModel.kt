@@ -1,18 +1,25 @@
 package com.loyalstring.rfid.viewmodel
 
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.loyalstring.rfid.data.local.entity.Design
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
 import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
+import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
 import com.loyalstring.rfid.data.model.addSingleItem.ProductModel
 import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
+import com.loyalstring.rfid.data.reader.BarcodeReader
+import com.loyalstring.rfid.data.reader.RFIDReaderManager
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.SingleProductRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,9 +28,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SingleProductViewModel @Inject constructor(
-    private val repository: SingleProductRepository
+    private val repository: SingleProductRepository,
+    private val readerManager: RFIDReaderManager,
+    internal val barcodeReader: BarcodeReader,
 ) : ViewModel() {
-
+    private val success = readerManager.initReader()
     private val _vendorResponse = MutableLiveData<Resource<List<VendorModel>>>()
     val vendorResponse: LiveData<Resource<List<VendorModel>>> = _vendorResponse
 
@@ -43,6 +52,8 @@ class SingleProductViewModel @Inject constructor(
     private val _purityResponse = MutableLiveData<Resource<List<PurityModel>>>()
     val purityResponse: LiveData<Resource<List<PurityModel>>> = _purityResponse
 
+    var stockResponse by mutableStateOf<Result<List<PurityModel>>?>(null)
+        private set
 
     /*venodr function*/
     fun getAllVendor(request: ClientCodeRequest) {
@@ -159,5 +170,35 @@ class SingleProductViewModel @Inject constructor(
         }
     }
 
+    fun saveImageUriToDb(uri: String) {
+        viewModelScope.launch {
+            val image = UploadedImage(uri = uri)
+            //  dao.insert(image)
+        }
+    }
 
+
+    fun fetchAllDropdownData(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            launch { getAllVendor(request) }
+            launch { getAllSKU(request) }
+            launch { getAllCategory(request) }
+            launch { getAllProduct(request) }
+            launch { getAllDesign(request) }
+            launch { getAllPurity(request) }
+        }
+    }
+
+
+    fun insertLabelledStock(request: InsertProductRequest) {
+        viewModelScope.launch {
+            stockResponse = repository.insertLabelledStock(request)
+        }
+    }
+
+    @Entity
+    data class UploadedImage(
+        @PrimaryKey(autoGenerate = true) val id: Int = 0,
+        val uri: String
+    )
 }

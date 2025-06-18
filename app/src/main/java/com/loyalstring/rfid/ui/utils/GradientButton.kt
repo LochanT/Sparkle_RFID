@@ -30,6 +30,6 @@ fun GradientButton(
             .clickable { onClick() }
             .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
-        Text(text = text, color = Color.White)
+        Text(text = text, color = Color.White, fontFamily = poppins)
     }
 }

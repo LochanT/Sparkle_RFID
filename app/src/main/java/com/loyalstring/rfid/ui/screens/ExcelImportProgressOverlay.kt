@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.ImportProgress
 
 @Composable
@@ -40,7 +41,7 @@ fun ExcelImportProgressOverlay(importProgress: ImportProgress) {
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Importing Excel Data", fontWeight = FontWeight.Bold)
+                Text("Importing Excel Data", fontWeight = FontWeight.Bold, fontFamily = poppins)
                 Spacer(modifier = Modifier.height(12.dp))
 
                 LinearProgressIndicator(
@@ -53,14 +54,18 @@ fun ExcelImportProgressOverlay(importProgress: ImportProgress) {
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("${importProgress.importedFields} / ${importProgress.totalFields} fields imported")
+                Text(
+                    "${importProgress.importedFields} / ${importProgress.totalFields} fields imported",
+                    fontFamily = poppins
+                )
 
                 if (importProgress.failedFields.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         "Failed: ${importProgress.failedFields.joinToString()}",
                         color = MaterialTheme.colorScheme.error,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        fontFamily = poppins
                     )
                 }
             }

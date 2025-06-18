@@ -13,9 +13,15 @@ interface BulkItemDao {
     suspend fun clearAllItems()
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertBulkItem(item: List<BulkItem>)
+    suspend fun insertBulkItem(items: List<BulkItem>): List<Long>
 
     @Query("SELECT * FROM bulk_items")
     fun getAllItemsFlow(): Flow<List<BulkItem>>
+
+    @Query("SELECT * FROM bulk_items WHERE epc = :epc LIMIT 1")
+    suspend fun getItemByEpc(epc: String): BulkItem?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertSingleItem(item: BulkItem): Long
 
 }

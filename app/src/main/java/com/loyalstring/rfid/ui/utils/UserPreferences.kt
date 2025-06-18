@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import androidx.core.content.edit
 
 class UserPreferences @Inject constructor(
     @ApplicationContext private val context: Context
@@ -21,6 +22,7 @@ class UserPreferences @Inject constructor(
         private const val KEY_PASSWORD = "remember_password"
         private const val KEY_REMEMBER_ME = "remember_me"
         private const val KEY_LOGGED_IN = "logged_in"
+        private const val KEY_SHEET_URL = "sheet_url"
 
         private val gson = Gson()
 
@@ -39,7 +41,7 @@ class UserPreferences @Inject constructor(
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
     fun saveToken(token: String) {
-        prefs.edit().putString(KEY_TOKEN, token).apply()
+        prefs.edit() { putString(KEY_TOKEN, token) }
     }
 
     fun getToken(): String? {
@@ -49,7 +51,7 @@ class UserPreferences @Inject constructor(
 
     fun <T> saveEmployee(employee: T) {
         val json = gson.toJson(employee)
-        prefs.edit().putString(KEY_EMPLOYEE, json).apply()
+        prefs.edit() { putString(KEY_EMPLOYEE, json) }
     }
 
     fun <T> getEmployee(clazz: Class<T>): T? {
@@ -58,11 +60,15 @@ class UserPreferences @Inject constructor(
     }
 
     fun clearAll() {
-        prefs.edit().clear().apply()
+        prefs.edit() { clear() }
     }
 
-    fun clear() {
-        prefs.edit().clear().apply()
+    fun saveSheetUrl(url: String) {
+        prefs.edit() { putString(KEY_SHEET_URL, url) }
+    }
+
+    fun getSheetUrl(): String? {
+        return prefs.getString(KEY_SHEET_URL, "")
     }
 
     fun saveLoginCredentials(username: String, password: String, rememberMe: Boolean) {
@@ -84,12 +90,12 @@ class UserPreferences @Inject constructor(
     fun isRememberMe(): Boolean = prefs.getBoolean(KEY_REMEMBER_ME, false)
 
     fun setLoggedIn(loggedIn: Boolean) {
-        prefs.edit().putBoolean(KEY_LOGGED_IN, loggedIn).apply()
+        prefs.edit() { putBoolean(KEY_LOGGED_IN, loggedIn) }
     }
 
     fun isLoggedIn(): Boolean = prefs.getBoolean(KEY_LOGGED_IN, false)
 
     fun logout() {
-        prefs.edit().clear().apply()
+        prefs.edit() { clear() }
     }
 }

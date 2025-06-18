@@ -1,4 +1,4 @@
-package com.loyalstring.rfid.data.remote.data
+package com.loyalstring.rfid.data.remote.response
 
 import com.google.gson.annotations.SerializedName
 

@@ -4,9 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.nfc.NfcAdapter
 import android.os.Bundle
+import android.view.KeyEvent
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -25,6 +27,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PersonOutline
+import androidx.compose.material.icons.filled.PersonPin
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -50,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -57,36 +62,63 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.navigation.AppNavigation
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.navigation.listOfNavItems
 import com.loyalstring.rfid.ui.theme.Purple40
 import com.loyalstring.rfid.ui.theme.SparkleRFIDTheme
+import com.loyalstring.rfid.ui.utils.BackgroundGradient
+import com.loyalstring.rfid.ui.utils.UserPreferences
+import com.loyalstring.rfid.ui.utils.poppins
+import com.loyalstring.rfid.viewmodel.BulkViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 
 @AndroidEntryPoint
-class MainActivity  : ComponentActivity() {
-    //private val viewModel: BulkProductViewModel by viewModels()
+class MainActivity(
+) : ComponentActivity() {
+    @Inject
+    lateinit var userPreferences: UserPreferences
+    private val viewModel: BulkViewModel by viewModels()
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SparkleRFIDTheme {
-                SetupNavigation(baseContext)
+                SetupNavigation(baseContext, userPreferences)
             }
         }
 
-        val nfcAdapter = NfcAdapter.getDefaultAdapter(this)
-        nfcAdapter?.disableReaderMode(this)
+//        val nfcAdapter = NfcAdapter.getDefaultAdapter(this)
+//        nfcAdapter?.disableReaderMode(this)
+    }
+
+    @SuppressLint("RestrictedApi")
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+            when (event.keyCode) {
+                293, 280, 139 -> {
+                    val keyType = if (event.keyCode == 139) "barcode" else "scan"
+                    viewModel.onScanKeyPressed(keyType)
+                    return true
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event)
     }
 }
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun SetupNavigation( context: Context) {
+private fun SetupNavigation(context: Context, userPreferences: UserPreferences) {
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var selectedItemIndex by rememberSaveable {
@@ -99,39 +131,42 @@ private fun SetupNavigation( context: Context) {
     ModalNavigationDrawer(
 
         {
-            ModalDrawerSheet ( modifier = Modifier.background(Color.White),drawerContainerColor = Color.White ){
+            ModalDrawerSheet(
+                modifier = Modifier.background(Color.White), drawerContainerColor = Color.White,
+                drawerShape = RectangleShape
+            ) {
                 Column {
 
                     Box(modifier = Modifier
-                        .height(56.dp)
                         .fillMaxWidth(0.8f)
-                        .background(color = Purple40)) {
+                        .background(BackgroundGradient)
+                    ) {
                         Row(
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Rounded app icon
                             Image(
-                                painter = painterResource(id = R.drawable.ic_launcher_background), // Replace with your app icon resource
-                                contentDescription = null,
+                                painter = painterResource(R.drawable.ic_user),
+                                contentDescription = "Default User", // Replace with your app icon resource
                                 modifier = Modifier
-                                    .size(60.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.secondary)
+                                    .size(50.dp)
                                     .padding(8.dp)
                             )
                             // Spacing between icon and app name
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(
-                                text = "Sparkle RFID",
+                                text = userPreferences.getSavedUsername(),
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.Normal,
                                     color = Color.White
-                                )
+                                ),
+                                fontFamily = poppins
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(10.dp))
                     val scrollState = rememberScrollState()
 
                     Column(
@@ -142,13 +177,13 @@ private fun SetupNavigation( context: Context) {
                         listOfNavItems.forEachIndexed { index, navigationItem ->
                             NavigationDrawerItem(
                                 modifier = Modifier
-                                    .padding(NavigationDrawerItemDefaults.ItemPadding)
                                     .fillMaxWidth(0.7f),
                                 label = {
                                     Text(
                                         text = navigationItem.title,
                                         fontSize = 16.sp,
-                                        color = Color.DarkGray
+                                        fontFamily = poppins,
+                                        color = Color.DarkGray,
                                     )
                                 },
                                 selected = index == selectedItemIndex,
@@ -156,8 +191,29 @@ private fun SetupNavigation( context: Context) {
                                 onClick = {
                                     selectedItemIndex = index
                                     if (selectedItemIndex >= 2) {
-                                        Toast.makeText(context, "Coming soon..", Toast.LENGTH_SHORT)
-                                            .show()
+                                        if (navigationItem.route.equals("login")) {
+                                            userPreferences.logout()
+                                            scope.launch {
+                                                drawerState.close()
+                                            }
+                                            navController.navigate("login") {
+                                                popUpTo(navController.graph.startDestinationId) {
+                                                    inclusive = true
+                                                }
+                                                launchSingleTop = true
+                                            }
+
+                                        } else if (navigationItem.route.equals(Screens.SettingsScreen.route)) {
+                                            navController.navigate(navigationItem.route)
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                "Coming soon..",
+                                                Toast.LENGTH_SHORT
+                                            )
+                                                .show()
+                                        }
+
                                     } else {
                                         scope.launch {
                                             drawerState.close()
@@ -177,9 +233,8 @@ private fun SetupNavigation( context: Context) {
                                     selectedContainerColor = Color.Transparent,
                                     unselectedContainerColor = Color.Transparent
                                 ),
+                            )
 
-
-                                )
                         }
                     }
                 }
@@ -204,7 +259,8 @@ private fun SetupNavigation( context: Context) {
                 }
             },
             content = { innerPadding ->
-                AppNavigation(navController, drawerState, scope,context)
+                AppNavigation(navController, drawerState, scope, context, userPreferences)
+
 
             }
         )
@@ -215,7 +271,7 @@ private fun SetupNavigation( context: Context) {
 @Composable
 fun ProductTopBar(navController: NavHostController) {
     TopAppBar(
-        title = { Text("Product", color = Color.White) },
+        title = { Text("Product", color = Color.White, fontFamily = poppins) },
         navigationIcon = {
             IconButton(onClick = {
 

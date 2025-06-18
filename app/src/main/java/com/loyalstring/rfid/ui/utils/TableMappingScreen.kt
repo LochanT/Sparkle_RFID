@@ -38,7 +38,8 @@ fun TableMappingScreen(
     bulkItemFields: List<String>,
     onDismiss: () -> Unit,
     fileselected: Boolean,
-    onImport: (Map<String, String>) -> Unit // (ExcelCol -> DBField)
+    onImport: (Map<String, String>) -> Unit,
+    isFromSheet: Boolean// (ExcelCol -> DBField)
 ) {
     val mappings = remember { mutableStateMapOf<String, String>() }
     val context: Context = LocalContext.current
@@ -48,7 +49,12 @@ fun TableMappingScreen(
         title = {
             Column {
                 Text("Table Mapping", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Text("Map each Excel column to a Database field.")
+                if (isFromSheet) {
+                    Text("Map each Excel column to a Database field.")
+                } else {
+                    Text("Map each Sheet column to a Database field.")
+                }
+
             }
         },
         text = {
@@ -66,7 +72,7 @@ fun TableMappingScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Excel Column",
+                        text = if (isFromSheet) "Excel Column" else "Sheet Column",
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1.5f),
                         fontSize = 13.sp
@@ -140,7 +146,7 @@ fun TableMappingScreen(
         },
         confirmButton = {
             GradientButton(
-                text = "Import",
+                text = if (isFromSheet) "Import" else "Sync",
                 onClick = {
                     if (fileselected) {
                         onImport(mappings)

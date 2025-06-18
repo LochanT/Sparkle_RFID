@@ -1,26 +1,29 @@
 
 package com.loyalstring.rfid.ui.screens
 
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,10 +31,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -52,7 +55,9 @@ import androidx.navigation.NavHostController
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.AddItemDialog
+import com.loyalstring.rfid.ui.utils.BackgroundGradient
 import com.loyalstring.rfid.ui.utils.ToastUtils
+import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,7 +69,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
     val tags by viewModel.scannedTags.collectAsState()
     val items by viewModel.scannedItems.collectAsState()
     val rfidMap by viewModel.rfidMap.collectAsState()
-    val itemCode = remember { mutableStateOf("") }
+    val itemCodes = remember { mutableStateOf("") }
     // Dropdown options
     val categories by viewModel.categories.collectAsState()
     val products by viewModel.products.collectAsState()
@@ -79,16 +84,63 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
 
     var clickedIndex by remember { mutableStateOf<Int?>(null) }
 
+    var selectedPower by remember { mutableStateOf(1) }
+    val scanTrigger by viewModel.scanTrigger.collectAsState()
+
+    val allScannedTags by viewModel.allScannedTags
+    val existingTags by viewModel.existingItems
+    val duplicateTags by viewModel.duplicateItems
+
+
+
+    LaunchedEffect(Unit) {
+        viewModel.toastMessage.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.syncStatusText.collect { message ->
+            message.let {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    LaunchedEffect(scanTrigger) {
+        scanTrigger?.let { type ->
+            // Do something based on the key
+            when (type) {
+                "scan" -> {
+                    if (items.size != 1) {
+                        viewModel.startScanning(selectedPower)
+                    }
+                }
+
+                "barcode" -> {
+                    viewModel.startBarcodeScanning()
+                }
+            }
+
+            // Important: clear after handling to prevent repeated triggers
+            viewModel.clearScanTrigger()
+        }
+    }
+
     // ✅ Set barcode scan callback ONCE
     LaunchedEffect(Unit) {
         viewModel.barcodeReader.setOnBarcodeScanned { scanned ->
             viewModel.onBarcodeScanned(scanned)
-            clickedIndex?.let { index ->
-                viewModel.assignRfidCode(index, scanned)
-            }
+            viewModel.setRfidForAllTags(scanned)
 
         }
     }
+
+//    LaunchedEffect(tags) {
+//        itemCodes = List(tags.size) { index ->
+//            itemCodes.getOrNull(index) ?: ""
+//        }
+//    }
 
     Scaffold(
         topBar = {
@@ -102,31 +154,49 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                             tint = Color.White
                         )
                     }
+                },
+                actions = {
+
+                },
+                showCounter = true,
+                selectedCount = selectedPower,
+                onCountSelected = {
+                    selectedPower = it
                 }
             )
         },
         bottomBar = {
+
+
             ScanBottomBar(
                 onSave = {
-
                     if (selectedCategory.isNotBlank() && selectedProduct.isNotBlank() && selectedDesign.isNotBlank()) {
-                        viewModel.saveBulkItems(
-                                selectedCategory,
-                                itemCode.toString(), selectedProduct, selectedDesign,
-                                clickedIndex?.let { tags.get(index = it) }!!
-                            )
-
+                        tags.forEachIndexed { index, _ ->
+                            val itemCode = itemCodes.value
+                            if (itemCode.isNotBlank()) {
+                                viewModel.saveBulkItems(
+                                    selectedCategory,
+                                    itemCode,
+                                    selectedProduct,
+                                    selectedDesign,
+                                    tags,
+                                    index
+                                )
+                            }
+                        }
+                        ToastUtils.showToast(context, "Items saved successfully")
+                        viewModel.resetData()
+                        navController.navigate(Screens.ProductManagementScreen.route)
                     } else {
-                        ToastUtils.showToast(context, "Category/Product/Design cannot be Empty")
+                        ToastUtils.showToast(context, "Category/Product/Design cannot be empty")
                     }
-
                 },
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
-                onScan = { /* TODO */ },
+                onScan = { viewModel.startScanning(selectedPower) },
                 onGscan = {
                     if (!firstPress) {
                         firstPress = true
-                        viewModel.startScanning()
+                        viewModel.startScanning(selectedPower)
                         //   viewModel.startBarcodeScanning()
                     } else {
                         viewModel.stopScanning()
@@ -162,7 +232,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     onAddOption = { showAddDialogFor = "Category" },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(vertical = 8.dp)
+
                 )
 
                 FilterDropdown(
@@ -175,7 +245,6 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     onAddOption = { showAddDialogFor = "Product" },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(vertical = 8.dp)
                 )
 
                 FilterDropdown(
@@ -186,9 +255,13 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     onAddOption = { showAddDialogFor = "Design" },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(vertical = 8.dp)
+
                 )
             }
+            Spacer(modifier = Modifier
+                .fillMaxWidth()
+                .height(0.5.dp)
+                .background(BackgroundGradient))
 
             if (showAddDialogFor != null) {
                 AddItemDialog(
@@ -216,75 +289,140 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                 )
             }
 
+            // Header Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .align(Alignment.CenterHorizontally)
                     .background(Color.DarkGray)
-                    .padding(vertical = 8.dp, horizontal = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(vertical = 4.dp, horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                listOf("Sr No.", "Item Code", "RFID Code").forEach {
-                    Text(it, color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+                Box(modifier = Modifier.width(50.dp), contentAlignment = Alignment.Center) {
+                    Text(
+                        "Sr No.",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        fontFamily = poppins
+                    )
+                }
+                Box(modifier = Modifier.width(150.dp), contentAlignment = Alignment.Center) {
+                    Text(
+                        "Item Code",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        fontFamily = poppins
+                    )
+                }
+                Box(modifier = Modifier.width(150.dp), contentAlignment = Alignment.Center) {
+                    Text(
+                        "RFID Code",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        fontFamily = poppins
+                    )
                 }
             }
 
             LazyColumn(
+                contentPadding = PaddingValues(vertical = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .weight(1f)
                     .background(Color(0xFFF0F0F0))
-
             ) {
                 itemsIndexed(tags) { index, item ->
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
-
-
-                            }) {
+                            .clickable { }
+                    ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp, horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                .padding(vertical = 2.dp, horizontal = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Sr No
+                            Box(
+                                modifier = Modifier
+                                    .width(50.dp)
+                                    .height(36.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "${index + 1}",
+                                    fontSize = 11.sp,
+                                    color = Color.DarkGray,
+                                    fontFamily = poppins
+                                )
+                            }
 
-                            Text(
-                                "${index + 1}",
-                                Modifier
-                                    .width(100.dp)
-                                    .background(Color.Transparent),
-                                color = Color.DarkGray
-                            )
-                            TextField(
-                                value = itemCode.value,
-                                onValueChange = { itemCode.value = it },
-                                modifier = Modifier.width(100.dp),
-                                singleLine = true,
-                                textStyle = LocalTextStyle.current.copy(color = Color.DarkGray)
-                            )
-                            val rfid = rfidMap[index]
-                            val isScanned = rfid != null
-                            val displayText = rfid ?: "scan here"
-                            val textColor = if (!isScanned) Color.Blue else Color.DarkGray
-                            val style =
-                                if (!isScanned) TextDecoration.Underline else TextDecoration.None
+// Item Code
+                            Box(
+                                modifier = Modifier
+                                    .width(150.dp)
+                                    .height(36.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                BasicTextField(
+                                    value = itemCodes.value,
+                                    onValueChange = { itemCodes.value = it },
+                                    singleLine = true,
+                                    textStyle = LocalTextStyle.current.copy(
+                                        fontSize = 11.sp,
+                                        color = Color.DarkGray,
+                                        fontFamily = poppins
+                                    ),
+                                    decorationBox = { innerTextField ->
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(horizontal = 4.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            innerTextField()
+                                        }
+                                    }
+                                )
+                            }
 
-                            Text(
-                                " $displayText",
-                                Modifier
-                                    .width(100.dp)
-                                    .clickable {
+// RFID Text
+                            Box(
+                                modifier = Modifier
+                                    .width(150.dp)
+                                    .height(36.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val rfid = rfidMap[index]
+                                val isScanned = rfid != null
+                                val displayText = rfid ?: "scan here"
+                                val textColor = if (!isScanned) Color.Blue else Color.DarkGray
+                                val style =
+                                    if (!isScanned) TextDecoration.Underline else TextDecoration.None
+                                Text(
+
+                                    text = displayText,
+                                    modifier = Modifier.clickable {
                                         clickedIndex = index
                                         viewModel.startBarcodeScanning()
-                                    }, color = textColor, textDecoration = style
-                            )
+                                    },
+                                    fontSize = 11.sp,
+                                    color = textColor,
+                                    textDecoration = style,
+                                    fontFamily = poppins
+                                )
+                            }
+
                         }
+
                         Spacer(
                             modifier = Modifier
-                                .height(1.dp)
+                                .height(0.5.dp)
                                 .fillMaxWidth()
                                 .background(Color.LightGray)
                                 .align(Alignment.BottomCenter)
@@ -292,6 +430,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     }
                 }
             }
+
 
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -301,14 +440,21 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Exist Items: ${items.size}", color = Color.White)
-                Text("Total Items: ${items.size}", color = Color.White)
+                println("EXISTING :${existingTags.size}")
+                println("ALL ITEMS : ${allScannedTags.size}")
+                println("DUPLICATE : ${duplicateTags.size}")
+
+                Text("Exist Items: ${existingTags.size}", color = Color.White, fontFamily = poppins)
+                Text(
+                    "Total Items: ${allScannedTags.size}",
+                    color = Color.White,
+                    fontFamily = poppins
+                )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FilterDropdown(
     label: String,
@@ -316,73 +462,80 @@ fun FilterDropdown(
     selectedOption: String,
     onOptionSelected: (String) -> Unit,
     onAddOption: () -> Unit,
-    modifier: Modifier
-
+    modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
-        Text(text = label, fontSize = 14.sp, color = Color.Gray)
-
-        Box {
-            OutlinedButton(
-                onClick = { expanded = true },
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp) // ensures enough height for text and icon
+                .clickable { expanded = true },
+            border = BorderStroke(1.dp, BackgroundGradient),
+            shape = RoundedCornerShape(6.dp),
+            color = Color.Transparent
+        ) {
+            Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(55.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.Black
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = if (selectedOption.isEmpty()) label else selectedOption,
+                    fontSize = 12.sp,
+                    fontFamily = poppins,
+                    color = Color.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = if (selectedOption.isEmpty()) "Select $label" else selectedOption,
-                        fontSize = 12.sp
-                    )
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Dropdown arrow",
-                        modifier = Modifier.padding(4.dp)
-                    )
-                }
-            }
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                options.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(option) },
-                        onClick = {
-                            onOptionSelected(option)
-                            expanded = false
-                        }
-                    )
-                }
-
-                HorizontalDivider()
-
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            "➕ Add New",
-                            color = Color.DarkGray,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    },
-                    onClick = {
-                        expanded = false
-                        onAddOption()
-                    }
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = "Dropdown arrow",
+                    tint = Color.LightGray,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option, fontFamily = poppins) },
+                    onClick = {
+                        onOptionSelected(option)
+                        expanded = false
+                    }
+                )
+            }
+
+            HorizontalDivider()
+
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        "➕ Add New",
+                        color = Color.DarkGray,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = poppins
+                    )
+                },
+                onClick = {
+                    expanded = false
+                    onAddOption()
+                }
+            )
+        }
     }
 }
+
+
+

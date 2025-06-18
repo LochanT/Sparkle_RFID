@@ -1,5 +1,6 @@
 package com.loyalstring.rfid.viewmodel
 
+import ScannedDataToService
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -7,10 +8,11 @@ import android.media.MediaScannerConnection
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.Gson
 import com.loyalstring.rfid.data.local.dao.BulkItemDao
 import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
@@ -18,8 +20,10 @@ import com.loyalstring.rfid.data.model.ScannedItem
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.reader.BarcodeReader
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
+import com.loyalstring.rfid.data.remote.api.RetrofitInterface
 import com.loyalstring.rfid.repository.BulkRepositoryImpl
 import com.loyalstring.rfid.repository.DropdownRepository
+import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.toBulkItem
 import com.rscja.deviceapi.entity.UHFTAGInfo
@@ -27,17 +31,25 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
@@ -47,7 +59,8 @@ class BulkViewModel @Inject constructor(
     private val repository: DropdownRepository,
     private val bulkItemDao: BulkItemDao,
     private val bulkRepository: BulkRepositoryImpl,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val apiService: RetrofitInterface
 ) : ViewModel() {
 
     private val success = readerManager.initReader()
@@ -61,6 +74,7 @@ class BulkViewModel @Inject constructor(
 
     private val _rfidMap = MutableStateFlow<Map<Int, String>>(emptyMap())
     val rfidMap: StateFlow<Map<Int, String>> = _rfidMap
+
 
     val employee: Employee? = userPreferences.getEmployee(Employee::class.java)
 
@@ -84,39 +98,151 @@ class BulkViewModel @Inject constructor(
     private val _exportStatus = MutableStateFlow("")
     val exportStatus: StateFlow<String> = _exportStatus
 
+    private val _reloadTrigger = MutableStateFlow(false)
+    val reloadTrigger = _reloadTrigger.asStateFlow()
+
+    private val _toastMessage = MutableSharedFlow<String>()
+    val toastMessage = _toastMessage
+
+    private val existingTags = mutableListOf<UHFTAGInfo>()
+    private val duplicateTags = mutableListOf<UHFTAGInfo>()
+
+    private val _allScannedTags = mutableStateOf<List<UHFTAGInfo>>(emptyList())
+    val allScannedTags: State<List<UHFTAGInfo>> = _allScannedTags
+
+    private val _existingItems = mutableStateOf<List<UHFTAGInfo>>(emptyList())
+    val existingItems: State<List<UHFTAGInfo>> = _existingItems
+
+    private val _duplicateItems = mutableStateOf<List<UHFTAGInfo>>(emptyList())
+    val duplicateItems: State<List<UHFTAGInfo>> = _duplicateItems
+    val rfidInput = mutableStateOf("")
+
 
     private var scanJob: Job? = null
 
-    fun startScanning() {
+    private val _scanTrigger = MutableStateFlow<String?>(null)
+    val scanTrigger: StateFlow<String?> = _scanTrigger
+
+    fun onScanKeyPressed(type: String) {
+        _scanTrigger.value = type
+    }
+
+    fun clearScanTrigger() {
+        _scanTrigger.value = null
+    }
+
+
+    fun startSingleScan(selectedPower: Int, onTagFound: (UHFTAGInfo) -> Unit) {
+        if (!success) return
+
+        readerManager.startInventoryTag(selectedPower)
+
+        // Cancel any ongoing scan job first
+        scanJob?.cancel()
+
+        scanJob = viewModelScope.launch(Dispatchers.IO) {
+            val timeoutMillis = 2000L // wait max 2 seconds
+            val startTime = System.currentTimeMillis()
+
+            while (isActive && (System.currentTimeMillis() - startTime < timeoutMillis)) {
+                val tag = readerManager.readTagFromBuffer()
+                if (tag != null && !tag.epc.isNullOrBlank()) {
+                    Log.d("RFID", "Single scan found: ${tag.epc}")
+                    readerManager.stopInventory()
+                    withContext(Dispatchers.Main) {
+                        onTagFound(tag)
+                        readerManager.playSound(1)
+                        readerManager.stopSound(1)
+                    }
+                    return@launch
+                } else {
+                    delay(100) // brief wait before retry
+                }
+            }
+
+            // Timeout
+            readerManager.stopInventory()
+            withContext(Dispatchers.Main) {
+                Log.d("Tags :", "No Tags found")
+            }
+        }
+    }
+
+
+    fun startScanning(selectedPower: Int) {
         if (success) {
-            readerManager.startInventoryTag()
+            readerManager.startInventoryTag(selectedPower)
             if (scanJob?.isActive == true) return
 
             scanJob = viewModelScope.launch(Dispatchers.IO) {
+
                 while (isActive) {
                     val tag = readerManager.readTagFromBuffer()
-                    readerManager.playSound(1)
                     if (tag != null) {
-                        val gson = Gson()
-                        val json = gson.toJson(tag)
-                        println(json)
-                        Log.e("RFID", "Tag read: $json")
-                        _scannedTags.update { currentList ->
-                            if (currentList.any { it.epc == tag.epc }) currentList
-                            else currentList + tag
+                        val epc = tag.epc ?: continue
+
+                        val exists = isTagExistsInDatabase(epc)
+
+                        withContext(Dispatchers.Main) {
+                            val alreadyInExisting = existingTags.any { it.epc == epc }
+                            val alreadyInScanned = _allScannedTags.value.any { it.epc == epc }
+                            val alreadyInDuplicates = duplicateTags.any { it.epc == epc }
+
+                            // Case 1: Already marked existing → ignore
+                            if (alreadyInExisting) return@withContext
+
+                            // Case 2: Seen before but not in duplicates → mark as duplicate
+                            if (alreadyInScanned) {
+                                if (!alreadyInDuplicates) {
+                                    duplicateTags.add(tag)
+                                    _duplicateItems.value = duplicateTags.toList()
+                                }
+                            } else {
+                                // First time scanned → add to list
+                                _allScannedTags.value += tag
+
+                                // Only mark as existing if it exists in DB and is not a duplicate
+                                if (exists && !alreadyInDuplicates) {
+                                    existingTags.add(tag)
+                                    _existingItems.value = existingTags.toList()
+                                }
+                            }
+
+                            // Always update scannedTags with distinct values
+                            _scannedTags.update { currentList ->
+                                if (currentList.any { it.epc == epc }) currentList
+                                else currentList + tag
+                            }
+
+                            Log.d("RFID", "Scanned EPC: $epc")
                         }
-                    } else {
-                        Log.e("RFID", "No tag in buffer")
                     }
                 }
             }
         }
     }
 
+    //    fun scanSingleTagBlocking(onResult: (String?) -> Unit) {
+//        viewModelScope.launch(Dispatchers.IO) {
+//            val tag = readerManager.inventorySingleTag(se)
+//            val epc = tag?.epc ?: ""
+//
+//            Log.d("RFID", "Blocking scan result: $epc")
+//
+//            withContext(Dispatchers.Main) {
+//                onResult(epc.ifBlank { null })
+//            }
+//        }
+//    }
     fun startBarcodeScanning() {
         barcodeDecoder.startScan()
 
     }
+    private suspend fun isTagExistsInDatabase(epc: String): Boolean {
+        return bulkItemDao.getItemByEpc(epc) != null
+    }
+
+
 
     fun assignRfidCode(index: Int, rfid: String) {
         val currentMap = _rfidMap.value
@@ -131,6 +257,7 @@ class BulkViewModel @Inject constructor(
 
 
     fun onBarcodeScanned(barcode: String) {
+        rfidInput.value = barcode
         if (_scannedItems.value.any { it.barcode == barcode }) return
 
         val nextIndex = _scannedItems.value.size + 1
@@ -165,6 +292,12 @@ class BulkViewModel @Inject constructor(
         _scannedTags.value = emptyList()
         _scannedItems.value = emptyList()
         _rfidMap.value = emptyMap()
+
+        _allScannedTags.value = emptyList()
+        _existingItems.value = emptyList()
+        _duplicateItems.value = emptyList()
+        existingTags.clear()
+        duplicateTags.clear()
     }
 
     override fun onCleared() {
@@ -196,46 +329,73 @@ class BulkViewModel @Inject constructor(
         itemCode: String,
         product: String,
         design: String,
-        uhftagInfo: UHFTAGInfo
+        scannedTags: List<UHFTAGInfo>,
+        index: Int
     ) {
         viewModelScope.launch {
-            val itemList = _rfidMap.value.mapNotNull { (index, rfid) ->
-                rfid.let {
-                    BulkItem(
-                        category = category,
-                        productName = product,
-                        design = design,
-                        itemCode = itemCode,
-                        rfid = it,
-                        uhfTagInfo = uhftagInfo,
-                        grossWeight = "",
-                        stoneWeight = "",
-                        dustWeight = "",
-                        netWeight = "",
-                        purity = "",
-                        makingPerGram = "",
-                        makingPercent = "",
-                        fixMaking = "",
-                        fixWastage = "",
-                        stoneAmount = "",
-                        dustAmount = "",
-                        sku = "",
-                        epc = "",
-                        vendor = "",
-                        tid = ""
-                    )
-                }
+            val itemList = scannedTags.mapNotNull { tag ->
+                val epc = tag.epc ?: return@mapNotNull null
+                val tid = tag.tid ?: ""
+                // val rfid = epc // or your display RFID if different
+
+                BulkItem(
+                    category = category,
+                    productName = product,
+                    design = design,
+                    itemCode = itemCode,
+                    rfid = rfidMap.value.get(index),
+                    uhfTagInfo = tag,
+                    grossWeight = "",
+                    stoneWeight = "",
+                    dustWeight = "",
+                    netWeight = "",
+                    purity = "",
+                    makingPerGram = "",
+                    makingPercent = "",
+                    fixMaking = "",
+                    fixWastage = "",
+                    stoneAmount = "",
+                    dustAmount = "",
+                    sku = "",
+                    epc = epc,
+                    vendor = "",
+                    tid = tid,
+                    box = "",
+                    designCode = "",
+                    productCode = "",
+                    imageUrl = ""
+                )
             }
             if (itemList.isNotEmpty()) {
+                bulkRepository.clearAllItems()
                 bulkRepository.insertBulkItems(itemList)
                 println("SAVED: Saved ${itemList.size} items to DB successfully.")
+                _toastMessage.emit("Saved ${itemList.size} items successfully!")
             } else {
-                println("SAVED: No items to save.")
+                _toastMessage.emit("No items to save.")
             }
         }
     }
 
-    fun exportToExcel(context: Context, items: List<BulkItem>) {
+    suspend fun parseGoogleSheetHeaders(url: String): List<String> = withContext(Dispatchers.IO) {
+        try {
+            val connection = URL(url).openConnection() as HttpURLConnection
+            connection.connect()
+            val reader = BufferedReader(InputStreamReader(connection.inputStream))
+            val headersLine = reader.readLine()
+            reader.close()
+            println()
+            headersLine.split(",").map {
+                it.trim()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+
+    private fun exportToExcel(context: Context, items: List<BulkItem>) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 _isExporting.value = true
@@ -245,26 +405,29 @@ class BulkViewModel @Inject constructor(
 
                 // Create header row
                 val columns = listOf<(BulkItem) -> String>(
-                    { it.category },
-                    { it.productName },
-                    { it.design },
-                    { it.itemCode },
-                    { it.rfid },
-                    { it.grossWeight },
-                    { it.stoneWeight },
-                    { it.dustWeight },
-                    { it.netWeight },
-                    { it.purity },
-                    { it.makingPerGram },
-                    { it.makingPercent },
-                    { it.fixMaking },
-                    { it.fixWastage },
-                    { it.stoneAmount },
-                    { it.dustAmount },
-                    { it.sku },
-                    { it.epc },
-                    { it.vendor },
-                    { it.tid }
+                    { it.category!! },
+                    { it.productName!! },
+                    { it.design!! },
+                    { it.itemCode!! },
+                    { it.rfid!! },
+                    { it.grossWeight!! },
+                    { it.stoneWeight!! },
+                    { it.dustWeight!! },
+                    { it.netWeight!! },
+                    { it.purity!! },
+                    { it.makingPerGram!! },
+                    { it.makingPercent!! },
+                    { it.fixMaking!! },
+                    { it.fixWastage!! },
+                    { it.stoneAmount!! },
+                    { it.dustAmount!! },
+                    { it.sku!! },
+                    { it.epc!! },
+                    { it.vendor!! },
+                    { it.tid!! },
+                    { it.productCode!! },
+                    { it.box!! },
+                    { it.designCode!! },
                 )
                 val headers = listOf(
                     "Category",
@@ -286,7 +449,10 @@ class BulkViewModel @Inject constructor(
                     "SKU",
                     "EPC",
                     "Vendor",
-                    "TID"
+                    "TID",
+                    "Box",
+                    "Product Code",
+                    "Design Code"
                 )
                 Log.e("HEADERS :", headers.toString())
                 val headerRow = sheet.createRow(0)
@@ -310,7 +476,18 @@ class BulkViewModel @Inject constructor(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 if (!downloads.exists()) downloads.mkdirs()
                 val file = File(downloads, "all_items.xlsx")
-                FileOutputStream(file).use { workbook.write(it) }
+
+// Optional: Delete existing file if you want to ensure it's removed before writing
+                if (file.exists()) {
+                    file.delete()
+                }
+
+
+
+                FileOutputStream(file).use { outputStream ->
+                    workbook.write(outputStream)
+                }
+
                 workbook.close()
 
                 // Media scan
@@ -350,7 +527,11 @@ class BulkViewModel @Inject constructor(
         }
     }
 
-    suspend fun getAllItems(context: Context) {
+    fun getAllItems() {
+        bulkRepository.getAllBulkItems()
+    }
+
+    fun getAllItems(context: Context) {
         viewModelScope.launch {
             bulkRepository.getAllBulkItems().collect { items ->
                 exportToExcel(context, items)
@@ -374,23 +555,88 @@ class BulkViewModel @Inject constructor(
                 val bulkItems = response.map { it.toBulkItem() }
 
                 val total = bulkItems.size
-                bulkItemDao.clearAllItems()
+                bulkRepository.clearAllItems()
 
                 bulkItems.forEachIndexed { index, item ->
-                    bulkItemDao.insertBulkItem(listOf(item))
+                    val result = bulkRepository.insertSingleItem(item)
+                    Log.d("Insert", "Inserted item with EPC ${item.epc}, result = $result")
                     _syncProgress.value = (index + 1f) / total
                     _syncStatusText.value = "Syncing... ${index + 1} of $total"
                     delay(100)
                 }
-
+                Log.d("ToastEmit", "Emitting toast")
+                _toastMessage.emit("Synced $total items successfully!")
                 _syncStatusText.value = "Sync completed successfully!"
+
             } catch (e: Exception) {
                 _syncStatusText.value = "Sync failed: ${e.localizedMessage}"
+                Log.d("ToastEmit", "Emitting toast")
+                _toastMessage.emit("Sync failed: ${e.localizedMessage}")
                 Log.e("Sync", "Error: ${e.localizedMessage}")
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+
+    fun setRfidForAllTags(scanned: String) {
+        val updatedMap = mutableMapOf<Int, String>()
+        scannedTags.value.forEachIndexed { index, _ ->
+            updatedMap[index] = scanned
+        }
+        _rfidMap.value = updatedMap
+    }
+
+
+    fun sendScannedData(tags: List<UHFTAGInfo>, androidId: String, context: Context) {
+        Log.d("send scanned items", "CALLED")
+        val currentDateTime = LocalDateTime.now()
+        val formatted = currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
+
+        val clientCode = employee?.clientCode
+
+
+        val data = _rfidMap.value.mapNotNull { (index, rfid) ->
+            rfid.let {
+                ScannedDataToService(
+                    tIDValue = tags.get(index).tid,
+                    rFIDCode = it,
+                    createdOn = formatted,
+                    lastUpdated = formatted,
+                    id = 0,
+                    clientCode = clientCode,
+                    statusType = true,
+                    deviceId = androidId
+
+                )
+
+
+            }
+        }
+
+        Log.d("DATA", data.toString())
+        if (data.isNotEmpty()) {
+
+
+            viewModelScope.launch {
+                val response = apiService.addAllScannedData(data)
+                if (response.isSuccessful) {
+                    response.body() ?: emptyList()
+                    ToastUtils.showToast(context, "Items scanned successfully")
+                    _reloadTrigger.value = !_reloadTrigger.value // triggers recomposition
+                    Log.d("API_SUCCESS", "Received response: ${response.body()}")
+
+                } else {
+                    Log.e("API_ERROR", "Error: ${response.code()}")
+                    ToastUtils.showToast(context, "Failed to scan")
+                }
+            }
+
+
+        }
+
+
     }
 
 

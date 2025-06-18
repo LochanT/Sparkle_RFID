@@ -1,6 +1,7 @@
 package com.loyalstring.rfid.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.MailOutline
@@ -9,6 +10,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.loyalstring.rfid.R
 
 enum class Screens(val route: String) {
+    SplashScreen("splash"),
+    LoginScreen("login"),
     HomeScreen("home"),
     ProductManagementScreen("products"),
     AddProductScreen("add product"),
@@ -16,6 +19,8 @@ enum class Screens(val route: String) {
     ImportExcelScreen("import excel"),
     ExportExcelScreen("export excel"),
     ProductListScreen("product list"),
+    ScanToDesktopScreen("scan_web"),
+    SettingsScreen("settings"),
 
 
 }
@@ -102,7 +107,14 @@ val listOfNavItems = listOf<NavItems>(
         title = "Settings",
         unselectedIcon= Icons.Outlined.FavoriteBorder,
         selectedIcon = ( R.drawable.setting_gr_svg),
-        route = ""
+        route = "settings"
+
+    ),
+    NavItems(
+        title = "Logout",
+        unselectedIcon = Icons.AutoMirrored.Default.Logout,
+        selectedIcon = (R.drawable.logout),
+        route = "login"
 
     ),
 

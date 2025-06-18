@@ -2,7 +2,9 @@ package com.loyalstring.rfid.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,6 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
+import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.ProductListViewModel
 
 @Composable
@@ -48,14 +52,16 @@ fun ProductListScreen(
     val viewModel: ProductListViewModel = hiltViewModel()
     val searchQuery = remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
+    var selectedCount by remember { mutableStateOf(1) }
+
 
     val allItems by viewModel.productList.collectAsState(initial = emptyList())
     val filteredItems = remember(searchQuery.value, allItems) {
         allItems.filter { item ->
             val query = searchQuery.value.trim().lowercase()
-            item.itemCode.lowercase().contains(query) ||
-                    item.productName.lowercase().contains(query) ||
-                    item.rfid.lowercase().contains(query)
+            item.itemCode!!.lowercase().contains(query) ||
+                    item.productName!!.lowercase().contains(query) ||
+                    item.rfid!!.lowercase().contains(query)
         }
     }
 
@@ -71,6 +77,14 @@ fun ProductListScreen(
                             tint = Color.White
                         )
                     }
+                },
+                actions = {
+
+                },
+                showCounter = true,
+                selectedCount = selectedCount,
+                onCountSelected = {
+                    selectedCount = it
                 }
             )
         },
@@ -96,7 +110,7 @@ fun ProductListScreen(
             OutlinedTextField(
                 value = searchQuery.value,
                 onValueChange = { searchQuery.value = it },
-                placeholder = { Text("Enter RFID / Item code / Product") },
+                placeholder = { Text("Enter RFID / Item code / Product", fontFamily = poppins) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
@@ -118,7 +132,10 @@ fun ProductListScreen(
                     "S.No",
                     Modifier.width(60.dp),
                     color = Color.White,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    fontFamily = poppins,
+                    fontSize = 14.sp,
+                    maxLines = 1
                 )
                 // Scrollable header
                 Row(
@@ -129,13 +146,13 @@ fun ProductListScreen(
                 ) {
                     listOf(
                         "Product Name" to 150.dp,
-                        "Item code" to 150.dp,
+                        "Item code" to 180.dp,
                         "RFID" to 90.dp,
                         "G.wt" to 90.dp,
                         "S.wt" to 90.dp,
                         "D.wt" to 90.dp,
                         "N.wt" to 90.dp,
-                        "Category" to 70.dp,
+                        "Category" to 80.dp,
                         "Design" to 70.dp,
                         "Purity" to 70.dp,
                         "Making/g" to 90.dp,
@@ -153,36 +170,55 @@ fun ProductListScreen(
                             label,
                             Modifier.width(width),
                             color = Color.White,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            fontFamily = poppins,
+                            maxLines = 1
                         )
                     }
                 }
                 // Fixed action buttons
                 Text(
                     "Edit",
-                    Modifier.width(30.dp),
+                    Modifier.width(35.dp),
                     color = Color.White,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    fontFamily = poppins,
+                    fontSize = 14.sp,
+                    maxLines = 1
                 )
                 Text(
                     "Delete",
-                    Modifier.width(50.dp),
+                    Modifier.width(55.dp),
                     color = Color.White,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    fontFamily = poppins,
+                    fontSize = 14.sp,
+                    maxLines = 1
+
                 )
             }
 
             // Data Rows
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                contentPadding = PaddingValues(vertical = 2.dp), // reduce padding
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
                 itemsIndexed(filteredItems) { index, item ->
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
+                            .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Fixed S.No
-                        Text("${index + 1}", Modifier.width(60.dp), textAlign = TextAlign.Center)
+                        Text(
+                            "${index + 1}",
+                            Modifier.width(60.dp),
+                            textAlign = TextAlign.Center,
+                            fontFamily = poppins,
+                            fontSize = 12.sp,
+                            maxLines = 1
+                        )
 
                         // Scrollable section
                         Row(
@@ -193,13 +229,13 @@ fun ProductListScreen(
                         ) {
                             listOf(
                                 item.productName to 150.dp,
-                                item.itemCode to 150.dp,
+                                item.itemCode to 180.dp,
                                 item.rfid to 90.dp,
                                 item.grossWeight to 90.dp,
                                 item.stoneWeight to 90.dp,
                                 item.dustWeight to 90.dp,
                                 item.netWeight to 90.dp,
-                                item.category to 70.dp,
+                                item.category to 80.dp,
                                 item.design to 70.dp,
                                 item.purity to 70.dp,
                                 item.makingPerGram to 90.dp,
@@ -211,15 +247,18 @@ fun ProductListScreen(
                                 item.sku to 120.dp,
                                 (item.uhfTagInfo?.epc ?: "") to 120.dp,
                                 item.vendor to 120.dp,
-                                (item.uhfTagInfo?.tid ?: "") to 90.dp
+                                (item.uhfTagInfo?.epc ?: "") to 90.dp
                             ).forEach { (value, width) ->
                                 Text(
-                                    value.ifBlank {
+                                    value?.ifBlank {
                                         "-"
-                                    },
+                                    } ?: "-",
                                     Modifier.width(width),
                                     fontSize = 12.sp,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
+                                    fontFamily = poppins,
+                                    maxLines = 1
+
                                 )
                             }
                         }

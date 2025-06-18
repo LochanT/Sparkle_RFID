@@ -7,6 +7,8 @@ androidx-compose-bom = "2024.10.00"
 androidx-navigation = "2.8.2"
 
 # Testing
+coil-compose = "2.5.0"
+core-splashscreen-version = "1.0.1"
 foundation-version = "1.6.0"
 junit = "4.13.2"
 androidx-junit = "1.2.1"
@@ -48,6 +50,7 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 [libraries]
 # AndroidX
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core-ktx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "core-splashscreen-version" }
 androidx-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation-version" }
 androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycle-livedata-ktx" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "androidx-lifecycle" }
@@ -68,6 +71,7 @@ androidx-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 androidx-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "androidx-ui-test-junit4" }
 
 # Testing
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil-compose" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-junit" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-espresso-core" }

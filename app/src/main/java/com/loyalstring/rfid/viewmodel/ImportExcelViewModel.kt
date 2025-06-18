@@ -168,7 +168,11 @@ class ImportExcelViewModel @Inject constructor(
                                 epc = "",
                                 vendor = "",
                                 tid = "",
-                                uhfTagInfo = null
+                                uhfTagInfo = null,
+                                box = "",
+                                designCode = "",
+                                productCode = "",
+                                imageUrl = ""
                             )
 
                             items.add(item)

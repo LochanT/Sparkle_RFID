@@ -1,5 +1,6 @@
 package com.loyalstring.rfid.data.remote.api
 
+import ScannedDataToService
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
 import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
@@ -10,8 +11,9 @@ import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.model.login.LoginRequest
 import com.loyalstring.rfid.data.model.login.LoginResponse
-import com.loyalstring.rfid.data.remote.data.AlllabelResponse
+import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.RequestBody
+import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -50,9 +52,15 @@ interface RetrofitInterface {
     @POST("api/ProductMaster/GetAllLabeledStock")
     suspend fun getAllLabeledStock(@Body request: RequestBody): Response<List<AlllabelResponse.LabelItem>>
 
-    /*Get all insert stock*/
+    /* insert single stock*/
     @POST("api/ProductMaster/InsertLabelledStock")
-    suspend fun insertStock(@Body request: InsertProductRequest): Response<List<PurityModel>>
+    suspend fun insertStock(
+        @Body payload: List<InsertProductRequest>
+    ): Response<List<PurityModel>>
+
+    //AddScannedDataToWeb
+    @POST("api/RFIDDevice/AddRFID")
+    suspend fun addAllScannedData(@Body scannedDataToService: List<ScannedDataToService>): Response<List<ScannedDataToService>>
 
 
 

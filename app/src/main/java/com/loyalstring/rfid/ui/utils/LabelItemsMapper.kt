@@ -1,7 +1,7 @@
 package com.loyalstring.rfid.ui.utils
 
 import com.loyalstring.rfid.data.local.entity.BulkItem
-import com.loyalstring.rfid.data.remote.data.AlllabelResponse
+import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 
 
 fun AlllabelResponse.LabelItem.toBulkItem(): BulkItem {
@@ -36,7 +36,11 @@ fun AlllabelResponse.LabelItem.toBulkItem(): BulkItem {
         vendor = this.vendorName ?: "",
         tid = this.tidNumber ?: "",
         id = 0,
-        epc = "",
+        epc = this.tidNumber,
         uhfTagInfo = null,
+        box = "",
+        designCode = "",
+        productCode = "",
+        imageUrl = ""
     )
 }

@@ -6,7 +6,7 @@ import com.loyalstring.rfid.data.local.dao.BulkItemDao
 import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.remote.api.RetrofitInterface
-import com.loyalstring.rfid.data.remote.data.AlllabelResponse
+import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import kotlinx.coroutines.flow.Flow
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -21,6 +21,10 @@ class BulkRepositoryImpl @Inject constructor(
         bulkItemDao.insertBulkItem(items)
     }
 
+    override suspend fun insertSingleItem(item: BulkItem) {
+        bulkItemDao.insertSingleItem(item)
+    }
+
     override fun getAllBulkItems(): Flow<List<BulkItem>> {
         return bulkItemDao.getAllItemsFlow()
     }
@@ -28,6 +32,7 @@ class BulkRepositoryImpl @Inject constructor(
     override suspend fun clearAllItems() {
         bulkItemDao.clearAllItems()
     }
+
 
     override suspend fun syncBulkItemsFromServer(request: ClientCodeRequest): List<AlllabelResponse.LabelItem> {
 

@@ -32,6 +32,7 @@ import androidx.navigation.NavHostController
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.FilePickerDialog
 import com.loyalstring.rfid.ui.utils.MappingDialogWrapper
+import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.ImportExcelViewModel
 import kotlinx.coroutines.launch
 
@@ -57,6 +58,33 @@ fun ImportExcelScreen(
     val isImportDone by viewModel.isImportDone.collectAsState()
     val importProgress by viewModel.importProgress.collectAsState()
     val isDone by viewModel.isImportDone.collectAsState()
+
+    val bulkItemFieldNames = listOf(
+        "productName",
+        "itemCode",
+        "rfid",
+        "grossWeight",
+        "stoneWeight",
+        "dustWeight",
+        "netWeight",
+        "category",
+        "design",
+        "purity",
+        "makingPerGram",
+        "makingPercent",
+        "fixMaking",
+        "fixWastage",
+        "stoneAmount",
+        "dustAmount",
+        "sku",
+        "epc",
+        "vendor",
+        "tid",
+        "box",
+        "designCode",
+        "productCode",
+        "uhftagInfo"
+    )
 
     LaunchedEffect(isImportDone) {
         if (isImportDone) {
@@ -88,11 +116,7 @@ fun ImportExcelScreen(
             }
         }
 
-    val bulkItemFieldNames = listOf(
-        "productName", "itemCode", "rfid", "grossWeight", "stoneWeight", "dustWeight", "netWeight",
-        "category", "design", "purity", "makingPerGram", "makingPercent", "fixMaking",
-        "fixWastage", "stoneAmount", "dustAmount", "sku", "epc", "vendor", "tid", "uhftagInfo"
-    )
+
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -137,7 +161,8 @@ fun ImportExcelScreen(
                             viewModel.importMappedData(context, mapping)
                             showMappingDialog = false
                         }
-                    }
+                    },
+                    isFromSheet = false
                 )
             }
 
@@ -160,13 +185,22 @@ fun ImportExcelScreen(
                                 .height(8.dp),
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Importing ${importProgress.importedFields} of ${importProgress.totalFields}...")
+                        Text(
+                            "Importing ${importProgress.importedFields} of ${importProgress.totalFields}...",
+                            fontFamily = poppins
+                        )
                     }
 
                     if (isDone) {
-                        Text("✅ Imported ${importProgress.importedFields} items")
+                        Text(
+                            "✅ Imported ${importProgress.importedFields} items",
+                            fontFamily = poppins
+                        )
                         if (importProgress.failedFields.isNotEmpty()) {
-                            Text("⚠️ Failed fields: ${importProgress.failedFields.joinToString()}")
+                            Text(
+                                "⚠️ Failed fields: ${importProgress.failedFields.joinToString()}",
+                                fontFamily = poppins
+                            )
                         }
                     }
                 }

@@ -29,6 +29,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -46,8 +49,13 @@ import androidx.navigation.NavHostController
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
+import com.loyalstring.rfid.ui.utils.MappingDialogWrapper
 import com.loyalstring.rfid.ui.utils.SyncProgressBar
+import com.loyalstring.rfid.ui.utils.ToastUtils
+import com.loyalstring.rfid.ui.utils.UserPreferences
+import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
+import com.loyalstring.rfid.viewmodel.ImportExcelViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -56,15 +64,70 @@ import kotlinx.coroutines.launch
 fun ProductManagementScreen(
     onBack: () -> Unit,
     navController: NavHostController,
+    userPreferences: UserPreferences,
     viewModel: BulkViewModel = hiltViewModel()
 ) {
+    val importViewModel: ImportExcelViewModel = hiltViewModel()
     val isLoading by viewModel.isLoading.collectAsState()
     val progress by viewModel.syncProgress.collectAsState()
     val status by viewModel.syncStatusText.collectAsState()
     val context: Context = LocalContext.current
     val scaffoldState = rememberScaffoldState()
-    val isExporting by viewModel.isExporting.collectAsState()
-    val exportStatus by viewModel.exportStatus.collectAsState()
+    var selectedCount by remember { mutableStateOf(1) }
+    var selectedPower by remember { mutableStateOf(1) }
+
+    var excelColumns by remember { mutableStateOf(listOf<String>()) }
+    var showMappingDialog by remember { mutableStateOf(false) }
+    var showProgress by remember { mutableStateOf(false) }
+    var showOverlay by remember { mutableStateOf(false) }
+
+    val scanTrigger by viewModel.scanTrigger.collectAsState()
+    val bulkItemFieldNames = listOf(
+        "productName",
+        "itemCode",
+        "rfid",
+        "grossWeight",
+        "stoneWeight",
+        "dustWeight",
+        "netWeight",
+        "category",
+        "design",
+        "purity",
+        "makingPerGram",
+        "makingPercent",
+        "fixMaking",
+        "fixWastage",
+        "stoneAmount",
+        "dustAmount",
+        "sku",
+        "epc",
+        "vendor",
+        "tid",
+        "box",
+        "designCode",
+        "productCode",
+        "uhftagInfo"
+    )
+    var isSheetProcessed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(scanTrigger) {
+        scanTrigger?.let { type ->
+            // Do something based on the key
+            when (type) {
+                "scan" -> {
+                    viewModel.startScanning(selectedPower)
+                }
+
+                "barcode" -> {
+                    viewModel.startBarcodeScanning()
+                }
+            }
+
+            // Important: clear after handling to prevent repeated triggers
+            viewModel.clearScanTrigger()
+        }
+    }
+
 
 
 
@@ -81,6 +144,14 @@ fun ProductManagementScreen(
                             tint = Color.White
                         )
                     }
+                },
+                actions = {
+
+                },
+                showCounter = true,
+                selectedCount = selectedCount,
+                onCountSelected = {
+                    selectedCount = it
                 }
             )
         },
@@ -106,12 +177,17 @@ fun ProductManagementScreen(
         val items = listOf(
             ProductGridItem("Add Single\nProduct", R.drawable.add_single_prod, true, "add product"),
             ProductGridItem("Add Bulk\nProducts", R.drawable.add_bulk_prod, true, "bulk products"),
-            ProductGridItem("Import\nExcel", R.drawable.export_excel, true, "import excel"),
-            ProductGridItem("Export\nExcel", R.drawable.export_excel, true, "export excel"),
-            ProductGridItem("Click to\nSync Data", R.drawable.ic_sync_data, true, ""),
-            ProductGridItem("Scan to\nDesktop", R.drawable.ic_sync_sheet_data, false, ""),
-            ProductGridItem("Sync Sheet\nData", R.drawable.barcode_reader, false, ""),
-            ProductGridItem("Upload\nData", R.drawable.upload_data, false, "")
+            ProductGridItem("Import\nExcel", R.drawable.import_excel, false, "import excel"),
+            ProductGridItem("Export\nExcel", R.drawable.export_excel, false, ""),
+            ProductGridItem("Click to\nSync Data", R.drawable.ic_sync_data, false, ""),
+            ProductGridItem("Scan to\nDesktop", R.drawable.barcode_reader, false, "scan_web"),
+            ProductGridItem("CLick to\nSync Sheet Data", R.drawable.ic_sync_sheet_data, false, ""),
+            ProductGridItem(
+                "Click to Upload Upload\nData to Server",
+                R.drawable.upload_data,
+                false,
+                ""
+            )
         )
 
 
@@ -148,17 +224,71 @@ fun ProductManagementScreen(
                     ) {
                         for (col in 0 until columns) {
                             val index = row * columns + col
-                            if (index < items.size) {
-                                ProductGridCard(
-                                    item = items[index],
-                                    navController = navController,
-                                    width = itemWidth,
-                                    height = itemHeight,
-                                    viewModel,
-                                    context
+                            if (index < items.size) ProductGridCard(
+                                item = items[index],
+                                width = itemWidth,
+                                height = itemHeight,
 
-                                )
-                            } else {
+                                onClick = { selectedItem ->
+                                    when (selectedItem.label) {
+                                        "Click to\nSync Data" -> {
+                                            Log.d("GridClick", "Calling syncItems()")
+                                            viewModel.syncItems()
+                                        }
+
+                                        "Export\nExcel" -> {
+                                            CoroutineScope(Dispatchers.IO).launch {
+                                                viewModel.getAllItems(context)
+                                            }
+                                        }
+
+                                        "CLick to\nSync Sheet Data" -> {
+                                            Log.d("sync sheet", "Called")
+
+                                            val sheetId = userPreferences.getSheetUrl()
+                                            if (sheetId.isNullOrBlank()) {
+                                                ToastUtils.showToast(
+                                                    context,
+                                                    "Please add a valid Sheet URL in Settings"
+                                                )
+                                                return@ProductGridCard
+                                            }
+
+                                            val sheetUrl =
+                                                "https://docs.google.com/spreadsheets/d/$sheetId/export?format=csv"
+
+                                            if (!isSheetProcessed) {
+                                                CoroutineScope(Dispatchers.IO).launch {
+                                                    val headers =
+                                                        viewModel.parseGoogleSheetHeaders(sheetUrl)
+                                                    if (headers.isNotEmpty()) {
+                                                        launch(Dispatchers.Main) {
+                                                            excelColumns = headers
+                                                            showMappingDialog = true
+                                                            isSheetProcessed = true
+                                                        }
+                                                    } else {
+                                                        launch(Dispatchers.Main) {
+                                                            ToastUtils.showToast(
+                                                                context,
+                                                                "Failed to fetch or parse sheet headers."
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+
+                                        else -> {
+                                            if (selectedItem.route.isNotBlank()) {
+                                                navController.navigate(selectedItem.route)
+                                            }
+                                        }
+                                    }
+                                },
+
+                                ) else {
                                 Spacer(modifier = Modifier.size(itemWidth, itemHeight))
                             }
                         }
@@ -189,16 +319,34 @@ fun ProductManagementScreen(
             )
         }
     }
+    if (showMappingDialog) {
+        showProgress = false
+        MappingDialogWrapper(
+            excelColumns = excelColumns,
+            bulkItemFields = bulkItemFieldNames,
+            onDismiss = {
+                showMappingDialog = false
+                navController.navigate(Screens.ProductManagementScreen.route)
+            },
+            fileSelected = true,
+            onImport = { mapping ->
+                showOverlay = true
+                importViewModel.importMappedData(context, mapping)
+                showMappingDialog = false
+
+            },
+            isFromSheet = true
+        )
+    }
 }
 
 @Composable
 fun ProductGridCard(
     item: ProductGridItem,
-    navController: NavHostController,
     width: Dp,
     height: Dp,
-    viewModel: BulkViewModel,
-    context: Context
+    onClick: (ProductGridItem) -> Unit
+
 ) {
     val cardColors = if (item.isGradient) {
         Brush.linearGradient(colors = listOf(Color(0xFF5231A7), Color(0xFFD32940)))
@@ -209,28 +357,8 @@ fun ProductGridCard(
     Card(
         modifier = Modifier
             .size(width, height)
-            .clickable {
-                when (item.label) {
-                    "Click to\nSync Data" -> {
-                        Log.d("GridClick", "Calling syncItems()")
-                        viewModel.syncItems()
-
-                    }
-
-                    "Export\nExcel" -> {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            viewModel.getAllItems(context)
-                        }
-                    }
-
-                    else -> {
-                        if (item.route.isNotBlank()) {
-                            navController.navigate(item.route)
-                        }
-                    }
-                }
-            },
-        shape = RoundedCornerShape(10.dp),
+            .clickable { onClick(item) },
+        shape = RoundedCornerShape(6.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -252,13 +380,15 @@ fun ProductGridCard(
                 Text(
                     text = item.label,
                     color = Color.White,
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    fontFamily = poppins
                 )
             }
         }
     }
+
 }
 
 // Data class

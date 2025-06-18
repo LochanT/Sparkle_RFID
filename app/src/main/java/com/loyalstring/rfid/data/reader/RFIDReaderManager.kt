@@ -7,6 +7,7 @@ import android.media.AudioManager
 import android.media.SoundPool
 import android.util.Log
 import com.loyalstring.rfid.R
+import com.loyalstring.rfid.data.model.ScannedItem
 import com.rscja.deviceapi.RFIDWithUHFUART
 import com.rscja.deviceapi.entity.UHFTAGInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -39,11 +40,13 @@ class RFIDReaderManager @Inject constructor(
         return reader?.readTagFromBuffer()
     }
 
-    fun startInventoryTag(): Boolean {
+    fun startInventoryTag(selectedPower: Int): Boolean {
+        reader?.setPower(selectedPower)
         val started = reader?.startInventoryTag() ?: false
         Log.d("RFID", "startInventoryTag: $started")
         return started
     }
+
 
     fun stopInventory() {
         reader?.stopInventory()
@@ -81,4 +84,14 @@ class RFIDReaderManager @Inject constructor(
         // Remove the stream ID from the map
 
     }
+
+    fun inventorySingleTag(selectedPower: Int): UHFTAGInfo? {
+        if (reader == null || !reader.isInventorying) {
+            Log.e("RFID", "Reader is null or not opened")
+            initReader()
+        }
+        reader?.setPower(selectedPower)
+        return reader?.inventorySingleTag()
+    }
+
 }

@@ -47,6 +47,7 @@ import androidx.navigation.NavHostController
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.navigation.NavItems
 import com.loyalstring.rfid.navigation.listOfNavItems
+import com.loyalstring.rfid.ui.utils.poppins
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -63,7 +64,7 @@ import kotlinx.coroutines.launch
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Home", color = Color.White) },
+                    title = { Text("Home", color = Color.White, fontFamily = poppins) },
                     navigationIcon = {
                         IconButton(onClick = {
                             scope.launch {
@@ -93,7 +94,8 @@ import kotlinx.coroutines.launch
 
                         // Apply padding only horizontally
                     ){
-                        val items = listOfNavItems.filter { it.title != "Home" }
+                        val items =
+                            listOfNavItems.filter { it.title != "Home" && it.title != "Logout" }
 
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(3),
@@ -178,8 +180,9 @@ import kotlinx.coroutines.launch
                             text = item.title,
 
                             color = Color.Blue,
-                            fontSize = 16.sp,
-                            textAlign = TextAlign.Center
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                            fontFamily = poppins
                         )
                     }
                 }

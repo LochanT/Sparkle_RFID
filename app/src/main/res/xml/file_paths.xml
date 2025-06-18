@@ -3,4 +3,9 @@
     <external-path
         name="downloads"
         path="Download/" />
+    <cache-path
+        name="cache"
+        path="." />
+
 </paths>
+

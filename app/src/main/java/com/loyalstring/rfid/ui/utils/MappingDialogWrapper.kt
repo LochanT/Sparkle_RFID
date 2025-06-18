@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Surface
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -18,9 +19,9 @@ fun MappingDialogWrapper(
     bulkItemFields: List<String>,
     onDismiss: () -> Unit,
     fileSelected: Boolean,
-    onImport: (Map<String, String>) -> Unit
+    onImport: (Map<String, String>) -> Unit,
+    isFromSheet: Boolean
 ) {
-    val mapping = remember { mutableStateMapOf<String, String>() }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -35,7 +36,8 @@ fun MappingDialogWrapper(
                 bulkItemFields = bulkItemFields,
                 onDismiss = onDismiss,
                 fileselected = fileSelected,
-                onImport = onImport
+                onImport = onImport,
+                isFromSheet = isFromSheet
             )
         }
     }
