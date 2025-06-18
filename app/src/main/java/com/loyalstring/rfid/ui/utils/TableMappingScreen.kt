@@ -146,7 +146,7 @@ fun TableMappingScreen(
         },
         confirmButton = {
             GradientButton(
-                text = if (isFromSheet) "Import" else "Sync",
+                text = if (isFromSheet) "Sync" else "Import",
                 onClick = {
                     if (fileselected) {
                         onImport(mappings)
