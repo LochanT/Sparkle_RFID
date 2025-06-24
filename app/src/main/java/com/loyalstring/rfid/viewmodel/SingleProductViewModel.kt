@@ -195,14 +195,16 @@ class SingleProductViewModel @Inject constructor(
         }
     }
 
-
-    fun insertLabelledStock(request: InsertProductRequest, context: Context) {
+    var isSuccess: Boolean = false
+    fun insertLabelledStock(request: InsertProductRequest, context: Context): Boolean {
         viewModelScope.launch {
             stockResponse = repository.insertLabelledStock(request)
+
 
             stockResponse!!.onSuccess {
                 ToastUtils.showToast(context, "Stock Added Successfully!")
                 bulkRepository.syncBulkItemsFromServer(ClientCodeRequest(request.ClientCode))
+                isSuccess = true
 
             }
             stockResponse!!.onFailure {
@@ -210,6 +212,8 @@ class SingleProductViewModel @Inject constructor(
             }
 
         }
+
+        return isSuccess
     }
 
     @Entity

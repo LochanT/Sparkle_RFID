@@ -25,9 +25,9 @@
         android:name=".SparkleRFIDApplication"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@drawable/logo_sparkle"
+        android:icon="@mipmap/logo_sparkle"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/logo_sparkle"
+        android:roundIcon="@mipmap/logo_sparkle_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.RFID_GUN_NO_ACTION"
         tools:targetApi="31">

@@ -67,6 +67,7 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.model.login.Employee
@@ -270,7 +271,132 @@ fun AddProductScreen(
         bottomBar = {
             ScanBottomBar(
                 onSave = {
-                    // handle save logic (existing code)
+
+                    formFields.forEach { field ->
+
+
+                        val itemCode = formFields.find { it.label == "Item Code" }?.value.orEmpty()
+                        val rfidCode = formFields.find { it.label == "RFIDcode" }?.value.orEmpty()
+                        val epc = formFields.find { it.label == "EPC" }?.value.orEmpty()
+                        val gWt = formFields.find { it.label == "Gross Weight" }?.value.orEmpty()
+                        val ntWt = formFields.find { it.label == "Net Weight" }?.value.orEmpty()
+                        val sWt = formFields.find { it.label == "Stone Weight" }?.value.orEmpty()
+                        val dWt = formFields.find { it.label == "Diamond Weight" }?.value.orEmpty()
+                        val making_gm =
+                            formFields.find { it.label == "Making/Gram" }?.value.orEmpty()
+                        val making_perc =
+                            formFields.find { it.label == "Making %" }?.value.orEmpty()
+                        val fMaking = formFields.find { it.label == "Fix Making" }?.value.orEmpty()
+                        val fWastage =
+                            formFields.find { it.label == "Fix Wastage" }?.value.orEmpty()
+                        val stAmt = formFields.find { it.label == "Stone Amount" }?.value.orEmpty()
+                        val dAmt =
+                            formFields.find { it.label == "Diamond Amount " }?.value.orEmpty()
+
+                        val categoryId =
+                            categoryList?.find { it.CategoryName == categoryName }?.Id ?: 0
+                        val productId = productList?.find { it.ProductName == productName }?.Id ?: 0
+                        val designId = designList?.find { it.DesignName == designName }?.Id ?: 0
+                        val vendorId = vendorList?.find { it.VendorName == vendorName }?.Id ?: 0
+                        val skuId = skuList?.find { it.StockKeepingUnit == skuName }?.Id ?: 0
+                        val purityId = purityList?.find { it.PurityName == purityName }?.Id ?: 0
+
+                        val request = skuList?.get(0)?.let {
+                            InsertProductRequest(
+                                CategoryId = categoryId,
+                                ProductId = productId,
+                                DesignId = designId,
+                                VendorId = vendorId,
+                                PurityId = purityId,
+                                RFIDCode = rfidCode,
+                                HUIDCode = "",
+                                HSNCode = "",
+                                Quantity = "",
+                                TotalWeight = 0.0,
+                                PackingWeight = 0.0,
+                                GrossWt = gWt,
+                                TotalStoneWeight = "",
+                                NetWt = ntWt,
+                                Pieces = "",
+                                MakingPercentage = making_perc,
+                                MakingPerGram = making_gm,
+                                MakingFixedAmt = fMaking,
+                                MakingFixedWastage = fWastage,
+                                MRP = "",
+                                ClipWeight = "",
+                                ClipQuantity = "",
+                                ProductCode = "",
+                                Featured = "",
+                                ProductTitle = "",
+                                Description = "",
+                                Gender = "",
+                                DiamondId = "",
+                                DiamondName = "",
+                                DiamondShape = "",
+                                DiamondShapeName = "",
+                                DiamondClarity = "",
+                                DiamondClarityName = "",
+                                DiamondColour = "",
+                                DiamondColourName = "",
+                                DiamondSleve = "",
+                                DiamondSize = "",
+                                DiamondSellRate = "",
+                                DiamondWeight = dWt,
+                                DiamondCut = "",
+                                DiamondCutName = "",
+                                DiamondSettingType = "",
+                                DiamondSettingTypeName = "",
+                                DiamondCertificate = "",
+                                DiamondDescription = "",
+                                DiamondPacket = "",
+                                DiamondBox = "",
+                                DiamondPieces = "",
+                                Stones = emptyList(),
+                                DButton = "",
+                                StoneName = "",
+                                StoneShape = "",
+                                StoneSize = "",
+                                StoneWeight = sWt,
+                                StonePieces = "",
+                                StoneRatePiece = "",
+                                StoneRateKarate = "",
+                                StoneAmount = stAmt,
+                                StoneDescription = "",
+                                StoneCertificate = "",
+                                StoneSettingType = "",
+                                BranchName = "",
+                                BranchId = it.BranchId,
+                                //   SKU = "",
+                                PurityName = "",
+                                TotalStoneAmount = "",
+                                TotalStonePieces = "",
+                                ClientCode = it.ClientCode,
+                                EmployeeCode = it.EmployeeId,
+                                StoneColour = "",
+                                CompanyId = 0,
+                                MetalId = 0,
+                                WarehouseId = 0,
+                                TIDNumber = epc,
+                                grosswt = "",
+                                TotalDiamondWeight = dWt,
+                                TotalDiamondAmount = "",
+                                Status = "",
+
+                                )
+
+                        }
+                        request?.let {
+                            val isStockAdded =
+                                viewModel.insertLabelledStock(
+                                    it,
+                                    context = context
+                                )
+                            if (isStockAdded) {
+                                bulkViewModel.syncItems()
+                            }
+
+                        }
+                    }
                 },
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
                 onScan = {
