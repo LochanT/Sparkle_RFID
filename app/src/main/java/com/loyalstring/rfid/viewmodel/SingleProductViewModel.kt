@@ -1,5 +1,6 @@
 package com.loyalstring.rfid.viewmodel
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,7 +22,9 @@ import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.reader.BarcodeReader
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
 import com.loyalstring.rfid.data.remote.resource.Resource
+import com.loyalstring.rfid.repository.BulkRepository
 import com.loyalstring.rfid.repository.SingleProductRepository
+import com.loyalstring.rfid.ui.utils.ToastUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,9 +32,12 @@ import javax.inject.Inject
 @HiltViewModel
 class SingleProductViewModel @Inject constructor(
     private val repository: SingleProductRepository,
+    private val bulkRepository: BulkRepository,
     private val readerManager: RFIDReaderManager,
     internal val barcodeReader: BarcodeReader,
-) : ViewModel() {
+
+
+    ) : ViewModel() {
     private val success = readerManager.initReader()
     private val _vendorResponse = MutableLiveData<Resource<List<VendorModel>>>()
     val vendorResponse: LiveData<Resource<List<VendorModel>>> = _vendorResponse
@@ -64,7 +70,7 @@ class SingleProductViewModel @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     _vendorResponse.value = Resource.Success((response.body()!!))
 
-                    Log.d("SingleProductViewModel", "Vendor" + response.body());
+                    Log.d("SingleProductViewModel", "Vendor" + response.body())
                 } else {
                     _vendorResponse.value =
                         Resource.Error("Vendor fetch failed: ${response.message()}")
@@ -84,7 +90,7 @@ class SingleProductViewModel @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     _skuResponse.value = Resource.Success((response.body()!!))
 
-                    Log.d("SingleProductViewModel", "SKU" + response.body());
+                    Log.d("SingleProductViewModel", "SKU" + response.body())
                 } else {
                     _skuResponse.value = Resource.Error("sku fetch failed: ${response.message()}")
                 }
@@ -103,7 +109,7 @@ class SingleProductViewModel @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     _categoryResponse.value = Resource.Success((response.body()!!))
 
-                    Log.d("SingleProductViewModel", "Category" + response.body());
+                    Log.d("SingleProductViewModel", "Category" + response.body())
                 } else {
                     _categoryResponse.value = Resource.Error("sku fetch failed: ${response.message()}")
                 }
@@ -122,7 +128,7 @@ class SingleProductViewModel @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     _productresponse.value = Resource.Success((response.body()!!))
 
-                    Log.d("SingleProductViewModel", "Product" + response.body());
+                    Log.d("SingleProductViewModel", "Product" + response.body())
                 } else {
                     _productresponse.value = Resource.Error("sku fetch failed: ${response.message()}")
                 }
@@ -141,7 +147,7 @@ class SingleProductViewModel @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     _designResponse.value = Resource.Success((response.body()!!))
 
-                    Log.d("SingleProductViewModel", "Product" + response.body());
+                    Log.d("SingleProductViewModel", "Product" + response.body())
                 } else {
                     _designResponse.value = Resource.Error("sku fetch failed: ${response.message()}")
                 }
@@ -160,7 +166,7 @@ class SingleProductViewModel @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     _purityResponse.value = Resource.Success((response.body()!!))
 
-                    Log.d("SingleProductViewModel", "Product" + response.body());
+                    Log.d("SingleProductViewModel", "Product" + response.body())
                 } else {
                     _purityResponse.value = Resource.Error("sku fetch failed: ${response.message()}")
                 }
@@ -190,9 +196,19 @@ class SingleProductViewModel @Inject constructor(
     }
 
 
-    fun insertLabelledStock(request: InsertProductRequest) {
+    fun insertLabelledStock(request: InsertProductRequest, context: Context) {
         viewModelScope.launch {
             stockResponse = repository.insertLabelledStock(request)
+
+            stockResponse!!.onSuccess {
+                ToastUtils.showToast(context, "Stock Added Successfully!")
+                bulkRepository.syncBulkItemsFromServer(ClientCodeRequest(request.ClientCode))
+
+            }
+            stockResponse!!.onFailure {
+                ToastUtils.showToast(context, "Failed to Add Stock")
+            }
+
         }
     }
 

@@ -87,11 +87,21 @@ class ImportExcelViewModel @Inject constructor(
                     }
 
                     val items = mutableListOf<BulkItem>()
+                    val seenEpc = mutableSetOf<String>()
+
                     total = sheet.lastRowNum
 
                     for (i in 1..sheet.lastRowNum) {
                         val row = sheet.getRow(i)
                         if (row == null || row.firstCellNum < 0) continue
+                        val epcRaw =
+                            getStringFromRow(row, rawHeaderIndexMap, normalizedFieldMapping["epc"])
+                        val epcVal = epcRaw.takeIf { it.isNotBlank() }
+
+                        if (!epcVal.isNullOrBlank() && !seenEpc.add(epcVal)) {
+                            failed.add("Duplicate EPC in row ${i + 1}")
+                            continue
+                        }
 
                         try {
                             val item = BulkItem(
@@ -165,7 +175,7 @@ class ImportExcelViewModel @Inject constructor(
                                 design = "",
                                 dustAmount = "",
                                 sku = "",
-                                epc = "",
+                                epc = epcVal,
                                 vendor = "",
                                 tid = "",
                                 uhfTagInfo = null,

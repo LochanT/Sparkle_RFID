@@ -62,7 +62,7 @@ val listOfNavItems = listOf<NavItems>(
         route = ""
 
     ), NavItems(
-        title = "Stock Transfer",
+        title = "Stock\nTransfer",
         unselectedIcon= Icons.Outlined.FavoriteBorder,
         selectedIcon = ( R.drawable.stock_tr_gr_svg),
         route = ""
