@@ -11,6 +11,7 @@ import com.loyalstring.rfid.ui.screens.BulkProductScreen
 import com.loyalstring.rfid.ui.screens.HomeScreen
 import com.loyalstring.rfid.ui.screens.ImportExcelScreen
 import com.loyalstring.rfid.ui.screens.LoginScreen
+import com.loyalstring.rfid.ui.screens.OrderScreen
 import com.loyalstring.rfid.ui.screens.ProductListScreen
 import com.loyalstring.rfid.ui.screens.ProductManagementScreen
 import com.loyalstring.rfid.ui.screens.ScanToDesktopScreen
@@ -76,6 +77,13 @@ fun AppNavigation(
         }
         composable(Screens.SettingsScreen.route) {
             SettingsScreen(
+                onBack = { navController.popBackStack() },
+                navController,
+                userPreferences
+            )
+        }
+        composable(Screens.OrderScreen.route) {
+            OrderScreen(
                 onBack = { navController.popBackStack() },
                 navController,
                 userPreferences

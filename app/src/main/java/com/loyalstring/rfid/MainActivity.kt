@@ -205,7 +205,10 @@ private fun SetupNavigation(context: Context, userPreferences: UserPreferences) 
 
                                         } else if (navigationItem.route.equals(Screens.SettingsScreen.route)) {
                                             navController.navigate(navigationItem.route)
-                                        } else {
+                                        }else if (navigationItem.route.equals(Screens.OrderScreen.route)) {
+                                            navController.navigate(navigationItem.route)
+                                        }
+                                        else {
                                             Toast.makeText(
                                                 context,
                                                 "Coming soon..",
