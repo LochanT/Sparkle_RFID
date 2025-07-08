@@ -32,9 +32,13 @@ object NetWorkRetrofitClient {
         loggingInterceptor: HttpLoggingInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
+            .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // ⏱️ connection timeout
+            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)    // ⏱️ server response read timeout
+            .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)   // ⏱️ client request write timeout
             .addInterceptor(loggingInterceptor)
             .build()
     }
+
 
     @Provides
     @Singleton

@@ -1,6 +1,9 @@
 package com.loyalstring.rfid.data.remote.api
 
 import ScannedDataToService
+import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
+import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
+import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
 import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
@@ -11,6 +14,7 @@ import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.model.login.LoginRequest
 import com.loyalstring.rfid.data.model.login.LoginResponse
+import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -76,6 +80,20 @@ interface RetrofitInterface {
     ): Response<ResponseBody>
 
 
+
+    //add employee api
+    @POST("api/ClientOnboarding/AddCustomer")
+    suspend fun addEmployee(
+        @Body addEmployeeRequest: AddEmployeeRequest
+    ): Response<EmployeeResponse>
+
+    /*Get Emp List*/
+    @POST("api/ClientOnboarding/GetAllCustomer") // Replace with your actual API endpoint
+    suspend fun getAllEmpList(@Body clientCodeRequest: ClientCodeRequest): Response<List<EmployeeList>>
+
+    //Lebel list
+    @POST("api/ProductMaster/GetAllLabeledStock") // Replace with your actual API endpoint
+    suspend fun getAllItemCodeList(@Body clientCodeRequest: ClientCodeRequest): Response<List<ItemCodeResponse>>
 
 
 }

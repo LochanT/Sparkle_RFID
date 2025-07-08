@@ -24,7 +24,8 @@ enum class Screens(val route: String) {
     SettingsScreen("settings"),
     InventoryMenuScreen("inventory"),
     SearchScreen("search_screen"),
-    EditProductScreen("edit_screen")
+    EditProductScreen("edit_screen"),
+    OrderScreen("order"),
 
 
 }
@@ -57,7 +58,7 @@ val listOfNavItems = listOf<NavItems>(
         title = "Order",
         unselectedIcon= Icons.Outlined.Settings,
         selectedIcon = ( R.drawable.order_gr_svg),
-        route = ""
+        route = Screens.OrderScreen.route
     ),
     NavItems(
         title = "Search",

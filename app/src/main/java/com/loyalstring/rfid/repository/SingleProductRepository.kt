@@ -1,5 +1,7 @@
 package com.loyalstring.rfid.repository
 
+import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
+import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
 import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
@@ -41,6 +43,8 @@ class SingleProductRepository @Inject constructor(
     suspend fun getAllPurityDetails(request: ClientCodeRequest): Response<List<PurityModel>> {
         return apiService.getAllPurityDetails(request)
     }
+
+
     suspend fun insertLabelledStock(request: InsertProductRequest): Result<List<PurityModel>> {
         return try {
             val payload = listOf(request) // not a single object
