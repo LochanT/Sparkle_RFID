@@ -22,7 +22,6 @@ import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
-import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.Multipart
@@ -94,7 +93,7 @@ interface RetrofitInterface {
     @POST("api/ClientOnboarding/GetAllCustomer") // Replace with your actual API endpoint
     suspend fun getAllEmpList(@Body clientCodeRequest: ClientCodeRequest): Response<List<EmployeeList>>
 
-    //Lebel list
+    //Label list
     @POST("api/ProductMaster/GetAllLabeledStock") // Replace with your actual API endpoint
     suspend fun getAllItemCodeList(@Body clientCodeRequest: ClientCodeRequest): Response<List<ItemCodeResponse>>
 
