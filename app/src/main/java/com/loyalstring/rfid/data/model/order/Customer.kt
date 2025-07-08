@@ -1,7 +1,6 @@
-package com.example.sparklepos.models.loginclasses.customerBill
+package com.loyalstring.rfid.data.model.order
 
-data class EmployeeList(
-    val Id: Int,
+data class Customer(
     val FirstName: String,
     val LastName: String,
     val PerAddStreet: String,
@@ -13,20 +12,20 @@ data class EmployeeList(
     val DateOfBirth: String,
     val MiddleName: String,
     val PerAddPincode: String,
-    val Gender: String?,               // nullable
-    val OnlineStatus: String?,        // nullable
-    val CurrAddTown: String?,         // nullable
+    val Gender: String,
+    val OnlineStatus: String,
+    val CurrAddTown: String,
     val CurrAddPincode: String,
     val CurrAddState: String,
     val PerAddTown: String,
-    val PerAddState: String?,         // nullable
+    val PerAddState: String,
     val GstNo: String,
     val PanNo: String,
     val AadharNo: String,
     val BalanceAmount: String,
     val AdvanceAmount: String,
     val Discount: String,
-    val CreditPeriod: String?,        // nullable
+    val CreditPeriod: String,
     val FineGold: String,
     val FineSilver: String,
     val ClientCode: String,
@@ -35,13 +34,13 @@ data class EmployeeList(
     val CustomerSlabId: Int,
     val CreditPeriodId: Int,
     val RateOfInterestId: Int,
-    val CustomerSlab: String?,        // nullable
-    val RateOfInterest: String?,      // nullable
-    val CreatedOn: String,
-    val LastUpdated: String,
-    val StatusType: Boolean,
     val Remark: String,
     val Area: String,
     val City: String,
-    val Country: String
+    val Country: String,
+    val Id: Int,
+    val CreatedOn: String,
+    val LastUpdated: String,
+    val StatusType: Boolean
 )
+

@@ -62,6 +62,7 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
+import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.login.Employee
@@ -71,6 +72,7 @@ import com.loyalstring.rfid.ui.utils.GradientButtonIcon
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.OrderViewModel
+import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import kotlinx.coroutines.delay
 
 
@@ -83,6 +85,21 @@ fun OrderScreen(
 
     ) {
     val bulkViewModel: BulkViewModel = hiltViewModel()
+    val orderViewModel: OrderViewModel = hiltViewModel()
+    val singleProductViewModel: SingleProductViewModel = hiltViewModel()
+    val context = LocalContext.current
+    val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
+    LaunchedEffect(Unit) {
+        employee?.clientCode?.let {
+            orderViewModel.getAllBranchList(ClientCodeRequest(it))
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        employee?.clientCode?.let {
+            singleProductViewModel.getAllPurity(ClientCodeRequest(it))
+        }
+    }
     Scaffold(
         topBar = {
             GradientTopBar(
@@ -129,6 +146,8 @@ fun OrderScreen(
 fun OrderScreenContent(userPreferences: UserPreferences, bulkViewModel: BulkViewModel) {
     val orderViewModel: OrderViewModel = hiltViewModel()
     var customerName by remember { mutableStateOf(TextFieldValue("")) }
+    var customerId by remember { mutableStateOf<Int?>(null) }
+    var selectedCustomer by remember { mutableStateOf<EmployeeList?>(null) }
     var itemCode by remember { mutableStateOf(TextFieldValue("")) }
     val customerOptions = listOf("John Doe", "Alice Smith", "Raj Kumar", "Ravi Jain")
     var expanded by remember { mutableStateOf(false) }
@@ -193,7 +212,15 @@ fun OrderScreenContent(userPreferences: UserPreferences, bulkViewModel: BulkView
     val items by bulkViewModel.scannedItems.collectAsState()
 
     val scanTrigger by bulkViewModel.scanTrigger.collectAsState()
+    var showOrderDialog by remember { mutableStateOf(false) }
     //val scannedData by bulkViewModel.scannedData.collectAsState()
+
+    // Function to handle dialog confirm action
+    val onConfirmOrderDetails: (String) -> Unit = { orderDetails ->
+        // Handle the order details here
+        Log.d("OrderDetails", "Order Details Confirmed: $orderDetails")
+    }
+
 
     LaunchedEffect(scanTrigger) {
         scanTrigger?.let { type ->
@@ -214,6 +241,7 @@ fun OrderScreenContent(userPreferences: UserPreferences, bulkViewModel: BulkView
 
         }
     }
+
 
     val customerSuggestions by orderViewModel.empListResponse.observeAsState(initial = emptyList())
 
@@ -236,11 +264,13 @@ fun OrderScreenContent(userPreferences: UserPreferences, bulkViewModel: BulkView
 
 
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
+
     LaunchedEffect(Unit) {
         employee?.clientCode?.let {
             orderViewModel.getAllEmpList(ClientCodeRequest(it))
         }
     }
+
     LaunchedEffect(addEmpResponse) {
         when (val response = addEmpResponse) {
             is Resource.Success -> {
@@ -370,6 +400,8 @@ fun OrderScreenContent(userPreferences: UserPreferences, bulkViewModel: BulkView
                             customerSuggestions.forEach { customer ->
                                 DropdownMenuItem(onClick = {
                                     customerName = TextFieldValue(customer.FirstName)
+                                    customerId = customer.Id
+                                    selectedCustomer=customer
                                     expanded = false
                                 }) {
                                     Text(customer.FirstName)
@@ -511,11 +543,27 @@ fun OrderScreenContent(userPreferences: UserPreferences, bulkViewModel: BulkView
                         Icon(
                             painter = painterResource(id = R.drawable.vector_add),
                             contentDescription = "Add",
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(20.dp)
+                            .clickable {
+                            // Show the dialog on click
+                            showOrderDialog = true
+                        },
                             tint = Color.Unspecified // keeps original colors of the vector
                         )
                     }
                 }
+            }
+
+            // Show the OrderDetailsDialog when showDialog is true
+            if (showOrderDialog) {
+                OrderDetailsDialog(
+                    customerId,
+                    selectedCustomer,
+                    onDismiss = { showOrderDialog = false },
+                  //  onConfirm = onConfirmOrderDetails,
+                    onSave = onConfirmOrderDetails as (OrderDetails) -> Unit
+
+                )
             }
             if (showDropdown) {
                 if (isLoading) {

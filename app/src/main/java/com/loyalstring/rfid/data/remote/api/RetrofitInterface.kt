@@ -14,6 +14,9 @@ import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.model.login.LoginRequest
 import com.loyalstring.rfid.data.model.login.LoginResponse
+import com.loyalstring.rfid.data.model.order.BranchResponse
+import com.loyalstring.rfid.data.model.order.CustomOrderRequest
+import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.MultipartBody
@@ -94,6 +97,13 @@ interface RetrofitInterface {
     //Lebel list
     @POST("api/ProductMaster/GetAllLabeledStock") // Replace with your actual API endpoint
     suspend fun getAllItemCodeList(@Body clientCodeRequest: ClientCodeRequest): Response<List<ItemCodeResponse>>
+
+    @POST("api/ClientOnboarding/GetAllBranchMaster")
+    suspend fun getAllBranchList(@Body clientCodeRequest: ClientCodeRequest): Response<List<BranchResponse>>
+
+    @POST("/api/Order/AddCustomOrder")
+    suspend fun addOrder(@Body customerOrderRequest: CustomOrderRequest): Response<CustomOrderResponse>
+
 
 
 }
