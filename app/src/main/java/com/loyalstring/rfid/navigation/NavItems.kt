@@ -20,7 +20,11 @@ enum class Screens(val route: String) {
     ExportExcelScreen("export excel"),
     ProductListScreen("product list"),
     ScanToDesktopScreen("scan_web"),
+    ScanDisplayScreen("scan_display"),
     SettingsScreen("settings"),
+    InventoryMenuScreen("inventory"),
+    SearchScreen("search_screen"),
+    EditProductScreen("edit_screen")
 
 
 }
@@ -47,7 +51,7 @@ val listOfNavItems = listOf<NavItems>(
         title = "Inventory",
         unselectedIcon= Icons.Outlined.FavoriteBorder,
         selectedIcon = ( R.drawable.inventory_gr_svg),
-        route = ""
+        route = "inventory"
     ),
     NavItems(
         title = "Order",

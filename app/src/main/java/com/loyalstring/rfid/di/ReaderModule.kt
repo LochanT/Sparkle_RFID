@@ -14,8 +14,8 @@ import javax.inject.Singleton
 object ReaderModule {
 
     @Provides
-    @Singleton
     fun provideReaderManager(@ApplicationContext context: Context): RFIDReaderManager {
         return RFIDReaderManager(context)
     }
+
 }

@@ -1,7 +1,9 @@
 package com.loyalstring.rfid.ui.screens
 
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -61,6 +63,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -78,8 +81,10 @@ import com.loyalstring.rfid.ui.utils.GradientButton
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
+import com.loyalstring.rfid.viewmodel.EditProductViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import java.io.File
+import java.util.jar.Manifest
 
 // Imports skipped for brevity — keep your existing ones
 
@@ -119,7 +124,9 @@ fun AddProductScreen(
     navController: NavHostController,
     viewModel: SingleProductViewModel = hiltViewModel()
 ) {
+
     val bulkViewModel: BulkViewModel = hiltViewModel()
+    val editProductViewModel: EditProductViewModel = hiltViewModel()
     val context = LocalContext.current
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
 
@@ -142,6 +149,7 @@ fun AddProductScreen(
     val imageUrl = remember { mutableStateOf("") }
     val imageUri = rememberSaveable { mutableStateOf<String?>(null) }
     val photoUri = remember { mutableStateOf<Uri?>(null) }
+    val shouldLaunchCamera = remember { mutableStateOf(false) }
 
     val fieldValues = remember { mutableStateMapOf<String, String>() }
 
@@ -198,7 +206,7 @@ fun AddProductScreen(
     }
 
     val isCategoryDisabled = fieldValues["SKU"].isNullOrEmpty().not()
-    
+
 
     LaunchedEffect(Unit) {
         employee?.clientCode?.let {
@@ -224,18 +232,64 @@ fun AddProductScreen(
         }
     }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) {}
-
-    val galleryLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? -> imageUri.value = uri?.toString() }
-
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) imageUri.value = photoUri.value?.toString()
+    }
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted && shouldLaunchCamera.value) {
+                val uri = File(
+                    context.cacheDir,
+                    "${System.currentTimeMillis()}.jpg"
+                ).apply { createNewFile() }.let {
+                    FileProvider.getUriForFile(context, "${context.packageName}.provider", it)
+                }
+                photoUri.value = uri
+                cameraLauncher.launch(uri)
+            } else {
+                Toast.makeText(context, "Camera permission denied", Toast.LENGTH_SHORT).show()
+            }
+            shouldLaunchCamera.value = false
+        }
+    )
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? -> imageUri.value = uri?.toString() }
+    if (showDialog.value) {
+        ImageUploadDialog(
+            showDialog = showDialog.value,
+            onDismiss = { showDialog.value = false },
+            onConfirm = {
+                showDialog.value = false
+            },
+            onTakePhoto = {
+                shouldLaunchCamera.value = true
+                if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED
+                ) {
+                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                } else {
+                    val uri = File(
+                        context.cacheDir,
+                        "${System.currentTimeMillis()}.jpg"
+                    ).apply { createNewFile() }.let {
+                        FileProvider.getUriForFile(context, "${context.packageName}.provider", it)
+                    }
+                    photoUri.value = uri
+                    cameraLauncher.launch(uri)
+                }
+            },
+            onAttachFile = {
+                galleryLauncher.launch("image/*")
+            },
+            imageUrl = imageUrl.value,
+            onImageUrlChange = { imageUrl.value = it },
+            imageUri = imageUri.value,
+            onImageUriChange = { imageUri.value = it }
+        )
     }
 
     fun onSkuSelected(sku: SKUModel) {
@@ -396,7 +450,9 @@ fun AddProductScreen(
                             }
 
                         }
+
                     }
+
                 },
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
                 onScan = {

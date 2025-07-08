@@ -9,7 +9,9 @@ import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -117,11 +119,25 @@ class BulkViewModel @Inject constructor(
     val duplicateItems: State<List<UHFTAGInfo>> = _duplicateItems
     val rfidInput = mutableStateOf("")
 
+    val scannedEpcList = mutableStateListOf<String>()
+
+    private val _matchedItems = mutableStateListOf<BulkItem>()
+    val matchedItems: List<BulkItem> get() = _matchedItems
+
+    private val _unmatchedItems = mutableStateListOf<BulkItem>()
+    val unmatchedItems: List<BulkItem> get() = _unmatchedItems
+
+    private val _scannedFilteredItems = mutableStateOf<List<BulkItem>>(emptyList())
+    val scannedFilteredItems: State<List<BulkItem>> = _scannedFilteredItems
 
     private var scanJob: Job? = null
 
     private val _scanTrigger = MutableStateFlow<String?>(null)
     val scanTrigger: StateFlow<String?> = _scanTrigger
+
+    private val _searchItems = mutableStateListOf<BulkItem>()
+    val searchItems: SnapshotStateList<BulkItem> get() = _searchItems
+
 
     fun onScanKeyPressed(type: String) {
         _scanTrigger.value = type
@@ -131,6 +147,10 @@ class BulkViewModel @Inject constructor(
         _scanTrigger.value = null
     }
 
+    fun startSearch(items: List<BulkItem>) {
+        _searchItems.clear()
+        _searchItems.addAll(items.filter { it.scannedStatus == "Unmatched" })
+    }
 
     fun startSingleScan(selectedPower: Int, onTagFound: (UHFTAGInfo) -> Unit) {
         if (!success) return
@@ -172,6 +192,8 @@ class BulkViewModel @Inject constructor(
     fun startScanning(selectedPower: Int) {
         if (success) {
             readerManager.startInventoryTag(selectedPower)
+            readerManager.playSound(1, 0)
+            scanJob?.cancel()
             if (scanJob?.isActive == true) return
 
             scanJob = viewModelScope.launch(Dispatchers.IO) {
@@ -219,6 +241,9 @@ class BulkViewModel @Inject constructor(
                     }
                 }
             }
+        } else {
+            Log.e("RFID", "Reader not connected.")
+            return
         }
     }
 
@@ -279,9 +304,56 @@ class BulkViewModel @Inject constructor(
 
     fun stopScanning() {
         scanJob?.cancel()
+        scanJob = null
         readerManager.stopInventory()
         readerManager.stopSound(1)
     }
+
+
+    fun onScanStopped() {
+        scanJob?.cancel()
+        scanJob = null
+        readerManager.stopInventory()
+        readerManager.stopSound(1)
+        scannedEpcList.clear()
+        _allScannedTags.value.forEach { tag ->
+            tag.epc?.let { epc ->
+                if (!scannedEpcList.contains(epc)) {
+                    scannedEpcList.add(epc)
+                }
+            }
+        }
+    }
+
+    fun computeScanResults(allItems: List<BulkItem>) {
+        val matched = mutableListOf<BulkItem>()
+        val unmatched = mutableListOf<BulkItem>()
+        val scannedEpcSet = scannedEpcList.toSet()
+
+        val updated = allItems.map { item ->
+            if (!item.epc.isNullOrBlank() && item.epc in scannedEpcSet) {
+                val updatedItem = item.copy(scannedStatus = "Matched")
+                matched.add(updatedItem)
+                updatedItem
+            } else {
+                val updatedItem = item.copy(scannedStatus = "Unmatched")
+                unmatched.add(updatedItem)
+                updatedItem
+            }
+        }
+
+        _matchedItems.clear()
+        _matchedItems.addAll(matched)
+
+        _unmatchedItems.clear()
+        _unmatchedItems.addAll(unmatched)
+
+        _scannedFilteredItems.value = updated
+    }
+
+
+
+
 
     fun stopBarcodeScanner() {
         barcodeDecoder.close()
@@ -344,7 +416,6 @@ class BulkViewModel @Inject constructor(
                     design = design,
                     itemCode = itemCode,
                     rfid = rfidMap.value.get(index),
-                    uhfTagInfo = tag,
                     grossWeight = "",
                     stoneWeight = "",
                     dustWeight = "",
@@ -363,8 +434,26 @@ class BulkViewModel @Inject constructor(
                     box = "",
                     designCode = "",
                     productCode = "",
-                    imageUrl = ""
-                )
+                    imageUrl = "",
+                    totalQty = 0,
+                    pcs = 0,
+                    matchedPcs = 0,
+                    totalGwt = 0.0,
+                    matchGwt = 0.0,
+                    totalStoneWt = 0.0,
+                    matchStoneWt = 0.0,
+                    totalNetWt = 0.0,
+                    matchNetWt = 0.0,
+                    unmatchedQty = 0,
+                    unmatchedGrossWt = 0.0,
+                    mrp = 0.0,
+                    counterName = "",
+                    matchedQty = 0,
+                    counterId = 0,
+                    scannedStatus = ""
+                ).apply {
+                    uhfTagInfo = tag
+                }
             }
             if (itemList.isNotEmpty()) {
                 bulkRepository.clearAllItems()

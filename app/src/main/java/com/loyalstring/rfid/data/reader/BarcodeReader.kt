@@ -7,7 +7,6 @@ import com.rscja.barcode.BarcodeUtility
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-
 @Singleton
 class BarcodeReader @Inject constructor(
     @ApplicationContext private val context: Context
@@ -17,18 +16,33 @@ class BarcodeReader @Inject constructor(
     val barcodeDecoder: BarcodeDecoder
         get() = _barcodeDecoder
 
-    init {
-        _barcodeDecoder.open(context)
+    private var isOpened = false
+
+    fun openIfNeeded() {
+        if (!isOpened) {
+            try {
+                _barcodeDecoder.open(context)
+                isOpened = true
+            } catch (e: SecurityException) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun setOnBarcodeScanned(callback: (String) -> Unit) {
-
         barcodeDecoder.setDecodeCallback { entity ->
             if (entity.resultCode == BarcodeDecoder.DECODE_SUCCESS) {
-                BarcodeUtility.getInstance().enablePlaySuccessSound(context, true) //success Sound
+                BarcodeUtility.getInstance().enablePlaySuccessSound(context, true)
                 callback(entity.barcodeData)
             }
         }
     }
 
+    fun close() {
+        if (isOpened) {
+            _barcodeDecoder.close()
+            isOpened = false
+        }
+    }
 }
+

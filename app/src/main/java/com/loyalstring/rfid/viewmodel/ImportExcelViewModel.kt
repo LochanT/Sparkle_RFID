@@ -178,12 +178,29 @@ class ImportExcelViewModel @Inject constructor(
                                 epc = epcVal,
                                 vendor = "",
                                 tid = "",
-                                uhfTagInfo = null,
                                 box = "",
                                 designCode = "",
                                 productCode = "",
-                                imageUrl = ""
-                            )
+                                imageUrl = "",
+                                totalQty = 0,
+                                pcs = 0,
+                                matchedPcs = 0,
+                                totalGwt = 0.0,
+                                matchGwt = 0.0,
+                                totalStoneWt = 0.0,
+                                matchStoneWt = 0.0,
+                                totalNetWt = 0.0,
+                                matchNetWt = 0.0,
+                                unmatchedQty = 0,
+                                matchedQty = 0,
+                                unmatchedGrossWt = 0.0,
+                                mrp = 0.0,
+                                counterName = "",
+                                counterId = 0,
+                                scannedStatus = ""
+                            ).apply {
+                                uhfTagInfo = null
+                            }
 
                             items.add(item)
                             imported++

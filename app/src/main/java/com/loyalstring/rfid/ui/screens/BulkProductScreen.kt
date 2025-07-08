@@ -84,7 +84,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
 
     var clickedIndex by remember { mutableStateOf<Int?>(null) }
 
-    var selectedPower by remember { mutableStateOf(1) }
+    var selectedPower by remember { mutableStateOf(10) }
     val scanTrigger by viewModel.scanTrigger.collectAsState()
 
     val allScannedTags by viewModel.allScannedTags
@@ -192,7 +192,13 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     }
                 },
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
-                onScan = { viewModel.startScanning(selectedPower) },
+                onScan = {
+                    viewModel.startSingleScan(20) { tag ->
+                        tag.epc?.let {
+
+                        }
+                    }
+                },
                 onGscan = {
                     if (!firstPress) {
                         firstPress = true
@@ -436,7 +442,6 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.DarkGray)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -444,11 +449,22 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                 println("ALL ITEMS : ${allScannedTags.size}")
                 println("DUPLICATE : ${duplicateTags.size}")
 
-                Text("Exist Items: ${existingTags.size}", color = Color.White, fontFamily = poppins)
+                Text(
+                    "Exist Items: ${existingTags.size}", color = Color.White, fontFamily = poppins,
+                    fontSize = 11.sp,
+                    modifier = Modifier
+                        .background(Color.DarkGray)
+                        .padding(3.dp)
+                )
                 Text(
                     "Total Items: ${allScannedTags.size}",
                     color = Color.White,
-                    fontFamily = poppins
+                    fontFamily = poppins,
+                    fontSize = 11.sp,
+                    modifier = Modifier
+                        .background(Color.DarkGray)
+                        .padding(3.dp)
+
                 )
             }
         }

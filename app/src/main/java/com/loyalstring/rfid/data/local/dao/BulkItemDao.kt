@@ -24,4 +24,8 @@ interface BulkItemDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertSingleItem(item: BulkItem): Long
 
+    @Query("UPDATE bulk_items SET imageUrl = :newImageUrl WHERE itemCode = :itemCode")
+    suspend fun updateImageUrl(itemCode: String, newImageUrl: String)
+
+
 }

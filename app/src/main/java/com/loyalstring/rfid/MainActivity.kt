@@ -190,7 +190,7 @@ private fun SetupNavigation(context: Context, userPreferences: UserPreferences) 
 
                                 onClick = {
                                     selectedItemIndex = index
-                                    if (selectedItemIndex >= 2) {
+                                    if (selectedItemIndex >= 3) {
                                         if (navigationItem.route.equals("login")) {
                                             userPreferences.logout()
                                             scope.launch {

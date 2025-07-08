@@ -1,7 +1,11 @@
 package com.loyalstring.rfid.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,6 +27,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -35,10 +40,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,16 +56,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.ProductListViewModel
+import java.io.File
 
 @Composable
 fun ProductListScreen(
@@ -69,6 +84,10 @@ fun ProductListScreen(
     val scrollState = rememberScrollState()
     var selectedCount by remember { mutableStateOf(1) }
     var isGridView by remember { mutableStateOf(false) }
+
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableStateOf<BulkItem?>(null) }
+    val baseUrl = "https://rrgold.loyalstring.co.in/"
 
     val allItems by viewModel.productList.collectAsState(initial = emptyList())
     val filteredItems = remember(searchQuery.value, allItems) {
@@ -112,6 +131,7 @@ fun ProductListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+
                 .background(Color.White)
         ) {
             Spacer(Modifier.height(12.dp))
@@ -168,6 +188,10 @@ fun ProductListScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clickable {
+                                    selectedItem = item
+                                    showDialog = true
+                                }
                                 .height(IntrinsicSize.Min),
                             shape = RoundedCornerShape(12.dp),
                             border = BorderStroke(1.dp, Color.LightGray),
@@ -179,14 +203,40 @@ fun ProductListScreen(
                                     .fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(4.dp) // Less vertical spacing
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Photo,
-                                    contentDescription = item.itemCode,
-                                    tint = Color.Gray,
-                                    modifier = Modifier
-                                        .size(72.dp) // Icon made bigger
-                                        .align(Alignment.CenterHorizontally)
-                                )
+                                if (!item.imageUrl.isNullOrEmpty()) {
+                                    val stored = item.imageUrl.trim()
+                                        .trimEnd(',') // remove any trailing commas/spaces
+                                    if (stored.startsWith("/")) {
+                                        val file = File(stored)
+                                        if (file.exists()) file
+                                        else null
+                                    } else {
+                                        stored.split(",")
+                                            .map { it.trim() }
+                                            .filter { it.isNotEmpty() }
+                                            .lastOrNull()
+                                            ?.let {
+
+                                                AsyncImage(
+                                                    model = baseUrl + it,
+                                                    contentDescription = item.itemCode,
+                                                    modifier = Modifier
+                                                        .size(72.dp)
+                                                        .align(Alignment.CenterHorizontally)
+                                                )
+                                            }
+                                    }
+
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Photo,
+                                        contentDescription = item.itemCode,
+                                        tint = Color.Gray,
+                                        modifier = Modifier
+                                            .size(72.dp)
+                                            .align(Alignment.CenterHorizontally)
+                                    )
+                                }
 
                                 // Row: RFID & Item Code
                                 Row(
@@ -242,6 +292,7 @@ fun ProductListScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+
                         .background(Color(0xFF2E2E2E)),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -331,6 +382,10 @@ fun ProductListScreen(
                             Row(
                                 modifier = Modifier
                                     .weight(1f)
+                                    .clickable {
+                                        selectedItem = item
+                                        showDialog = true
+                                    }
                                     .horizontalScroll(scrollState),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -367,7 +422,15 @@ fun ProductListScreen(
                                 }
                             }
 
-                            IconButton(onClick = { /* Edit */ }, modifier = Modifier.width(30.dp)) {
+                            IconButton(onClick = {
+                                try {
+                                    val currentEntry = navController.currentBackStackEntry
+                                    currentEntry?.savedStateHandle?.set("item", item)
+                                    navController.navigate(Screens.EditProductScreen.route)
+                                } catch (e: Exception) {
+                                    Log.e("NAVIGATION", "BackStackEntry error: ${e.message}")
+                                }
+                            }, modifier = Modifier.width(30.dp)) {
                                 Icon(
                                     Icons.Default.Edit,
                                     contentDescription = "Edit",
@@ -387,6 +450,9 @@ fun ProductListScreen(
                         }
                     }
                 }
+            }
+            if (showDialog && selectedItem != null) {
+                ItemDetailsDialog(item = selectedItem!!, onDismiss = { showDialog = false })
             }
         }
     }
@@ -417,5 +483,99 @@ fun ActionButton(
                 softWrap = false
             )
         }
+    }
+}
+
+@Composable
+fun ItemDetailsDialog(
+    item: BulkItem,
+    onDismiss: () -> Unit
+) {
+    val baseUrl = "https://rrgold.loyalstring.co.in/"
+    val imageUrl = item.imageUrl?.split(",")
+        ?.lastOrNull()
+        ?.trim()
+        ?.let { "$baseUrl$it" }
+
+    var scale by remember { mutableStateOf(1f) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            color = Color.White,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Item Details",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 14.sp,
+                        fontFamily = poppins
+                    )
+                    TextButton(onClick = onDismiss) {
+                        Text("Close", fontFamily = poppins)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (!imageUrl.isNullOrBlank()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUrl),
+                        contentDescription = "Zoomable Image",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .graphicsLayer(
+                                scaleX = scale,
+                                scaleY = scale
+                            )
+                            .pointerInput(Unit) {
+                                detectTransformGestures { _, _, zoom, _ ->
+                                    scale = (scale * zoom).coerceIn(1f, 5f)
+                                }
+                            }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                InfoRow("Product Name", item.productName)
+                InfoRow("Item Code", item.itemCode)
+                InfoRow("RFID", item.rfid)
+                InfoRow("G.Wt", item.grossWeight)
+                InfoRow("S.Wt", item.stoneWeight)
+                InfoRow("D.Wt", item.dustWeight)
+                InfoRow("N.Wt", item.netWeight)
+                InfoRow("Category", item.category)
+                InfoRow("Design", item.design)
+                InfoRow("Purity", item.purity)
+                InfoRow("Making/Gram", item.makingPerGram)
+            }
+        }
+    }
+}
+
+@Composable
+fun InfoRow(label: String, value: String?) {
+    Row(modifier = Modifier.padding(vertical = 4.dp)) {
+        Text(
+            "$label:",
+            modifier = Modifier.weight(1f),
+            color = Color.DarkGray,
+            fontSize = 12.sp,
+            fontFamily = poppins
+        )
+        Text(value ?: "-", modifier = Modifier.weight(1.5f), fontSize = 12.sp, fontFamily = poppins)
     }
 }

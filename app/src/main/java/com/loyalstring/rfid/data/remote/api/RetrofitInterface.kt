@@ -12,11 +12,15 @@ import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.model.login.LoginRequest
 import com.loyalstring.rfid.data.model.login.LoginResponse
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
+import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 
 interface RetrofitInterface {
     /*Login*/
@@ -61,6 +65,16 @@ interface RetrofitInterface {
     //AddScannedDataToWeb
     @POST("api/RFIDDevice/AddRFID")
     suspend fun addAllScannedData(@Body scannedDataToService: List<ScannedDataToService>): Response<List<ScannedDataToService>>
+
+    @Multipart
+    @POST("api/ProductMaster/UploadImagesByClientCode ")
+    suspend fun uploadLabelStockImage(
+        @Part("ClientCode") clientCode: RequestBody,
+//        @Part("DesignId") skuId: RequestBody,
+        @Part("ItemCode") itemCode: RequestBody,
+        @Part files: List<MultipartBody.Part>
+    ): Response<ResponseBody>
+
 
 
 

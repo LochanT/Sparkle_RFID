@@ -1,10 +1,14 @@
 package com.loyalstring.rfid.data.local.entity
 
+import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.rscja.deviceapi.entity.UHFTAGInfo
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 @Entity(
     tableName = "bulk_items",
     indices = [Index(value = ["epc"], unique = true)]
@@ -35,5 +39,24 @@ data class BulkItem(
     val designCode: String?,
     val productCode: String?,
     val imageUrl: String?,
-    val uhfTagInfo: UHFTAGInfo? = null
-)
+    val totalQty: Int,
+    val pcs: Int?,
+    val matchedPcs: Int?,
+    val totalGwt: Double?,
+    val matchGwt: Double?,
+    val totalStoneWt: Double?,
+    val matchStoneWt: Double?,
+    val totalNetWt: Double,
+    val matchNetWt: Double?,
+    val unmatchedQty: Int?,
+    val matchedQty: Int?,
+    val unmatchedGrossWt: Double?,
+    val mrp: Double,
+    val counterName: String?,
+    val counterId: Int?,
+    val scannedStatus: String?
+) : Parcelable {
+    // ❗ Declare outside constructor, so it's excluded from Parcelable
+    @IgnoredOnParcel
+    var uhfTagInfo: UHFTAGInfo? = null
+}

@@ -5,8 +5,6 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.loyalstring.rfid.data.local.converters.UHFTAGInfoConverter
 import com.loyalstring.rfid.data.local.dao.BulkItemDao
 import com.loyalstring.rfid.data.local.dao.DropdownDao
@@ -116,13 +114,12 @@ abstract class AppDatabase : RoomDatabase() {
         fun getDatabase(context: Context): AppDatabase =
 
             INSTANCE ?: synchronized(this) {
-                context.deleteDatabase("app_db")
+                // context.deleteDatabase("app_db")
                 Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "app_db"
                 )
-                    .fallbackToDestructiveMigration()
                     .build().also { INSTANCE = it }
             }
     }

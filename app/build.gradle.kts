@@ -4,6 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose") version "2.0.21"
     id("com.google.dagger.hilt.android")
     id("org.jetbrains.kotlin.kapt")
+    id("kotlin-parcelize")
     alias(libs.plugins.ksp)
 }
 
@@ -15,8 +16,8 @@ android {
         applicationId = "com.loyalstring.rfid"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 5
+        versionName = "1.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -66,6 +67,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.runtime.livedata)
+    implementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.appcompat)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -73,6 +76,8 @@ dependencies {
     implementation(libs.androidx.foundation) // or latest stable
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.coil.compose)
+    implementation(libs.androidx.foundation.layout) // ✅ Add this
+
 
 
 
@@ -113,7 +118,7 @@ dependencies {
     kapt(libs.hilt.compiler)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.compose.runtime.livedata)
-    implementation("androidx.compose.material:material-icons-extended:1.6.0")
+    implementation(libs.androidx.material.icons.extended)
 
     //LiveData
     implementation(libs.androidx.lifecycle.livedata.ktx)// or latest

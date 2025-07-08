@@ -10,37 +10,50 @@ fun AlllabelResponse.LabelItem.toBulkItem(): BulkItem {
         itemCode = this.itemCode ?: "",
         rfid = this.rfidCode ?: "",
 
-        // Weights
         grossWeight = this.grossWt ?: "",
         stoneWeight = this.totalStoneWeight ?: "",
-        dustWeight = "",   // if you want pouch/other
+        dustWeight = "",
         netWeight = this.netWt ?: "",
 
-        // Category/design/purity
         category = this.categoryName ?: "",
         design = this.designName ?: "",
         purity = this.purityName ?: "",
 
-        // Making charges
         makingPerGram = this.makingPerGram ?: "",
         makingPercent = this.makingPercentage ?: "",
         fixMaking = this.makingFixedAmt ?: "",
         fixWastage = this.makingFixedWastage ?: "",
 
-        // Stone amounts
         stoneAmount = this.totalStoneAmount ?: "",
         dustAmount = "",
 
-        // Identifiers
-        sku = this.sku ?: "", // if your JSON has an EPC field
+        sku = this.sku ?: "",
         vendor = this.vendorName ?: "",
         tid = this.tidNumber ?: "",
         id = 0,
-        epc = this.tidNumber,
-        uhfTagInfo = null,
+        epc = this.tidNumber, // or wherever epc is coming from
+
         box = "",
         designCode = "",
         productCode = "",
-        imageUrl = ""
-    )
+        imageUrl = this.image ?: "",
+        totalQty = this.quantity?.toIntOrNull() ?: 0,
+        pcs = this.pieces?.toIntOrNull() ?: 0,
+        matchedPcs = 0,
+        totalGwt = 0.0,
+        matchGwt = 0.0,
+        totalStoneWt = this.totalStoneWeight?.toDoubleOrNull() ?: 0.0,
+        matchStoneWt = 0.0,
+        totalNetWt = this.netWt?.toDoubleOrNull() ?: 0.0,
+        matchNetWt = 0.0,
+        unmatchedQty = 0,
+        matchedQty = 0,
+        unmatchedGrossWt = 0.0,
+        mrp = this.mrp?.toDoubleOrNull() ?: 0.0,
+        counterName = "",
+        counterId = 0,
+        scannedStatus = ""
+    ).apply {
+        uhfTagInfo = null // ✅ set it separately here
+    }
 }
