@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.loyalstring.rfid.data.local.dao.BulkItemDao
 import com.loyalstring.rfid.data.local.dao.DropdownDao
+import com.loyalstring.rfid.data.local.dao.OrderItemDao
 import com.loyalstring.rfid.data.local.db.AppDatabase
 import dagger.Module
 import dagger.Provides
@@ -30,5 +31,10 @@ object DatabaseModule {
     @Provides
     fun provideBulkItemDao(db: AppDatabase): BulkItemDao {
         return db.bulkItemDao()
+    }
+
+    @Provides
+    fun provideOrderItemDao(db: AppDatabase): OrderItemDao {
+        return db.orderItemDao()
     }
 }

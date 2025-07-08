@@ -19,6 +19,7 @@ import com.loyalstring.rfid.data.model.addSingleItem.ProductModel
 import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
+import com.loyalstring.rfid.data.model.order.BranchResponse
 import com.loyalstring.rfid.data.reader.BarcodeReader
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
 import com.loyalstring.rfid.data.remote.resource.Resource
@@ -26,6 +27,8 @@ import com.loyalstring.rfid.repository.BulkRepository
 import com.loyalstring.rfid.repository.SingleProductRepository
 import com.loyalstring.rfid.ui.utils.ToastUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -57,6 +60,9 @@ class SingleProductViewModel @Inject constructor(
 
     private val _purityResponse = MutableLiveData<Resource<List<PurityModel>>>()
     val purityResponse: LiveData<Resource<List<PurityModel>>> = _purityResponse
+
+    private val _purityResponse1 = MutableStateFlow<List<PurityModel>>(emptyList())
+    val purityResponse1: StateFlow<List<PurityModel>> = _purityResponse1
 
     var stockResponse by mutableStateOf<Result<List<PurityModel>>?>(null)
         private set
@@ -165,13 +171,16 @@ class SingleProductViewModel @Inject constructor(
                 val response = repository.getAllPurityDetails(request)
                 if (response.isSuccessful && response.body() != null) {
                     _purityResponse.value = Resource.Success((response.body()!!))
+                    _purityResponse1.value = (response.body()!!)
 
                     Log.d("SingleProductViewModel", "Product" + response.body())
                 } else {
                     _purityResponse.value = Resource.Error("sku fetch failed: ${response.message()}")
+                    _purityResponse1.value = (response.body()!!)
                 }
             } catch (e: Exception) {
                 _purityResponse.value = Resource.Error("Exception: ${e.message}")
+              //  _purityResponse1.value = (response.body()!!)
             }
         }
     }

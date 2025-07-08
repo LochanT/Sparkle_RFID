@@ -11,8 +11,13 @@ import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeReques
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.google.gson.Gson
+import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.order.BranchResponse
+import com.loyalstring.rfid.data.model.order.CustomOrderRequest
+import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
+import com.loyalstring.rfid.data.model.order.OrderItemModel
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,6 +42,15 @@ class OrderViewModel @Inject constructor(
     private val _itemCodeResponse = MutableStateFlow<List<ItemCodeResponse>>(emptyList())
     val itemCodeResponse: StateFlow<List<ItemCodeResponse>> = _itemCodeResponse
     val isItemCodeLoading = MutableStateFlow(false)
+
+    private val _branchResponse = MutableStateFlow<List<BranchResponse>>(emptyList())
+    val branchResponse: StateFlow<List<BranchResponse>> = _branchResponse
+
+    private val _orderResponse = MutableStateFlow<CustomOrderResponse?>(null) // ✅
+    val orderResponse: StateFlow<CustomOrderResponse?> = _orderResponse
+
+    private val _allOrderItems = MutableStateFlow<List<OrderItem>>(emptyList())
+    val allOrderItems: StateFlow<List<OrderItem>> = _allOrderItems
 
 
     /*add employee*/
@@ -109,6 +123,77 @@ class OrderViewModel @Inject constructor(
             }
         }
     }
+
+    /*get all branch response  list*/
+    fun getAllBranchList(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            //isItemCodeLoading.value = true
+            delay(2000)
+            try {
+                val response = repository.getAllBranchList(request)
+                if (response.isSuccessful && response.body() != null) {
+                    _branchResponse.value = response.body()!!
+                    Log.d("OrderViewModel", "BranchName: ${response.body()}")
+                } else {
+                    _branchResponse.value = emptyList()
+                    Log.e("OrderViewModel", "Branch Response error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _branchResponse.value = emptyList()
+                Log.e("OrderViewModel", "Branch Exception: ${e.message}")
+            }
+            finally {
+               // isItemCodeLoading.value = false
+            }
+        }
+    }
+
+
+    /*customer order*/
+    fun addOrderCustomer(request: CustomOrderRequest) {
+        viewModelScope.launch {
+            try {
+                val response = repository.addOrder(request)
+                if (response.isSuccessful && response.body() != null) {
+                    _orderResponse.value = response.body()!!
+                    Log.d("OrderViewModel", "Custom Order: ${response.body()}")
+                } else {
+                    _orderResponse.value = response.body()// ✅ Use default object
+                    Log.e("OrderViewModel", "Custom Order Response error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _orderResponse.value = _orderResponse.value
+                Log.e("OrderViewModel", "Custom Order Exception: ${e.message}")
+            }
+        }
+    }
+
+
+    /*insert order item locally*/
+    fun insertOrderItemToRoom(item: OrderItem) {
+        viewModelScope.launch {
+            try {
+                repository.insertOrderItems(item)
+                Log.d("OrderViewModel", "Order item inserted into Room: $item")
+            } catch (e: Exception) {
+                Log.e("OrderViewModel", "Room Insert Error: ${e.message}")
+            }
+        }
+    }
+
+    /*getAll order items from the roomdatbase*/
+
+    fun getAllOrderItemsFromRoom() {
+        viewModelScope.launch {
+            repository.getAllOrderItems().collect { items ->
+                _allOrderItems.value = items
+                Log.d("OrderViewModel", "Fetched ${items.size} order items from Room")
+            }
+        }
+    }
+
+
+
 
 
 
