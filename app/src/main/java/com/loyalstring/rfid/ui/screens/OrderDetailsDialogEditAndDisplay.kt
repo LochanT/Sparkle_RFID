@@ -1,5 +1,7 @@
 package com.loyalstring.rfid.ui.screens
 
+
+
 import android.app.DatePickerDialog
 import android.util.Log
 import androidx.compose.foundation.background
@@ -42,12 +44,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.model.order.BranchResponse
-import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.ui.utils.GradientButtonIcon
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.viewmodel.OrderViewModel
@@ -55,11 +57,28 @@ import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.Int
+import kotlin.toString
 
 
 // Sample OrderDetails data class
-data class OrderDetails(
+data class OrderDetailsData(
+    val productName:String,
+    val itemCode:String,
+    val sku:String,
+    val NetWt:String,
+    val totalWt:String,
+    val packingWt:String,
+    val GrossWt:String,
+    val StoneWT:String,
+    val dimondWt:String,
+    val ratePerGram:String,
+    val finePer:String,
+    val wastagePer:String,
+    val qty:String,
+    val hallMarkAmt:String,
+    val mrp:String,
+
+
     val branch: String,
     val exhibition: String,
     val remark: String,
@@ -74,18 +93,18 @@ data class OrderDetails(
 )
 
 @Composable
-fun OrderDetailsDialog(
+fun OrderDetailsDialogEditAndDisplay(
 
     selectedCustomerId: Int?,
     selectedCustomer: EmployeeList?,
-    selectedItem: ItemCodeResponse?,
+    selectedItem: OrderItem?,
     branchList: List<BranchResponse>,
     onDismiss: () -> Unit,
-    onSave: (OrderDetails) -> Unit,
+    onSave: (OrderDetailsData) -> Unit,
     viewModel: SingleProductViewModel = hiltViewModel(),
 
     ) {
-    Log.e("TAG", "RFID Code: ${selectedItem?.RFIDCode}")
+    Log.e("TAG", "RFID Code: ${selectedItem?.rfidCode+" image url"+selectedItem?.image.toString()}")
 
     val orderViewModel: OrderViewModel = hiltViewModel()
     val singleProductViewModel: SingleProductViewModel = hiltViewModel()
@@ -104,6 +123,69 @@ fun OrderDetailsDialog(
     var orderDate by remember { mutableStateOf("") }
     var deliverDate by remember { mutableStateOf("") }
 
+
+
+
+   //  exhibition =selectedItem.e
+   /* var remark by remember { mutableStateOf("") }
+    var purity by remember { mutableStateOf("") }
+    var size by remember { mutableStateOf("") }
+    var length by remember { mutableStateOf("") }
+    var typeOfColors by remember { mutableStateOf("") }
+    var screwType by remember { mutableStateOf("") }
+    var polishType by remember { mutableStateOf("") }
+    var finePercentage by remember { mutableStateOf("") }
+    var wastage by remember { mutableStateOf("") }
+    var orderDate by remember { mutableStateOf("") }
+    var deliverDate by remember { mutableStateOf("") }*/
+
+
+    var productName by remember { mutableStateOf("") }
+    var itemCode by remember { mutableStateOf("") }
+    var sku by remember { mutableStateOf("") }
+    var NetWt by remember { mutableStateOf("") }
+    var totalWt by remember { mutableStateOf("") }
+    var dimondWt by remember { mutableStateOf("") }
+    var packingWt by remember { mutableStateOf("") }
+    var grossWT by remember { mutableStateOf("") }
+    var stoneWt by remember { mutableStateOf("") }
+    var ratePerGRam by remember { mutableStateOf("") }
+    var finePer by remember { mutableStateOf("") }
+    var wastagePer by remember { mutableStateOf("") }
+    var qty by remember { mutableStateOf("") }
+    var hallMarkAmt by remember { mutableStateOf("") }
+    var mrp by remember { mutableStateOf("") }
+    var stoneAmt by remember { mutableStateOf("") }
+
+    branch=selectedItem?.branchName.toString()
+    productName =selectedItem?.productName.toString()
+    itemCode=selectedItem?.itemCode.toString()
+    totalWt=selectedItem?.totalWt.toString()
+    stoneWt=selectedItem?.stoneWt.toString()
+    dimondWt=selectedItem?.dimondWt.toString()
+    NetWt=selectedItem?.nWt.toString()
+    exhibition=selectedItem?.exhibition.toString()
+    sku=selectedItem?.sku.toString()
+    purity= selectedItem?.purity.toString()
+    size=selectedItem?.size.toString()
+    length=selectedItem?.length.toString()
+    stoneAmt=selectedItem?.stoneAmt.toString()
+    packingWt=selectedItem?.packingWt.toString()
+    NetWt=selectedItem?.nWt.toString()
+    remark=selectedItem?.remark.toString()
+    typeOfColors=selectedItem?.typeOfColor.toString()
+    screwType=selectedItem?.screwType.toString()
+    polishType=selectedItem?.polishType.toString()
+    finePercentage=selectedItem?.finePer.toString()
+    wastagePer=selectedItem?.wastage.toString()
+    orderDate=selectedItem?.orderDate.toString()
+    deliverDate=selectedItem?.deliverDate.toString()
+    qty=selectedItem?.qty.toString()
+    hallMarkAmt=selectedItem?.hallmarkAmt.toString()
+    mrp=selectedItem?.mrp.toString()
+
+
+
     //val branchList = listOf("Branch 1", "Branch 2", "Branch 3")
 
     //val branchList by orderViewModel.branchResponse.collectAsState()
@@ -111,6 +193,7 @@ fun OrderDetailsDialog(
     //   val purityList = listOf("Purity 1", "Purity 2")
     //  val purityList = (viewModel.purityResponse.observeAsState().value as? Resource.Success)?.data
     val purityList by singleProductViewModel.purityResponse1.collectAsState()
+    val skuList by singleProductViewModel.skuResponse1.collectAsState()
     val sizeList = listOf("Size 1", "Size 2")
     val lengthList = listOf("Length 1", "Length 2")
     val colorsList = listOf(
@@ -133,6 +216,7 @@ fun OrderDetailsDialog(
     var expandedColors by remember { mutableStateOf(false) }
     var expandedScrew by remember { mutableStateOf(false) }
     var expandedPolish by remember { mutableStateOf(false) }
+    var expandedSKU by remember { mutableStateOf(false) }
 
     // Inside @Composable
 
@@ -202,6 +286,31 @@ fun OrderDetailsDialog(
                 }
                 Spacer(modifier = Modifier.height(12.dp))*/
 
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp) // Set the height you need
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center // Center horizontally
+                    ) {
+                      /*  Icon(
+                            painter = painterResource(id = R.drawable.add_photo), // Replace with your image resource
+                            contentDescription = "Center Icon",
+                            modifier = Modifier.size(32.dp), // Set desired icon size
+                            tint = Color.Black // Optional tint color
+                        )*/
+
+                        AsyncImage(
+                            model =selectedItem?.image,
+                            contentDescription = "Image from URL",
+                            placeholder = painterResource(R.drawable.add_photo), // Optional
+                            error = painterResource(R.drawable.add_photo),       // Optional
+                            modifier = Modifier.size(100.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
                     // Use your DropdownMenuField & input rows here
                     // Example: Branch dropdown
                     Surface(
@@ -219,11 +328,10 @@ fun OrderDetailsDialog(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
 
-
-                        if (branchList.isEmpty()) {
+                            if (branchList.isEmpty()) {
                                 //Text("Loading branches...", modifier = Modifier.padding(8.dp))
                             } else {
-                                DropdownMenuField(
+                                DropdownMenuFieldDisplay(
                                     label = "Branch",
                                     options = branchList,
                                     selectedValue = branch,
@@ -237,6 +345,331 @@ fun OrderDetailsDialog(
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Product Name",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (productName.isEmpty()) {
+                                Text(
+                                    text = "Enter Product",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = productName,
+                                onValueChange = { productName = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "ItemCode",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (itemCode.isEmpty()) {
+                                Text(
+                                    text = "Enter Itemcode",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = itemCode,
+                                onValueChange = { itemCode = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Total Weight",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (totalWt.isEmpty()) {
+                                Text(
+                                    text = "Enter total wt",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = totalWt,
+                                onValueChange = { totalWt = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Packing Wt",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (packingWt.isEmpty()) {
+                                Text(
+                                    text = "Enter packing wt",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = packingWt,
+                                onValueChange = { packingWt = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Stone Weight",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (stoneWt.isEmpty()) {
+                                Text(
+                                    text = "Enter stone wt",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = stoneWt,
+                                onValueChange = { stoneWt = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Dimond Weight",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (dimondWt.isEmpty()) {
+                                Text(
+                                    text = "Enter dimond wt",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = dimondWt,
+                                onValueChange = { dimondWt = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Net Weight",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (NetWt.isEmpty()) {
+                                Text(
+                                    text = "Enter net wt",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = NetWt,
+                                onValueChange = { NetWt = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -345,7 +778,35 @@ fun OrderDetailsDialog(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
 
-                            DropdownMenuField(
+                            DropdownMenuFieldDisplay(
+                                "SKU",
+                                skuList,
+                                sku,
+                                expandedSKU,
+                                { sku = it },
+                                { expandedSKU = it },
+                                labelColor = Color.Black,
+                                getOptionLabel = { it.PurityName.toString() }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp),
+                        color = Color(0xFFF2F2F3),
+                        shape = RoundedCornerShape(8.dp),
+                        tonalElevation = 2.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+
+                            DropdownMenuFieldDisplay(
                                 "Purity",
                                 purityList,
                                 purity,
@@ -384,7 +845,7 @@ fun OrderDetailsDialog(
                                 .background(Color.White, RoundedCornerShape(4.dp)),
                             contentAlignment = Alignment.CenterStart
                         ) {
-                            if (exhibition.isEmpty()) {
+                            if (size.isEmpty()) {
                                 Text(
                                     text = "Enter size",
                                     fontSize = 13.sp,
@@ -405,6 +866,55 @@ fun OrderDetailsDialog(
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Length",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (length.isEmpty()) {
+                                Text(
+                                    text = "Enter length",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = length,
+                                onValueChange = { length = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+
+
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -420,7 +930,7 @@ fun OrderDetailsDialog(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
 
-                            DropdownMenuField(
+                            DropdownMenuFieldDisplay(
                                 "Colors",
                                 colorsList,
                                 typeOfColors,
@@ -449,7 +959,7 @@ fun OrderDetailsDialog(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
 
-                            DropdownMenuField(
+                            DropdownMenuFieldDisplay(
                                 "Screw Type",
                                 screwList,
                                 screwType,
@@ -462,7 +972,7 @@ fun OrderDetailsDialog(
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Spacer(modifier = Modifier.height(4.dp))
+
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -478,7 +988,7 @@ fun OrderDetailsDialog(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
 
-                            DropdownMenuField(
+                            DropdownMenuFieldDisplay(
                                 "Polish Type",
                                 polishList,
                                 polishType,
@@ -753,6 +1263,147 @@ fun OrderDetailsDialog(
                     }
                     Spacer(modifier = Modifier.height(10.dp))
 
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Quantity",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (qty.isEmpty()) {
+                                Text(
+                                    text = "Enter quantity",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = qty,
+                                onValueChange = { qty = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Hallmark Amt",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (hallMarkAmt.isEmpty()) {
+                                Text(
+                                    text = "Enter hallmark amt",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = hallMarkAmt,
+                                onValueChange = { hallMarkAmt = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Mrp",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (mrp.isEmpty()) {
+                                Text(
+                                    text = "Enter mrp",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = mrp,
+                                onValueChange = { mrp = it },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+
 
 
 
@@ -780,237 +1431,11 @@ fun OrderDetailsDialog(
                         Spacer(modifier = Modifier.width(8.dp)) // Add space between buttons
                         GradientButtonIcon(
                             text = "OK",
-                         /*   onClick = {
-                                *//*  OrderDetails(
-                                      branch, exhibition, remark, purity, size, length,
-                                      typeOfColors, screwType, polishType, finePercentage, wastage
-                                  )*//*
-                                val request = CustomOrderRequest(
-                                    CustomOrderId = 0,
-                                    CustomerId = selectedCustomerId.toString(),
-                                    ClientCode = employee?.clientCode.toString(),
-                                    OrderId = 0,
-                                    TotalAmount = "",
-                                    PaymentMode = "",
-                                    Offer = null,
-                                    Qty = "",
-                                    GST = "",
-                                    OrderStatus = "",
-                                    MRP = "",
-                                    VendorId = 12,
-                                    TDS = null,
-                                    PurchaseStatus = null,
-                                    GSTApplied = "",
-                                    Discount = "",
-                                    TotalNetAmount = "",
-                                    TotalGSTAmount = "",
-                                    TotalPurchaseAmount = "",
-                                    ReceivedAmount = "",
-                                    TotalBalanceMetal = "",
-                                    BalanceAmount = "",
-                                    TotalFineMetal = "",
-                                    CourierCharge = null,
-                                    SaleType = null,
-                                    OrderDate = "2025-07-08",
-                                    OrderCount = "1",
-                                    AdditionTaxApplied = "0",
-                                    CategoryId = 2,
-                                    OrderNo = "ORD123456",
-                                    DeliveryAddress = "123 Street, Mumbai",
-                                    BillType = "Retail",
-                                    UrdPurchaseAmt = null,
-                                    BilledBy = "Employee1",
-                                    SoldBy = "Employee1",
-                                    CreditSilver = null,
-                                    CreditGold = null,
-                                    CreditAmount = null,
-                                    BalanceAmt = "25000",
-                                    BalanceSilver = null,
-                                    BalanceGold = null,
-                                    TotalSaleGold = null,
-                                    TotalSaleSilver = null,
-                                    TotalSaleUrdGold = null,
-                                    TotalSaleUrdSilver = null,
-                                    FinancialYear = "2024-25",
-                                    BaseCurrency = "INR",
-                                    TotalStoneWeight = "0.5",
-                                    TotalStoneAmount = "2000",
-                                    TotalStonePieces = "3",
-                                    TotalDiamondWeight = "0.3",
-                                    TotalDiamondPieces = "2",
-                                    TotalDiamondAmount = "1500",
-                                    FineSilver = "0",
-                                    FineGold = "5.0",
-                                    DebitSilver = null,
-                                    DebitGold = null,
-                                    PaidMetal = "5.0",
-                                    PaidAmount = "25000",
-                                    TotalAdvanceAmt = null,
-                                    TaxableAmount = "47000",
-                                    TDSAmount = null,
-                                    CreatedOn = "2025-07-08",
-                                    LastUpdated = "2025-07-08",
-                                    StatusType = true,
-                                    FineMetal = "5.0",
-                                    BalanceMetal = "0.0",
-                                    AdvanceAmt = "0",
-                                    PaidAmt = "25000",
-                                    TaxableAmt = "47000",
-                                    GstAmount = "2500",
-                                    GstCheck = "true",
-                                    Category = "Ring",
-                                    TDSCheck = "false",
-                                    Remark = "Urgent order",
-                                    OrderItemId = null,
-                                    StoneStatus = null,
-                                    DiamondStatus = null,
-                                    BulkOrderId = null,
-                                    CustomOrderItem = listOf(
-                                        CustomOrderItem(
-                                            CustomOrderId = 1,
-                                            OrderDate = "2025-07-08",
-                                            DeliverDate = "2025-07-10",
-                                            SKUId = 101,
-                                            SKU = "SKU123",
-                                            CategoryId = 5,
-                                            VendorId = null,
-                                            CategoryName = "Rings",
-                                            CustomerName = "John Doe",
-                                            VendorName = null,
-                                            ProductId = 10,
-                                            ProductName = "Gold Ring",
-                                            DesignId = 8,
-                                            DesignName = "Classic",
-                                            PurityId = 22,
-                                            PurityName = "22KT",
-                                            GrossWt = "15.0",
-                                            StoneWt = "1.0",
-                                            DiamondWt = "0.5",
-                                            NetWt = "13.5",
-                                            Size = "14",
-                                            Length = "0",
-                                            TypesOdColors = "Yellow",
-                                            Quantity = "1",
-                                            RatePerGram = "5500",
-                                            MakingPerGram = "300",
-                                            MakingFixed = "0",
-                                            FixedWt = "0",
-                                            MakingPercentage = "12",
-                                            DiamondPieces = "2",
-                                            DiamondRate = "50000",
-                                            DiamondAmount = "25000",
-                                            StoneAmount = "1000",
-                                            ScrewType = "Normal",
-                                            Polish = "Mirror",
-                                            Rhodium = "No",
-                                            SampleWt = "0",
-                                            Image = "",
-                                            ItemCode = "ITEM123",
-                                            CustomerId = 201,
-                                            MRP = "95000",
-                                            HSNCode = "7113",
-                                            UnlProductId = 0,
-                                            OrderBy = "Admin",
-                                            StoneLessPercent = "0",
-                                            ProductCode = "PRD123",
-                                            TotalWt = "15.0",
-                                            BillType = "Retail",
-                                            FinePercentage = "91.6",
-                                            ClientCode = "LS000241",
-                                            OrederId = null,
-                                            CreatedOn = "2025-07-08",
-                                            LastUpdated = "2025-07-08",
-                                            StatusType = true,
-                                            PackingWeight = "0.2",
-                                            MetalAmount = "74250",
-                                            OldGoldPurchase = null,
-                                            Amount = "100000",
-                                            totalGstAmount = "5000",
-                                            finalPrice = "105000",
-                                            MakingFixedWastage = "200",
-                                            Description = "Gold Ring with Diamonds",
-                                            CompanyId = 1,
-                                            LabelledStockId = null,
-                                            TotalStoneWeight = "1.0",
-                                            BranchId = 2,
-                                            BranchName = "Mumbai",
-                                            Exhibition = "No",
-                                            CounterId = 3,
-                                            EmployeeId = 4,
-                                            OrderNo = "ORD20250708",
-                                            OrderStatus = "Pending",
-                                            DueDate = "2025-07-15",
-                                            Remark = "Urgent delivery",
-                                            Id = 0,
-                                            PurchaseInvoiceNo = null,
-                                            Purity = "22KT",
-                                            Status = null,
-                                            URDNo = null,
-                                            Stones = emptyList(),
-                                            Diamond = emptyList()
-                                        )
-                                    ),
-                                    Payments = listOf(
-                                        Payment("")
-                                    ),
-                                    uRDPurchases = listOf(
-                                        URDPurchase("")
-                                    ),
-                                    Customer = Customer(
-                                        FirstName = selectedCustomer?.FirstName.orEmpty(),
-                                        LastName = selectedCustomer?.LastName.orEmpty(),
-                                        PerAddStreet = "",
-                                        CurrAddStreet = "",
-                                        Mobile = selectedCustomer?.Mobile.orEmpty(),
-                                        Email = selectedCustomer?.Email.orEmpty(),
-                                        Password = "",
-                                        CustomerLoginId = selectedCustomer?.Email.orEmpty(), // usually same as Email
-                                        DateOfBirth = "",
-                                        MiddleName = "",
-                                        PerAddPincode = "",
-                                        Gender = "",
-                                        OnlineStatus = "",
-                                        CurrAddTown = selectedCustomer?.CurrAddTown.orEmpty(),
-                                        CurrAddPincode = "",
-                                        CurrAddState = selectedCustomer?.CurrAddState.orEmpty(),
-                                        PerAddTown = "",
-                                        PerAddState = "",
-                                        GstNo = selectedCustomer?.GstNo.orEmpty(),
-                                        PanNo = selectedCustomer?.PanNo.orEmpty(),
-                                        AadharNo = "",
-                                        BalanceAmount = "0",
-                                        AdvanceAmount = "0",
-                                        Discount = "0",
-                                        CreditPeriod = "",
-                                        FineGold = "0",
-                                        FineSilver = "0",
-                                        ClientCode = selectedCustomer?.ClientCode.orEmpty(),
-                                        VendorId = 0,
-                                        AddToVendor = false,
-                                        CustomerSlabId = 0,
-                                        CreditPeriodId = 0,
-                                        RateOfInterestId = 0,
-                                        Remark = "",
-                                        Area = "",
-                                        City = selectedCustomer?.City.orEmpty(),
-                                        Country = selectedCustomer?.Country.orEmpty(),
-                                        Id = selectedCustomer?.Id ?: 0,
-                                        CreatedOn = "2025-07-08",     // as per your fixed value
-                                        LastUpdated = "2025-07-08",   // as per your fixed value
-                                        StatusType = true
-                                    )
-                                )
 
-
-                                orderViewModel.addOrderCustomer(request)
-                                onDismiss
-                            },
-
-*/
                             onClick = {
 
                                 val orderItem = OrderItem(
-                                    branchId = "1",
+                                    branchId = selectedItem?.branchId.toString(),
                                     branchName = branch,
                                     exhibition = exhibition,
                                     remark = remark,
@@ -1024,39 +1449,36 @@ fun OrderDetailsDialog(
                                     wastage = wastage,
                                     orderDate = orderDate,
                                     deliverDate = deliverDate,
-                                    productName = selectedItem?.ProductName.toString(),
-                                    itemCode = selectedItem?.ProductName.toString(),
-                                    rfidCode = selectedItem?.RFIDCode.toString(),
-                                    itemAmt = selectedItem?.MakingFixedAmt,
-                                    grWt = selectedItem?.GrossWt,
-                                    nWt = selectedItem?.NetWt,
-                                    stoneAmt = selectedItem?.TotalStoneAmount,
-                                    finePlusWt = selectedItem?.FinePercent,
-
-                                    packingWt = selectedItem?.PackingWeight.toString(),
-                                    totalWt = selectedItem?.TotalWeight.toString(),
-                                    stoneWt = selectedItem?.TotalStoneWeight.toString(),
-                                    dimondWt = selectedItem?.DiamondWeight.toString(),
-                                    sku = selectedItem?.SKU.toString(),
-                                    qty = selectedItem?.ClipQuantity.toString(),
-                                    hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
-                                    mrp = selectedItem?.MRP.toString(),
-                                    image = selectedItem?.Images.toString(),
-                                    netAmt = "",
-                                    diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
-                                     categoryId = selectedItem?.CategoryId!!,
-                                 categoryName = selectedItem?.CategoryName!!,
-                                 productId = selectedItem?.ProductId!!,
-                                 productCode = selectedItem?.ProductCode!!,
-                                 skuId =selectedItem?.SKUId!!,
-                                 designid = selectedItem?.DesignId!!,
-                                 designName =selectedItem?.DesignName!!,
-                                 purityid = selectedItem?.PurityId!!,
-                                 counterId = selectedItem?.CounterId!!,
-                                 counterName ="",
-                                 companyId = 0
-
-
+                                    productName = productName,
+                                    itemCode = itemCode,
+                                    rfidCode = selectedItem?.rfidCode.toString(),
+                                    itemAmt = selectedItem?.itemAmt,
+                                    grWt = grossWT,
+                                    nWt = NetWt,
+                                    stoneAmt =stoneAmt ,
+                                    finePlusWt = selectedItem?.finePlusWt,
+                                    packingWt = selectedItem?.packingWt.toString(),
+                                    totalWt = selectedItem?.totalWt.toString(),
+                                    stoneWt = selectedItem?.stoneWt.toString(),
+                                    dimondWt = selectedItem?.dimondWt.toString(),
+                                    sku = selectedItem?.sku.toString(),
+                                    qty = selectedItem?.qty.toString(),
+                                    hallmarkAmt = selectedItem?.hallmarkAmt.toString(),
+                                    mrp = selectedItem?.mrp.toString(),
+                                    image=selectedItem?.image.toString(),
+                                    netAmt="",
+                                    diamondAmt=selectedItem?.diamondAmt.toString(),
+                                    categoryId = selectedItem?.categoryId!!,
+                                    categoryName = selectedItem?.categoryName!!,
+                                    productId = selectedItem?.productId!!,
+                                    productCode = selectedItem?.productName!!,
+                                    skuId =selectedItem?.skuId!!,
+                                    designid = selectedItem?.designid!!,
+                                    designName =selectedItem?.designName!!,
+                                    purityid = selectedItem?.purityid!!,
+                                    counterId = selectedItem?.counterId!!,
+                                    counterName ="",
+                                    companyId = 0
 
 
                                 )
@@ -1152,7 +1574,7 @@ fun DropdownMenuField(
 }*/
 
 @Composable
-fun <T> DropdownMenuField(
+fun <T> DropdownMenuFieldDisplay(
     label: String,
     options: List<T>,
     selectedValue: String,

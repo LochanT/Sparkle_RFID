@@ -64,7 +64,7 @@ data class CustomOrderRequest(
     val TaxableAmount: String,
     val TDSAmount: String? = null,
     val CreatedOn: String? = null,
-    val LastUpdated: String? = null,
+    //val LastUpdated: String? = null,
     val StatusType: Boolean? = null,
     val FineMetal: String,
     val BalanceMetal: String,

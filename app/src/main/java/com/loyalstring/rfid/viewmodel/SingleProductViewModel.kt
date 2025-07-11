@@ -49,6 +49,9 @@ class SingleProductViewModel @Inject constructor(
     private val _skuResponse = MutableLiveData<Resource<List<SKUModel>>>()
     val skuResponse: LiveData<Resource<List<SKUModel>>> = _skuResponse
 
+    private val _skuResponse1 = MutableStateFlow<List<SKUModel>>(emptyList())
+    val skuResponse1: StateFlow<List<SKUModel>> = _skuResponse1
+
     private val _categoryResponse = MutableLiveData<Resource<List<CategoryModel>>>()
     val categoryResponse: LiveData<Resource<List<CategoryModel>>> = _categoryResponse
 
