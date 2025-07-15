@@ -197,7 +197,14 @@ class ImportExcelViewModel @Inject constructor(
                                 mrp = 0.0,
                                 counterName = "",
                                 counterId = 0,
-                                scannedStatus = ""
+                                scannedStatus = "",
+                                boxId = 0,
+                                boxName = "",
+                                branchId = 0,
+                                branchName = "",
+                                categoryId = 0,
+                                productId = 0,
+                                designId = 0
                             ).apply {
                                 uhfTagInfo = null
                             }

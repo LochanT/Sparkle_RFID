@@ -12,14 +12,16 @@ import androidx.lifecycle.viewModelScope
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.addSingleItem.BoxModel
+import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
 import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
+import com.loyalstring.rfid.data.model.addSingleItem.CounterModel
 import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
 import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
 import com.loyalstring.rfid.data.model.addSingleItem.ProductModel
 import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
-import com.loyalstring.rfid.data.model.order.BranchResponse
 import com.loyalstring.rfid.data.reader.BarcodeReader
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
 import com.loyalstring.rfid.data.remote.resource.Resource
@@ -64,8 +66,25 @@ class SingleProductViewModel @Inject constructor(
     private val _purityResponse1 = MutableStateFlow<List<PurityModel>>(emptyList())
     val purityResponse1: StateFlow<List<PurityModel>> = _purityResponse1
 
+    private val _counterResponse = MutableLiveData<Resource<List<CounterModel>>>()
+    val counterResponse: LiveData<Resource<List<CounterModel>>> = _counterResponse
+
+    private val _boxResponse = MutableLiveData<Resource<List<BoxModel>>>()
+    val boxResponse: LiveData<Resource<List<BoxModel>>> = _boxResponse
+
+
     var stockResponse by mutableStateOf<Result<List<PurityModel>>?>(null)
         private set
+
+    var counters by mutableStateOf<List<CounterModel>>(emptyList())
+        private set
+    var branches by mutableStateOf<List<BranchModel>>(emptyList())
+        private set
+    var boxes by mutableStateOf<List<BoxModel>>(emptyList())
+        private set
+    var exhibitions by mutableStateOf<List<BranchModel>>(emptyList())
+        private set
+
 
     /*venodr function*/
     fun getAllVendor(request: ClientCodeRequest) {
@@ -105,6 +124,61 @@ class SingleProductViewModel @Inject constructor(
             }
         }
     }
+
+    /*Counter function*/
+    fun getAllCounters(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            try {
+                val response = repository.getAllCounters(request)
+                if (response.isSuccessful) {
+                    counters = response.body().orEmpty()
+                } else {
+                    // Handle API error
+                    Log.e("InventoryViewModel", "API error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                // Handle network or unexpected error
+                Log.e("InventoryViewModel", "Exception: ${e.message}")
+            }
+        }
+    }
+
+    /*Branch function*/
+    fun getAllBranches(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            try {
+                val response = repository.getAllBranches(request)
+                if (response.isSuccessful) {
+                    branches = response.body().orEmpty()
+                } else {
+                    // Handle API error
+                    Log.e("InventoryViewModel", "API error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                // Handle network or unexpected error
+                Log.e("InventoryViewModel", "Exception: ${e.message}")
+            }
+        }
+    }
+
+    /*Box function*/
+    fun getAllBoxes(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            try {
+                val response = repository.getAllBoxes(request)
+                if (response.isSuccessful) {
+                    boxes = response.body().orEmpty()
+                } else {
+                    // Handle API error
+                    Log.e("InventoryViewModel", "API error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                // Handle network or unexpected error
+                Log.e("InventoryViewModel", "Exception: ${e.message}")
+            }
+        }
+    }
+
 
     /*catogory function*/
     fun getAllCategory(request: ClientCodeRequest) {
@@ -184,6 +258,26 @@ class SingleProductViewModel @Inject constructor(
             }
         }
     }
+
+    //Exhibition function
+    fun getAllExhibitions(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            try {
+                val response = repository.getAllBranches(request)
+                if (response.isSuccessful) {
+                    branches = response.body().orEmpty()
+                        .filter { it.BranchType.equals("Exhibition", ignoreCase = true) }
+                } else {
+                    // Handle API error
+                    Log.e("InventoryViewModel", "API error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                // Handle network or unexpected error
+                Log.e("InventoryViewModel", "Exception: ${e.message}")
+            }
+        }
+    }
+
 
     fun saveImageUriToDb(uri: String) {
         viewModelScope.launch {

@@ -5,7 +5,10 @@ import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeReques
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.addSingleItem.BoxModel
+import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
 import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
+import com.loyalstring.rfid.data.model.addSingleItem.CounterModel
 import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
 import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
 import com.loyalstring.rfid.data.model.addSingleItem.ProductModel
@@ -37,6 +40,18 @@ interface RetrofitInterface {
     @POST("api/ProductMaster/GetAllPartyDetails")
     suspend fun getAllVendorDetails(@Body request: ClientCodeRequest): Response<List<VendorModel>>
 
+    /*get all Counters*/
+    @POST("api/ClientOnboarding/GetAllCounters")
+    suspend fun getAllCounters(@Body request: ClientCodeRequest): Response<List<CounterModel>>
+
+    /*get all branches*/
+    @POST("api/ClientOnboarding/GetAllBranchMaster")
+    suspend fun getAllBranches(@Body request: ClientCodeRequest): Response<List<BranchModel>>
+
+    /*get all boxes*/
+    @POST("api/ProductMaster/GetAllBoxMaster")
+    suspend fun getAllBoxes(@Body request: ClientCodeRequest): Response<List<BoxModel>>
+
 
     /*Get all SKU*/
     @POST("api/ProductMaster/GetAllSKU")
@@ -46,7 +61,7 @@ interface RetrofitInterface {
     @POST("api/ProductMaster/GetAllCategory")
     suspend fun getAllCategoryDetails(@Body request: ClientCodeRequest): Response<List<CategoryModel>>
 
-    /*Get all Category*/
+    /*Get all Products*/
     @POST("api/ProductMaster/GetAllProductMaster")
     suspend fun getAllProductDetails(@Body request: ClientCodeRequest): Response<List<ProductModel>>
 
@@ -58,7 +73,7 @@ interface RetrofitInterface {
     @POST("api/ProductMaster/GetAllPurity")
     suspend fun getAllPurityDetails(@Body request: ClientCodeRequest): Response<List<PurityModel>>
 
-    //Get all products
+    //Get all stock
     @POST("api/ProductMaster/GetAllLabeledStock")
     suspend fun getAllLabeledStock(@Body request: RequestBody): Response<List<AlllabelResponse.LabelItem>>
 

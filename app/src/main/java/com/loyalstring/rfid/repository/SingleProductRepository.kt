@@ -1,19 +1,17 @@
 package com.loyalstring.rfid.repository
 
-import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
-import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.addSingleItem.BoxModel
+import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
 import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
+import com.loyalstring.rfid.data.model.addSingleItem.CounterModel
 import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
 import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
 import com.loyalstring.rfid.data.model.addSingleItem.ProductModel
 import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
-import com.loyalstring.rfid.data.model.login.LoginRequest
-import com.loyalstring.rfid.data.model.login.LoginResponse
 import com.loyalstring.rfid.data.remote.api.RetrofitInterface
-import com.loyalstring.rfid.ui.utils.ToastUtils
 import retrofit2.Response
 import javax.inject.Inject
 
@@ -42,6 +40,21 @@ class SingleProductRepository @Inject constructor(
 
     suspend fun getAllPurityDetails(request: ClientCodeRequest): Response<List<PurityModel>> {
         return apiService.getAllPurityDetails(request)
+    }
+    suspend fun getAllCounters(request: ClientCodeRequest): Response<List<CounterModel>> {
+        return apiService.getAllCounters(request)
+    }
+
+    suspend fun getAllBranches(request: ClientCodeRequest): Response<List<BranchModel>> {
+        return apiService.getAllBranches(request)
+    }
+
+    suspend fun getAllBoxes(request: ClientCodeRequest): Response<List<BoxModel>> {
+        return apiService.getAllBoxes(request)
+    }
+
+    suspend fun getAllExhibitions(request: ClientCodeRequest): Response<List<BranchModel>> {
+        return apiService.getAllBranches(request)
     }
 
 

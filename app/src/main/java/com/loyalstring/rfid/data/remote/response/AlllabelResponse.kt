@@ -89,7 +89,11 @@ data class AlllabelResponse(
         @SerializedName("TotalDiamondAmount") val totalDiamondAmount: String?,
         @SerializedName("TotalStonePieces") val totalStonePieces: String?,
         @SerializedName("Status") val status: String?,
-        @SerializedName("Images") val image: String?
+        @SerializedName("Images") val image: String?,
+        @SerializedName("CounterName") val counterName: String?,
+        @SerializedName("CounterId") val counterId: String?,
+        @SerializedName("BoxId") val boxId: String?,
+        @SerializedName("BoxName") val boxName: String?
     )
 }
 

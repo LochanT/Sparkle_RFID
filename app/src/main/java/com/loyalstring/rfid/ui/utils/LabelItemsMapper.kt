@@ -50,10 +50,17 @@ fun AlllabelResponse.LabelItem.toBulkItem(): BulkItem {
         matchedQty = 0,
         unmatchedGrossWt = 0.0,
         mrp = this.mrp?.toDoubleOrNull() ?: 0.0,
-        counterName = "",
-        counterId = 0,
-        scannedStatus = ""
+        counterName = this.counterName ?: "",
+        counterId = this.counterId?.toInt() ?: 0,
+        boxId = this.boxId?.toInt() ?: 0,
+        boxName = this.boxId ?: "",
+        scannedStatus = "",
+        branchId = this.branchId ?: 0,
+        branchName = this.branchName ?: "",
+        categoryId = this.categoryId ?: 0,
+        productId = this.productId ?: 0,
+        designId = this.designId ?: 0
     ).apply {
-        uhfTagInfo = null // ✅ set it separately here
+        uhfTagInfo = null
     }
 }
