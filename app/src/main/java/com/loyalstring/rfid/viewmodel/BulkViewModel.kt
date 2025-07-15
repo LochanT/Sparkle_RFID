@@ -450,7 +450,14 @@ class BulkViewModel @Inject constructor(
                     counterName = "",
                     matchedQty = 0,
                     counterId = 0,
-                    scannedStatus = ""
+                    scannedStatus = "",
+                    boxId = 0,
+                    boxName = "",
+                    branchId = 0,
+                    branchName = "",
+                    categoryId = 0,
+                    productId = 0,
+                    designId = 0
                 ).apply {
                     uhfTagInfo = tag
                 }

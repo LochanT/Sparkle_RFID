@@ -1,7 +1,6 @@
 package com.loyalstring.rfid.data.local.converters
 
 import androidx.room.TypeConverter
-import com.google.gson.Gson
 import com.rscja.deviceapi.entity.UHFTAGInfo
 
 class UHFTAGInfoConverter {

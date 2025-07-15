@@ -1,6 +1,7 @@
 package com.loyalstring.rfid.ui.screens
 
 import android.annotation.SuppressLint
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -45,6 +47,7 @@ import androidx.navigation.NavController
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.navigation.NavItems
 import com.loyalstring.rfid.navigation.listOfNavItems
+import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.poppins
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -59,7 +62,7 @@ fun HomeScreen(
     scope: CoroutineScope
 ) {
     val items = listOfNavItems.filter { it.title != "Home" && it.title != "Logout" }
-
+    val context: Context = LocalContext.current
     Scaffold(
         topBar = {
             TopAppBar(
@@ -110,7 +113,12 @@ fun HomeScreen(
                     contentPadding = PaddingValues(top = 16.dp)
                 ) {
                     items(items) { item ->
-                        HomeGridCard(item = item, navController = navController, size = cardSize)
+                        HomeGridCard(
+                            item = item,
+                            navController = navController,
+                            size = cardSize,
+                            context
+                        )
                     }
                 }
 
@@ -137,11 +145,17 @@ fun HomeScreen(
 
 
 @Composable
-fun HomeGridCard(item: NavItems, navController: NavController, size: Dp) {
+fun HomeGridCard(item: NavItems, navController: NavController, size: Dp, context: Context) {
     Card(
         modifier = Modifier
             .size(size)
-            .clickable { navController.navigate(item.route) },
+            .clickable {
+                if (item.route.isNotEmpty()) {
+                    navController.navigate(item.route)
+                } else {
+                    ToastUtils.showToast(context, "Coming Soon...")
+                }
+            },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)

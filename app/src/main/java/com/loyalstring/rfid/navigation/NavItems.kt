@@ -25,8 +25,13 @@ enum class Screens(val route: String) {
     InventoryMenuScreen("inventory"),
     SearchScreen("search_screen"),
     EditProductScreen("edit_screen"),
+    ScanCounterScreen("scan_counter"),
+    ScanBranchScreen("scan_branch"),
+    ScanExhibitionScreen("scan_exhib"),
+    ScanBoxScreen("scan_box"),
     OrderScreen("order"),
-    InvoiceScreen("invoiceScreen")
+    InvoiceScreen("invoiceScreen"),
+    StockTransferScreen("stock_transfer")
 
 
 }
@@ -71,7 +76,7 @@ val listOfNavItems = listOf<NavItems>(
         title = "Stock\nTransfer",
         unselectedIcon= Icons.Outlined.FavoriteBorder,
         selectedIcon = ( R.drawable.stock_tr_gr_svg),
-        route = ""
+        route = "stock_transfer"
 
     ), NavItems(
         title = "Report",
