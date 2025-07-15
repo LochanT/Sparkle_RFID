@@ -1,5 +1,7 @@
 package com.loyalstring.rfid.data.model.order
 
+import java.io.Serializable
+
 data class CustomOrderResponse(
     val CustomOrderId: Int,
     val CustomerId: Int,
@@ -83,4 +85,4 @@ data class CustomOrderResponse(
     val CustomOrderItem: List<CustomOrderItem>,
     val Payments: List<Payment>,
     val Customer: Customer
-)
+): Serializable

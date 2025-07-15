@@ -66,6 +66,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltVi
                 userPrefs.saveToken(response.token.orEmpty())
                 userPrefs.saveEmployee(response.employee)
                 userPrefs.setLoggedIn(true)
+                userPrefs.saveClient(response.employee?.clients!!)
                 navController.navigate(Screens.HomeScreen.route)
             }
         }

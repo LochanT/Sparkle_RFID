@@ -10,6 +10,7 @@ import com.loyalstring.rfid.data.model.order.BranchResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
+import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import com.loyalstring.rfid.data.model.order.OrderItemModel
 import com.loyalstring.rfid.data.remote.api.RetrofitInterface
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +40,13 @@ class OrderRepository @Inject constructor(
     suspend fun addOrder(customOrderRequest: CustomOrderRequest): Response<CustomOrderResponse> {
         return apiService.addOrder(customOrderRequest)
     }
+
+
+    suspend fun getLastOrderNo(clientCodeRequest: ClientCodeRequest): Response<LastOrderNoResponse> {
+        return apiService.getLastOrderNo(clientCodeRequest)
+    }
+
+
 
     suspend fun insertOrderItems(items: OrderItem) {
         orderItemDao.insertOrderItem(items)

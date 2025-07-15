@@ -2,21 +2,22 @@ package com.loyalstring.rfid.navigation
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.DrawerState
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.loyalstring.rfid.data.local.entity.BulkItem
+import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.ui.screens.AddProductScreen
 import com.loyalstring.rfid.ui.screens.BulkProductScreen
 import com.loyalstring.rfid.ui.screens.EditProductScreen
 import com.loyalstring.rfid.ui.screens.HomeScreen
 import com.loyalstring.rfid.ui.screens.ImportExcelScreen
 import com.loyalstring.rfid.ui.screens.InventoryMenuScreen
+import com.loyalstring.rfid.ui.screens.InvoiceScreen
 import com.loyalstring.rfid.ui.screens.LoginScreen
 import com.loyalstring.rfid.ui.screens.OrderScreen
 import com.loyalstring.rfid.ui.screens.ProductListScreen
@@ -30,6 +31,7 @@ import com.loyalstring.rfid.ui.utils.UserPreferences
 import kotlinx.coroutines.CoroutineScope
 
 
+@RequiresApi(Build.VERSION_CODES.R)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun AppNavigation(
@@ -130,6 +132,30 @@ fun AppNavigation(
                 navController,
                 userPreferences
             )
+        }
+
+      /*  composable(Screens.InvoiceScreen.route) {
+            InvoiceScreen(
+                navController = navController,
+                onBack = { navController.popBackStack() },
+                item = it
+
+            )
+
+        }*/
+
+        composable(Screens.InvoiceScreen.route) { backStackEntry ->
+            val item = navController.previousBackStackEntry?.savedStateHandle?.get<CustomOrderResponse>("customerOrderResponse")
+
+            item?.let {
+                InvoiceScreen(
+                    navController = navController,
+                    onBack = { navController.popBackStack() },
+                    item = it
+                )
+            } /*?: run {
+                Text("Error: No item passed")
+            }*/
         }
 
     }

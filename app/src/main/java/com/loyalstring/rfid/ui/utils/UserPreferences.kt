@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import androidx.core.content.edit
+import com.loyalstring.rfid.data.model.login.Clients
 
 class UserPreferences @Inject constructor(
     @ApplicationContext private val context: Context
@@ -23,6 +24,7 @@ class UserPreferences @Inject constructor(
         private const val KEY_REMEMBER_ME = "remember_me"
         private const val KEY_LOGGED_IN = "logged_in"
         private const val KEY_SHEET_URL = "sheet_url"
+        private const val KEY_CLIENT = "client"
 
         private val gson = Gson()
 
@@ -97,5 +99,15 @@ class UserPreferences @Inject constructor(
 
     fun logout() {
         prefs.edit() { clear() }
+    }
+
+    fun saveClient(client: Clients) {
+        val json = gson.toJson(client)
+        prefs.edit { putString(KEY_CLIENT, json) }
+    }
+
+    fun getClient(): Clients? {
+        val json = prefs.getString(KEY_CLIENT, null)
+        return if (json != null) gson.fromJson(json, Clients::class.java) else null
     }
 }

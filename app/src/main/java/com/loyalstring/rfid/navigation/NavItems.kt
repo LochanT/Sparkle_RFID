@@ -26,6 +26,7 @@ enum class Screens(val route: String) {
     SearchScreen("search_screen"),
     EditProductScreen("edit_screen"),
     OrderScreen("order"),
+    InvoiceScreen("invoiceScreen")
 
 
 }

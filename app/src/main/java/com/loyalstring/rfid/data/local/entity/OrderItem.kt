@@ -51,8 +51,13 @@ data class OrderItem(
     val purityid:Int,
     val counterId:Int,
     val counterName: String,
-    val companyId:Int
+    val companyId:Int,
+    val epc:String,
+    val tid:String,
 
-
-
+    val todaysRate:String,
+    val makingPercentage:String,
+    val makingFixedAmt:String,
+    val makingFixedWastage:String,
+    val makingPerGram:String
 )

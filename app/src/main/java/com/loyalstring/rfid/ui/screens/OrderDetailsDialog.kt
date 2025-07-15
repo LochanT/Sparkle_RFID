@@ -55,7 +55,6 @@ import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.Int
 
 
 // Sample OrderDetails data class
@@ -104,15 +103,9 @@ fun OrderDetailsDialog(
     var orderDate by remember { mutableStateOf("") }
     var deliverDate by remember { mutableStateOf("") }
 
-    //val branchList = listOf("Branch 1", "Branch 2", "Branch 3")
 
-    //val branchList by orderViewModel.branchResponse.collectAsState()
-    val exhibitionList by orderViewModel.branchResponse.collectAsState()
-    //   val purityList = listOf("Purity 1", "Purity 2")
-    //  val purityList = (viewModel.purityResponse.observeAsState().value as? Resource.Success)?.data
     val purityList by singleProductViewModel.purityResponse1.collectAsState()
-    val sizeList = listOf("Size 1", "Size 2")
-    val lengthList = listOf("Length 1", "Length 2")
+
     val colorsList = listOf(
         "Yellow Gold",
         "White Gold",
@@ -168,15 +161,29 @@ fun OrderDetailsDialog(
                         .fillMaxWidth()
                         .height(48.dp) // Toolbar-like height
                         .background(Color.DarkGray),
-                    contentAlignment = Alignment.CenterStart // or Alignment.Center for centered text
+                    contentAlignment = Alignment.Center   // or Alignment.Center for centered text
                 ) {
-                    Text(
-                        text = "Order Details",
-                        fontSize = 18.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(start = 16.dp) // Add start padding if using CenterStart
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 16.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.new_order_icon), // or use any Material icon you prefer
+                            contentDescription = "Order Details",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text(
+                            text = "Order Details",
+                            fontSize = 18.sp,
+                            color = Color.White
+                        )
+                    }
                 }
+
 
                 Spacer(modifier = Modifier.height(5.dp))
                 Column(
@@ -185,23 +192,6 @@ fun OrderDetailsDialog(
                         .padding(8.dp)
                     // .verticalScroll(rememberScrollState())
                 ) {
-                    // Title
-                    /* Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp) // Toolbar-like height
-                        .background(Color.DarkGray),
-                    contentAlignment = Alignment.CenterStart // or Alignment.Center for centered text
-                ) {
-                    Text(
-                        text = "Order Details",
-                        fontSize = 18.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(start = 16.dp) // Add start padding if using CenterStart
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))*/
-
                     // Use your DropdownMenuField & input rows here
                     // Example: Branch dropdown
                     Surface(
@@ -584,52 +574,6 @@ fun OrderDetailsDialog(
                     }
                     Spacer(modifier = Modifier.height(4.dp))
 
-
-                    /*    Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Order Date",
-                                modifier = Modifier
-                                    .weight(0.4f)
-                                    .padding(start = 2.dp),
-                                fontSize = 12.sp,
-                                color = Color.Black
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(0.9f)
-                                    .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
-                                    .height(32.dp)
-
-                                    .background(Color.White, RoundedCornerShape(4.dp)),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                if (orderDate.isEmpty()) {
-                                    Text(
-                                        text = "Enter Order Date",
-                                        fontSize = 13.sp,
-                                        color = Color.Gray,
-                                        modifier = Modifier.padding(start = 4.dp)
-                                    )
-                                }
-
-                                BasicTextField(
-                                    value = orderDate,
-                                    onValueChange = { orderDate = it },
-                                    singleLine = true,
-                                    textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(2.dp) // minimal inner padding for cursor spacing
-                                )
-                            }
-                        }*/
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -780,235 +724,8 @@ fun OrderDetailsDialog(
                         Spacer(modifier = Modifier.width(8.dp)) // Add space between buttons
                         GradientButtonIcon(
                             text = "OK",
-                         /*   onClick = {
-                                *//*  OrderDetails(
-                                      branch, exhibition, remark, purity, size, length,
-                                      typeOfColors, screwType, polishType, finePercentage, wastage
-                                  )*//*
-                                val request = CustomOrderRequest(
-                                    CustomOrderId = 0,
-                                    CustomerId = selectedCustomerId.toString(),
-                                    ClientCode = employee?.clientCode.toString(),
-                                    OrderId = 0,
-                                    TotalAmount = "",
-                                    PaymentMode = "",
-                                    Offer = null,
-                                    Qty = "",
-                                    GST = "",
-                                    OrderStatus = "",
-                                    MRP = "",
-                                    VendorId = 12,
-                                    TDS = null,
-                                    PurchaseStatus = null,
-                                    GSTApplied = "",
-                                    Discount = "",
-                                    TotalNetAmount = "",
-                                    TotalGSTAmount = "",
-                                    TotalPurchaseAmount = "",
-                                    ReceivedAmount = "",
-                                    TotalBalanceMetal = "",
-                                    BalanceAmount = "",
-                                    TotalFineMetal = "",
-                                    CourierCharge = null,
-                                    SaleType = null,
-                                    OrderDate = "2025-07-08",
-                                    OrderCount = "1",
-                                    AdditionTaxApplied = "0",
-                                    CategoryId = 2,
-                                    OrderNo = "ORD123456",
-                                    DeliveryAddress = "123 Street, Mumbai",
-                                    BillType = "Retail",
-                                    UrdPurchaseAmt = null,
-                                    BilledBy = "Employee1",
-                                    SoldBy = "Employee1",
-                                    CreditSilver = null,
-                                    CreditGold = null,
-                                    CreditAmount = null,
-                                    BalanceAmt = "25000",
-                                    BalanceSilver = null,
-                                    BalanceGold = null,
-                                    TotalSaleGold = null,
-                                    TotalSaleSilver = null,
-                                    TotalSaleUrdGold = null,
-                                    TotalSaleUrdSilver = null,
-                                    FinancialYear = "2024-25",
-                                    BaseCurrency = "INR",
-                                    TotalStoneWeight = "0.5",
-                                    TotalStoneAmount = "2000",
-                                    TotalStonePieces = "3",
-                                    TotalDiamondWeight = "0.3",
-                                    TotalDiamondPieces = "2",
-                                    TotalDiamondAmount = "1500",
-                                    FineSilver = "0",
-                                    FineGold = "5.0",
-                                    DebitSilver = null,
-                                    DebitGold = null,
-                                    PaidMetal = "5.0",
-                                    PaidAmount = "25000",
-                                    TotalAdvanceAmt = null,
-                                    TaxableAmount = "47000",
-                                    TDSAmount = null,
-                                    CreatedOn = "2025-07-08",
-                                    LastUpdated = "2025-07-08",
-                                    StatusType = true,
-                                    FineMetal = "5.0",
-                                    BalanceMetal = "0.0",
-                                    AdvanceAmt = "0",
-                                    PaidAmt = "25000",
-                                    TaxableAmt = "47000",
-                                    GstAmount = "2500",
-                                    GstCheck = "true",
-                                    Category = "Ring",
-                                    TDSCheck = "false",
-                                    Remark = "Urgent order",
-                                    OrderItemId = null,
-                                    StoneStatus = null,
-                                    DiamondStatus = null,
-                                    BulkOrderId = null,
-                                    CustomOrderItem = listOf(
-                                        CustomOrderItem(
-                                            CustomOrderId = 1,
-                                            OrderDate = "2025-07-08",
-                                            DeliverDate = "2025-07-10",
-                                            SKUId = 101,
-                                            SKU = "SKU123",
-                                            CategoryId = 5,
-                                            VendorId = null,
-                                            CategoryName = "Rings",
-                                            CustomerName = "John Doe",
-                                            VendorName = null,
-                                            ProductId = 10,
-                                            ProductName = "Gold Ring",
-                                            DesignId = 8,
-                                            DesignName = "Classic",
-                                            PurityId = 22,
-                                            PurityName = "22KT",
-                                            GrossWt = "15.0",
-                                            StoneWt = "1.0",
-                                            DiamondWt = "0.5",
-                                            NetWt = "13.5",
-                                            Size = "14",
-                                            Length = "0",
-                                            TypesOdColors = "Yellow",
-                                            Quantity = "1",
-                                            RatePerGram = "5500",
-                                            MakingPerGram = "300",
-                                            MakingFixed = "0",
-                                            FixedWt = "0",
-                                            MakingPercentage = "12",
-                                            DiamondPieces = "2",
-                                            DiamondRate = "50000",
-                                            DiamondAmount = "25000",
-                                            StoneAmount = "1000",
-                                            ScrewType = "Normal",
-                                            Polish = "Mirror",
-                                            Rhodium = "No",
-                                            SampleWt = "0",
-                                            Image = "",
-                                            ItemCode = "ITEM123",
-                                            CustomerId = 201,
-                                            MRP = "95000",
-                                            HSNCode = "7113",
-                                            UnlProductId = 0,
-                                            OrderBy = "Admin",
-                                            StoneLessPercent = "0",
-                                            ProductCode = "PRD123",
-                                            TotalWt = "15.0",
-                                            BillType = "Retail",
-                                            FinePercentage = "91.6",
-                                            ClientCode = "LS000241",
-                                            OrederId = null,
-                                            CreatedOn = "2025-07-08",
-                                            LastUpdated = "2025-07-08",
-                                            StatusType = true,
-                                            PackingWeight = "0.2",
-                                            MetalAmount = "74250",
-                                            OldGoldPurchase = null,
-                                            Amount = "100000",
-                                            totalGstAmount = "5000",
-                                            finalPrice = "105000",
-                                            MakingFixedWastage = "200",
-                                            Description = "Gold Ring with Diamonds",
-                                            CompanyId = 1,
-                                            LabelledStockId = null,
-                                            TotalStoneWeight = "1.0",
-                                            BranchId = 2,
-                                            BranchName = "Mumbai",
-                                            Exhibition = "No",
-                                            CounterId = 3,
-                                            EmployeeId = 4,
-                                            OrderNo = "ORD20250708",
-                                            OrderStatus = "Pending",
-                                            DueDate = "2025-07-15",
-                                            Remark = "Urgent delivery",
-                                            Id = 0,
-                                            PurchaseInvoiceNo = null,
-                                            Purity = "22KT",
-                                            Status = null,
-                                            URDNo = null,
-                                            Stones = emptyList(),
-                                            Diamond = emptyList()
-                                        )
-                                    ),
-                                    Payments = listOf(
-                                        Payment("")
-                                    ),
-                                    uRDPurchases = listOf(
-                                        URDPurchase("")
-                                    ),
-                                    Customer = Customer(
-                                        FirstName = selectedCustomer?.FirstName.orEmpty(),
-                                        LastName = selectedCustomer?.LastName.orEmpty(),
-                                        PerAddStreet = "",
-                                        CurrAddStreet = "",
-                                        Mobile = selectedCustomer?.Mobile.orEmpty(),
-                                        Email = selectedCustomer?.Email.orEmpty(),
-                                        Password = "",
-                                        CustomerLoginId = selectedCustomer?.Email.orEmpty(), // usually same as Email
-                                        DateOfBirth = "",
-                                        MiddleName = "",
-                                        PerAddPincode = "",
-                                        Gender = "",
-                                        OnlineStatus = "",
-                                        CurrAddTown = selectedCustomer?.CurrAddTown.orEmpty(),
-                                        CurrAddPincode = "",
-                                        CurrAddState = selectedCustomer?.CurrAddState.orEmpty(),
-                                        PerAddTown = "",
-                                        PerAddState = "",
-                                        GstNo = selectedCustomer?.GstNo.orEmpty(),
-                                        PanNo = selectedCustomer?.PanNo.orEmpty(),
-                                        AadharNo = "",
-                                        BalanceAmount = "0",
-                                        AdvanceAmount = "0",
-                                        Discount = "0",
-                                        CreditPeriod = "",
-                                        FineGold = "0",
-                                        FineSilver = "0",
-                                        ClientCode = selectedCustomer?.ClientCode.orEmpty(),
-                                        VendorId = 0,
-                                        AddToVendor = false,
-                                        CustomerSlabId = 0,
-                                        CreditPeriodId = 0,
-                                        RateOfInterestId = 0,
-                                        Remark = "",
-                                        Area = "",
-                                        City = selectedCustomer?.City.orEmpty(),
-                                        Country = selectedCustomer?.Country.orEmpty(),
-                                        Id = selectedCustomer?.Id ?: 0,
-                                        CreatedOn = "2025-07-08",     // as per your fixed value
-                                        LastUpdated = "2025-07-08",   // as per your fixed value
-                                        StatusType = true
-                                    )
-                                )
 
-
-                                orderViewModel.addOrderCustomer(request)
-                                onDismiss
-                            },
-
-*/
                             onClick = {
-
                                 val orderItem = OrderItem(
                                     branchId = "1",
                                     branchName = branch,
@@ -1054,7 +771,14 @@ fun OrderDetailsDialog(
                                  purityid = selectedItem?.PurityId!!,
                                  counterId = selectedItem?.CounterId!!,
                                  counterName ="",
-                                 companyId = 0
+                                    companyId = 0,
+                                    epc = selectedItem?.TIDNumber!!,
+                                    tid = selectedItem?.TIDNumber!!,
+                                    todaysRate = selectedItem?.TodaysRate.toString(),
+                                    makingPercentage = selectedItem?.MakingPercentage.toString(),
+                                    makingFixedAmt = selectedItem?.MakingFixedAmt.toString(),
+                                    makingFixedWastage = selectedItem?.MakingFixedWastage.toString(),
+                                    makingPerGram = selectedItem?.MakingPerGram.toString()
 
 
 
@@ -1072,10 +796,6 @@ fun OrderDetailsDialog(
                             iconDescription = "Check Icon",
                             fontSize = 12
                         )
-
-                        // Observe the ViewModel's response
-                        // Handle response from the ViewModel
-
                     }
                 }
             }
@@ -1084,72 +804,6 @@ fun OrderDetailsDialog(
 }
 
 
-/*@Composable
-fun DropdownMenuField(
-    label: String,
-    options: List<BranchResponse>,
-    selectedValue: String,
-    expanded: Boolean,
-    onValueChange: (String) -> Unit,
-    onExpandedChange: (Boolean) -> Unit,
-    labelColor: Color = Color.Black
-) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 2.dp) // ⬅️ reduced vertical padding
-        ) {
-            Text(
-                text = label,
-                modifier = Modifier
-                    .weight(0.3f)
-                    .padding(start = 8.dp),
-                fontSize = 12.sp,
-                color = Color.Black
-            )
-            Box(
-                modifier = Modifier
-                    .weight(0.8f)
-                    .padding(start = 4.dp) // ⬅️ reduced horizontal padding
-                    .clickable { onExpandedChange(true) }
-                    .background(
-                        Color.White,
-                        shape = RoundedCornerShape(4.dp)
-                    ) // ⬅️ slightly smaller corners
-                    .padding(horizontal = 8.dp, vertical = 2.dp) // ⬅️ reduced inner padding
-            ) {
-                Text(
-                    text = if (selectedValue.isEmpty()) "Select $label" else selectedValue,
-                    style = TextStyle(fontSize = 14.sp, color = Color.Black),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.Center)
-                )
-                Icon(
-                    imageVector = Icons.Filled.ArrowDropDown,
-                    contentDescription = "Dropdown",
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                )
-            }
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { onExpandedChange(false) }
-        ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option.BranchName) },
-                    onClick = {
-                        onValueChange(option.BranchName)
-                        onExpandedChange(false)
-                    }
-                )
-            }
-        }
-    }
-}*/
 
 @Composable
 fun <T> DropdownMenuField(

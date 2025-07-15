@@ -17,9 +17,11 @@ import com.loyalstring.rfid.data.model.order.BranchResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
+import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import com.loyalstring.rfid.data.model.order.OrderItemModel
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.OrderRepository
+
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -27,6 +29,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+
 
 @HiltViewModel
 class OrderViewModel @Inject constructor(
@@ -46,11 +50,19 @@ class OrderViewModel @Inject constructor(
     private val _branchResponse = MutableStateFlow<List<BranchResponse>>(emptyList())
     val branchResponse: StateFlow<List<BranchResponse>> = _branchResponse
 
+    private val _lastOrderNOResponse = MutableStateFlow(LastOrderNoResponse())
+    val lastOrderNoresponse: StateFlow<LastOrderNoResponse> = _lastOrderNOResponse
+
     private val _orderResponse = MutableStateFlow<CustomOrderResponse?>(null) // ✅
     val orderResponse: StateFlow<CustomOrderResponse?> = _orderResponse
 
     private val _allOrderItems = MutableStateFlow<List<OrderItem>>(emptyList())
     val allOrderItems: StateFlow<List<OrderItem>> = _allOrderItems
+
+    fun setOrderResponse(response: CustomOrderResponse) {
+        _orderResponse.value = response
+    }
+
 
 
     /*add employee*/
@@ -164,6 +176,23 @@ class OrderViewModel @Inject constructor(
             } catch (e: Exception) {
                 _orderResponse.value = _orderResponse.value
                 Log.e("OrderViewModel", "Custom Order Exception: ${e.message}")
+            }
+        }
+    }
+
+    /*last order no*/
+    fun fetchLastOrderNo(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            try {
+                val response = repository.getLastOrderNo(request)
+                if (response.isSuccessful && response.body() != null) {
+                    _lastOrderNOResponse.value = response.body()!!
+                    Log.d("OrderViewModel", "Last Order No: ${response.body()}")
+                } else {
+                    Log.e("OrderViewModel", "Error: ${response.code()} ${response.message()}")
+                }
+            } catch (e: Exception) {
+                Log.e("OrderViewModel", "Exception: ${e.message}")
             }
         }
     }

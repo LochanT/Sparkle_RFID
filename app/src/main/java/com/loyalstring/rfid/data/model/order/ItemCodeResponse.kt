@@ -111,7 +111,10 @@ data class ItemCodeResponse(
     @SerializedName("CollectionNameSKU") var CollectionNameSKU: String? = null,
     @SerializedName("PackingWeight") var PackingWeight: Int? = null,
     @SerializedName("TotalWeight") var TotalWeight: Double? = null,
-    @SerializedName("Stones") var Stones: ArrayList<String> = arrayListOf(),
-    @SerializedName("Diamonds") var Diamonds: ArrayList<String> = arrayListOf()
+    @SerializedName("Stones")
+    var Stones: MutableList<Stone> = mutableListOf(),
+
+    @SerializedName("Diamonds")
+    var Diamonds: MutableList<Diamond> = mutableListOf()
 
 )

@@ -18,6 +18,7 @@ import com.loyalstring.rfid.data.model.order.BranchResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
+import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -97,11 +98,18 @@ interface RetrofitInterface {
     @POST("api/ProductMaster/GetAllLabeledStock") // Replace with your actual API endpoint
     suspend fun getAllItemCodeList(@Body clientCodeRequest: ClientCodeRequest): Response<List<ItemCodeResponse>>
 
+    // get all branchList
     @POST("api/ClientOnboarding/GetAllBranchMaster")
     suspend fun getAllBranchList(@Body clientCodeRequest: ClientCodeRequest): Response<List<BranchResponse>>
 
+    //addCustomerOrder
     @POST("/api/Order/AddCustomOrder")
     suspend fun addOrder(@Body customerOrderRequest: CustomOrderRequest): Response<CustomOrderResponse>
+
+
+    //get last order no
+    @POST("api/Order/LastOrderNo")
+    suspend fun getLastOrderNo(@Body clientCodeRequest: ClientCodeRequest): Response<LastOrderNoResponse>
 
 
 

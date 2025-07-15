@@ -57,7 +57,6 @@ import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.toString
 
 
 // Sample OrderDetails data class
@@ -123,23 +122,6 @@ fun OrderDetailsDialogEditAndDisplay(
     var orderDate by remember { mutableStateOf("") }
     var deliverDate by remember { mutableStateOf("") }
 
-
-
-
-   //  exhibition =selectedItem.e
-   /* var remark by remember { mutableStateOf("") }
-    var purity by remember { mutableStateOf("") }
-    var size by remember { mutableStateOf("") }
-    var length by remember { mutableStateOf("") }
-    var typeOfColors by remember { mutableStateOf("") }
-    var screwType by remember { mutableStateOf("") }
-    var polishType by remember { mutableStateOf("") }
-    var finePercentage by remember { mutableStateOf("") }
-    var wastage by remember { mutableStateOf("") }
-    var orderDate by remember { mutableStateOf("") }
-    var deliverDate by remember { mutableStateOf("") }*/
-
-
     var productName by remember { mutableStateOf("") }
     var itemCode by remember { mutableStateOf("") }
     var sku by remember { mutableStateOf("") }
@@ -184,18 +166,9 @@ fun OrderDetailsDialogEditAndDisplay(
     hallMarkAmt=selectedItem?.hallmarkAmt.toString()
     mrp=selectedItem?.mrp.toString()
 
-
-
-    //val branchList = listOf("Branch 1", "Branch 2", "Branch 3")
-
-    //val branchList by orderViewModel.branchResponse.collectAsState()
-    val exhibitionList by orderViewModel.branchResponse.collectAsState()
-    //   val purityList = listOf("Purity 1", "Purity 2")
-    //  val purityList = (viewModel.purityResponse.observeAsState().value as? Resource.Success)?.data
     val purityList by singleProductViewModel.purityResponse1.collectAsState()
     val skuList by singleProductViewModel.skuResponse1.collectAsState()
-    val sizeList = listOf("Size 1", "Size 2")
-    val lengthList = listOf("Length 1", "Length 2")
+
     val colorsList = listOf(
         "Yellow Gold",
         "White Gold",
@@ -252,14 +225,27 @@ fun OrderDetailsDialogEditAndDisplay(
                         .fillMaxWidth()
                         .height(48.dp) // Toolbar-like height
                         .background(Color.DarkGray),
-                    contentAlignment = Alignment.CenterStart // or Alignment.Center for centered text
+                    contentAlignment = Alignment.Center   // or Alignment.Center for centered text
                 ) {
-                    Text(
-                        text = "Order Details",
-                        fontSize = 18.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(start = 16.dp) // Add start padding if using CenterStart
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 16.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.order_edit_icon), // or use any Material icon you prefer
+                            contentDescription = "Custom Order Icon",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text(
+                            text = "Custom Order Fields",
+                            fontSize = 18.sp,
+                            color = Color.White
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(5.dp))
@@ -269,23 +255,6 @@ fun OrderDetailsDialogEditAndDisplay(
                         .padding(8.dp)
                     // .verticalScroll(rememberScrollState())
                 ) {
-                    // Title
-                    /* Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp) // Toolbar-like height
-                        .background(Color.DarkGray),
-                    contentAlignment = Alignment.CenterStart // or Alignment.Center for centered text
-                ) {
-                    Text(
-                        text = "Order Details",
-                        fontSize = 18.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(start = 16.dp) // Add start padding if using CenterStart
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))*/
-
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -295,13 +264,6 @@ fun OrderDetailsDialogEditAndDisplay(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center // Center horizontally
                     ) {
-                      /*  Icon(
-                            painter = painterResource(id = R.drawable.add_photo), // Replace with your image resource
-                            contentDescription = "Center Icon",
-                            modifier = Modifier.size(32.dp), // Set desired icon size
-                            tint = Color.Black // Optional tint color
-                        )*/
-
                         AsyncImage(
                             model =selectedItem?.image,
                             contentDescription = "Image from URL",
@@ -339,7 +301,8 @@ fun OrderDetailsDialogEditAndDisplay(
                                     onValueChange = { branch = it },
                                     onExpandedChange = { expandedBranch = it },
                                     labelColor = Color.Black,
-                                    getOptionLabel = { it.BranchName }
+                                    getOptionLabel = { it.BranchName },
+                                    enabled = false
                                 )
                             }
                         }
@@ -381,6 +344,7 @@ fun OrderDetailsDialogEditAndDisplay(
 
                             BasicTextField(
                                 value = productName,
+                                readOnly = true,
                                 onValueChange = { productName = it },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
@@ -428,6 +392,7 @@ fun OrderDetailsDialogEditAndDisplay(
 
                             BasicTextField(
                                 value = itemCode,
+                                readOnly = true,
                                 onValueChange = { itemCode = it },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
@@ -785,8 +750,8 @@ fun OrderDetailsDialogEditAndDisplay(
                                 expandedSKU,
                                 { sku = it },
                                 { expandedSKU = it },
-                                labelColor = Color.Black,
-                                getOptionLabel = { it.PurityName.toString() }
+                                getOptionLabel = { it.PurityName.toString() },
+                                enabled = false
                             )
                         }
                     }
@@ -813,8 +778,8 @@ fun OrderDetailsDialogEditAndDisplay(
                                 expandedPurity,
                                 { purity = it },
                                 { expandedPurity = it },
-                                labelColor = Color.Black,
-                                getOptionLabel = { it.PurityName.toString() }
+                                getOptionLabel = { it.PurityName.toString() },
+                                enabled = false
                             )
                         }
                     }
@@ -937,8 +902,8 @@ fun OrderDetailsDialogEditAndDisplay(
                                 expandedColors,
                                 { typeOfColors = it },
                                 { expandedColors = it },
-                                labelColor = Color.Black,
-                                getOptionLabel = { it.toString() }
+                                getOptionLabel = { it.toString() },
+                                enabled = true
                             )
                         }
                     }
@@ -966,8 +931,8 @@ fun OrderDetailsDialogEditAndDisplay(
                                 expandedScrew,
                                 { screwType = it },
                                 { expandedScrew = it },
-                                labelColor = Color.Black,
-                                getOptionLabel = { it.toString() }
+                                getOptionLabel = { it.toString() },
+                                enabled = true
                             )
                         }
                     }
@@ -995,8 +960,8 @@ fun OrderDetailsDialogEditAndDisplay(
                                 expandedPolish,
                                 { polishType = it },
                                 { expandedPolish = it },
-                                labelColor = Color.Black,
-                                getOptionLabel = { it.toString() }
+                                getOptionLabel = { it.toString() },
+                                enabled = true
                             )
                         }
                     }
@@ -1094,52 +1059,6 @@ fun OrderDetailsDialogEditAndDisplay(
                     }
                     Spacer(modifier = Modifier.height(4.dp))
 
-
-                    /*    Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Order Date",
-                                modifier = Modifier
-                                    .weight(0.4f)
-                                    .padding(start = 2.dp),
-                                fontSize = 12.sp,
-                                color = Color.Black
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(0.9f)
-                                    .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
-                                    .height(32.dp)
-
-                                    .background(Color.White, RoundedCornerShape(4.dp)),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                if (orderDate.isEmpty()) {
-                                    Text(
-                                        text = "Enter Order Date",
-                                        fontSize = 13.sp,
-                                        color = Color.Gray,
-                                        modifier = Modifier.padding(start = 4.dp)
-                                    )
-                                }
-
-                                BasicTextField(
-                                    value = orderDate,
-                                    onValueChange = { orderDate = it },
-                                    singleLine = true,
-                                    textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(2.dp) // minimal inner padding for cursor spacing
-                                )
-                            }
-                        }*/
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1429,9 +1348,43 @@ fun OrderDetailsDialogEditAndDisplay(
                             fontSize = 12
                         )
                         Spacer(modifier = Modifier.width(8.dp)) // Add space between buttons
+
+                        val netWt: Double = (selectedItem?.grWt?.toDoubleOrNull()
+                            ?: 0.0) - (selectedItem?.stoneWt?.toDoubleOrNull() ?: 0.0)
+
+                        val finePercent = selectedItem?.finePer?.toDoubleOrNull() ?: 0.0
+                        val wastagePercent = selectedItem?.wastage?.toDoubleOrNull() ?: 0.0
+
+
+                        val finewt: Double =
+                            ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
+                        val metalAmt: Double = (selectedItem?.nWt?.toDoubleOrNull()
+                            ?: 0.0) * (selectedItem?.todaysRate?.toDoubleOrNull() ?: 0.0)
+
+                        val makingPerGram =
+                            selectedItem?.makingPerGram?.toDoubleOrNull() ?: 0.0
+                        val fixMaking = selectedItem?.makingFixedAmt?.toDoubleOrNull() ?: 0.0
+                        val extraMakingPercent =
+                            selectedItem?.makingPercentage?.toDoubleOrNull() ?: 0.0
+                        val fixWastage = selectedItem?.makingFixedWastage?.toDoubleOrNull() ?: 0.0
+
+                        val makingAmt: Double =
+                            ((makingPerGram / 100.0) * netWt) +
+                                    fixMaking +
+                                    ((extraMakingPercent / 100.0) * netWt) +
+                                    fixWastage
+
+                        val totalStoneAmount =
+                            selectedItem?.stoneAmt?.toDoubleOrNull() ?: 0.0
+                        val diamondAmount =
+                            selectedItem?.diamondAmt?.toDoubleOrNull() ?: 0.0
+                        val safeMetalAmt = metalAmt ?: 0.0
+                        val safeMakingAmt = makingAmt ?: 0.0
+
+                        val itemAmt: Double =
+                            totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt
                         GradientButtonIcon(
                             text = "OK",
-
                             onClick = {
 
                                 val orderItem = OrderItem(
@@ -1452,7 +1405,7 @@ fun OrderDetailsDialogEditAndDisplay(
                                     productName = productName,
                                     itemCode = itemCode,
                                     rfidCode = selectedItem?.rfidCode.toString(),
-                                    itemAmt = selectedItem?.itemAmt,
+                                    itemAmt = itemAmt.toString(),
                                     grWt = grossWT,
                                     nWt = NetWt,
                                     stoneAmt =stoneAmt ,
@@ -1478,7 +1431,14 @@ fun OrderDetailsDialogEditAndDisplay(
                                     purityid = selectedItem?.purityid!!,
                                     counterId = selectedItem?.counterId!!,
                                     counterName ="",
-                                    companyId = 0
+                                    companyId = 0,
+                                    epc = selectedItem?.epc!!,
+                                    tid = selectedItem?.tid!!,
+                                    todaysRate = selectedItem?.todaysRate.toString(),
+                                    makingPercentage = extraMakingPercent.toString(),
+                                    makingFixedAmt = fixMaking.toString(),
+                                    makingFixedWastage = fixWastage.toString(),
+                                    makingPerGram = makingPerGram.toString()
 
 
                                 )
@@ -1494,84 +1454,12 @@ fun OrderDetailsDialogEditAndDisplay(
                             iconDescription = "Check Icon",
                             fontSize = 12
                         )
-
-                        // Observe the ViewModel's response
-                        // Handle response from the ViewModel
-
                     }
                 }
             }
         }
     }
 }
-
-
-/*@Composable
-fun DropdownMenuField(
-    label: String,
-    options: List<BranchResponse>,
-    selectedValue: String,
-    expanded: Boolean,
-    onValueChange: (String) -> Unit,
-    onExpandedChange: (Boolean) -> Unit,
-    labelColor: Color = Color.Black
-) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 2.dp) // ⬅️ reduced vertical padding
-        ) {
-            Text(
-                text = label,
-                modifier = Modifier
-                    .weight(0.3f)
-                    .padding(start = 8.dp),
-                fontSize = 12.sp,
-                color = Color.Black
-            )
-            Box(
-                modifier = Modifier
-                    .weight(0.8f)
-                    .padding(start = 4.dp) // ⬅️ reduced horizontal padding
-                    .clickable { onExpandedChange(true) }
-                    .background(
-                        Color.White,
-                        shape = RoundedCornerShape(4.dp)
-                    ) // ⬅️ slightly smaller corners
-                    .padding(horizontal = 8.dp, vertical = 2.dp) // ⬅️ reduced inner padding
-            ) {
-                Text(
-                    text = if (selectedValue.isEmpty()) "Select $label" else selectedValue,
-                    style = TextStyle(fontSize = 14.sp, color = Color.Black),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.Center)
-                )
-                Icon(
-                    imageVector = Icons.Filled.ArrowDropDown,
-                    contentDescription = "Dropdown",
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                )
-            }
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { onExpandedChange(false) }
-        ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option.BranchName) },
-                    onClick = {
-                        onValueChange(option.BranchName)
-                        onExpandedChange(false)
-                    }
-                )
-            }
-        }
-    }
-}*/
 
 @Composable
 fun <T> DropdownMenuFieldDisplay(
@@ -1582,7 +1470,8 @@ fun <T> DropdownMenuFieldDisplay(
     onValueChange: (String) -> Unit,
     onExpandedChange: (Boolean) -> Unit,
     labelColor: Color = Color.Black,
-    getOptionLabel: (T) -> String
+    getOptionLabel: (T) -> String,
+    enabled: Boolean
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -1626,19 +1515,20 @@ fun <T> DropdownMenuFieldDisplay(
                     )
                 }
             }
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { onExpandedChange(false) }
-            ) {
-                options.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(getOptionLabel(option)) },
-                        onClick = {
-                            onValueChange(getOptionLabel(option))
-                            onExpandedChange(false)
-                        }
-                    )
+            if (enabled) {
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { onExpandedChange(false) }
+                ) {
+                    options.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(getOptionLabel(option)) },
+                            onClick = {
+                                onValueChange(getOptionLabel(option))
+                                onExpandedChange(false)
+                            }
+                        )
+                    }
                 }
             }
         }
