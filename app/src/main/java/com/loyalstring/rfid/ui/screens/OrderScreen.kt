@@ -123,6 +123,8 @@ fun OrderScreen(
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
     var selectedCustomer by remember { mutableStateOf<EmployeeList?>(null) }
     val itemCodeList by orderViewModel.itemCodeResponse.collectAsState()
+    orderViewModel.deleteAllOrders()
+
     employee?.clientCode?.let { code ->
         orderViewModel.getAllItemCodeList(
             ClientCodeRequest(
@@ -130,6 +132,7 @@ fun OrderScreen(
             )
         )
     }
+
 
     LaunchedEffect(Unit) {
         employee?.clientCode?.let {
@@ -827,7 +830,9 @@ fun OrderScreenContent(
                                 .size(20.dp)
                                 .clickable {
                                     // Show the dialog on click
-                                    showOrderDialog = true
+                                    if (validateBeforeShowingDialog(selectedCustomer,productList,context)) {
+                                        showOrderDialog = true
+                                    }
                                 },
                             tint = Color.Unspecified // keeps original colors of the vector
                         )
@@ -1079,13 +1084,13 @@ fun OrderScreenContent(
                                     selected = selectedIndex.value == index,
                                     onClick = {
                                         selectedIndex.value = index
-                                        selectedItem = ItemCodeResponse(
+                                         selectedItem = ItemCodeResponse(
                                             Id = 0,
                                             SKUId = 0,
                                             ProductTitle = "",
                                             ClipWeight = "",
                                             ClipQuantity = "",
-                                            ItemCode = "",
+                                            ItemCode = item.itemCode ?: "",
                                             HSNCode = "",
                                             Description = "",
                                             ProductCode = "",
@@ -1094,20 +1099,20 @@ fun OrderScreenContent(
                                             ProductId = 0,
                                             DesignId = 0,
                                             PurityId = 0,
-                                            Colour = "",
-                                            Size = "",
+                                            Colour = item.typeOfColor ?: "",
+                                            Size = item.size ?: "",
                                             WeightCategory = "",
-                                            GrossWt = "",
-                                            NetWt = "",
+                                            GrossWt = item.grWt ?: "",
+                                            NetWt = item.nWt ?: "",
                                             CollectionName = "",
                                             OccassionName = "",
                                             Gender = "",
-                                            MakingFixedAmt = "",
+                                            MakingFixedAmt = item.itemAmt ?: "",
                                             MakingPerGram = "",
                                             MakingFixedWastage = "",
                                             MakingPercentage = "",
                                             TotalStoneWeight = "",
-                                            TotalStoneAmount = "",
+                                            TotalStoneAmount = item.stoneAmt ?: "",
                                             TotalStonePieces = "",
                                             TotalDiamondWeight = "",
                                             TotalDiamondPieces = "",
@@ -1122,9 +1127,9 @@ fun OrderScreenContent(
                                             FirmName = "",
                                             BoxId = 0,
                                             TIDNumber = "",
-                                            RFIDCode = "",
-                                            FinePercent = "",
-                                            WastagePercent = "",
+                                            RFIDCode = item.rfidCode ?: "",
+                                            FinePercent = item.finePlusWt ?: "",
+                                            WastagePercent = item.wastage ?: "",
                                             Images = "",
                                             BlackBeads = "",
                                             Height = "",
@@ -1137,7 +1142,7 @@ fun OrderScreenContent(
                                             DeptId = 0,
                                             PurchaseCost = "",
                                             Margin = "",
-                                            BranchName = "",
+                                            BranchName = item.branchName ?: "",
                                             BoxName = "",
                                             EstimatedDays = "",
                                             OfferPrice = "",
@@ -1146,7 +1151,7 @@ fun OrderScreenContent(
                                             Ranking = "",
                                             CompanyId = 0,
                                             CounterId = 0,
-                                            BranchId = 0,
+                                            BranchId = item.branchId?.toIntOrNull() ?: 0,
                                             EmployeeId = 0,
                                             Status = "",
                                             ClientCode = "",
@@ -1161,9 +1166,9 @@ fun OrderScreenContent(
                                             OtherWeight = "",
                                             PouchWeight = "",
                                             CategoryName = "",
-                                            PurityName = "",
+                                            PurityName = item.purity ?: "",
                                             TodaysRate = "",
-                                            ProductName = "",
+                                            ProductName = item.productName ?: "",
                                             DesignName = "",
                                             DiamondSize = "",
                                             DiamondWeight = "",
@@ -1188,26 +1193,12 @@ fun OrderScreenContent(
                                             CollectionNameSKU = "",
                                             PackingWeight = 0,
                                             TotalWeight = 0.0,
-                                            Stones = TODO(),
-                                            Diamonds = TODO()
-                                        ).apply {
-                                            BranchId = item.branchId?.toIntOrNull()
-                                            BranchName = item.branchName ?: ""
-                                            PurityName = item.purity ?: ""
-                                            Size = item.size ?: ""
-                                            Colour = item.typeOfColor ?: ""
-                                            FinePercent = item.finePlusWt ?: ""
-                                            WastagePercent = item.wastage ?: ""
-                                            ProductName = item.productName ?: ""
-                                            ItemCode = item.itemCode ?: ""
-                                            RFIDCode = item.rfidCode ?: ""
-                                            GrossWt = item.grWt ?: ""
-                                            NetWt = item.nWt ?: ""
-                                            TotalStoneAmount = item.stoneAmt ?: ""
-                                            MakingFixedAmt = item.itemAmt ?: ""
-                                        }
-                                    }
-                                )
+                                            Stones = emptyList(),
+                                            Diamonds = emptyList()
+                                        )
+
+                                    })
+
 
 
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -1328,7 +1319,17 @@ fun OrderScreenContent(
             Spacer(modifier = Modifier.height(12.dp))
             val coroutineScope = rememberCoroutineScope()
             ScanBottomBar(
-                onSave = {
+                onSave = run@{
+
+                    if (selectedCustomer == null) {
+                        Toast.makeText(context, "Please select a customer.", Toast.LENGTH_SHORT).show()
+                        return@run
+                    }
+
+                    if (productList.isEmpty()) {
+                        Toast.makeText(context, "Please add at least one product.", Toast.LENGTH_SHORT).show()
+                        return@run
+                    }
                     val cientcodereq = ClientCodeRequest(employee?.clientCode.toString())
                     orderViewModel.fetchLastOrderNo(cientcodereq)
                     val nextOrderNo = lastOrder.LastOrderNo.toIntOrNull()?.plus(1) ?: 1
@@ -2480,6 +2481,25 @@ fun OrderScreenContent(
 
     }
 }
+
+fun validateBeforeShowingDialog(
+    selectedCustomer: EmployeeList?,
+    productList: List<OrderItem>,
+    context: Context
+): Boolean {
+    return when {
+        selectedCustomer == null -> {
+            Toast.makeText(context, "Please select a customer.", Toast.LENGTH_SHORT).show()
+            false
+        }
+        productList.isEmpty() -> {
+            Toast.makeText(context, "Please add at least one product.", Toast.LENGTH_SHORT).show()
+            false
+        }
+        else -> true
+    }
+}
+
 
 fun generateInvoicePdfAndOpen(context: Context, order: CustomOrderResponse, employee: Employee?) {
     val document = PdfDocument()

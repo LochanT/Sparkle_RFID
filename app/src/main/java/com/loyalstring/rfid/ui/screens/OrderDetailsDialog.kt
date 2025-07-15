@@ -784,7 +784,7 @@ fun OrderDetailsDialog(
 
 
                                 )
-                                orderViewModel.insertOrderItemToRoom(orderItem)
+                                orderViewModel.insertOrderItemToRoomORUpdate(orderItem)
                                 onDismiss()
 
                             },

@@ -112,9 +112,10 @@ data class ItemCodeResponse(
     @SerializedName("PackingWeight") var PackingWeight: Int? = null,
     @SerializedName("TotalWeight") var TotalWeight: Double? = null,
     @SerializedName("Stones")
-    var Stones: MutableList<Stone> = mutableListOf(),
+    val Stones: List<Stone>,
 
     @SerializedName("Diamonds")
-    var Diamonds: MutableList<Diamond> = mutableListOf()
+    val Diamonds: List<Diamond>,
 
-)
+
+    )

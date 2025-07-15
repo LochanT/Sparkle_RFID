@@ -221,6 +221,24 @@ class OrderViewModel @Inject constructor(
         }
     }
 
+/*delete all order*/
+    fun deleteAllOrders() {
+        viewModelScope.launch {
+            repository.deleteAllOrder()
+        }
+    }
+
+    /*insert order item or update locally*/
+    fun insertOrderItemToRoomORUpdate(item: OrderItem) {
+        viewModelScope.launch {
+            try {
+                repository.insertORUpdate(item)
+                Log.d("OrderViewModel", "Order item updated into Room: $item")
+            } catch (e: Exception) {
+                Log.e("OrderViewModel", "Room update Error: ${e.message}")
+            }
+        }
+    }
 
 
 

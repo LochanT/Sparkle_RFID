@@ -1442,7 +1442,7 @@ fun OrderDetailsDialogEditAndDisplay(
 
 
                                 )
-                                orderViewModel.insertOrderItemToRoom(orderItem)
+                                orderViewModel.insertOrderItemToRoomORUpdate(orderItem)
                                 onDismiss()
 
                             },

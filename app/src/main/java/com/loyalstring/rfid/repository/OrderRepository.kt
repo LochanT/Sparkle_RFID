@@ -55,4 +55,12 @@ class OrderRepository @Inject constructor(
     fun getAllOrderItems(): Flow<List<OrderItem>> {
         return orderItemDao.getAllOrderItem()
     }
+    suspend fun deleteAllOrder() {
+        orderItemDao.clearAllItems()
+    }
+
+    suspend fun insertORUpdate(items: OrderItem) {
+        orderItemDao.insertOrUpdate(items)
+    }
+
 }
