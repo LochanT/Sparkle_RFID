@@ -121,6 +121,9 @@ interface RetrofitInterface {
     @POST("/api/Order/AddCustomOrder")
     suspend fun addOrder(@Body customerOrderRequest: CustomOrderRequest): Response<CustomOrderResponse>
 
+    @POST("/api/ProductMaster/GetStockTransferTypes")
+    suspend fun getStockTransferTypes(@Body customerOrderRequest: CustomOrderRequest): Response<CustomOrderResponse>
+
 
     //get last order no
     @POST("api/Order/LastOrderNo")
