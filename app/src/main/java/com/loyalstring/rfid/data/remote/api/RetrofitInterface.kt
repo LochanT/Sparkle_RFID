@@ -17,7 +17,6 @@ import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.model.login.LoginRequest
 import com.loyalstring.rfid.data.model.login.LoginResponse
-import com.loyalstring.rfid.data.model.order.BranchResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
@@ -113,9 +112,7 @@ interface RetrofitInterface {
     @POST("api/ProductMaster/GetAllLabeledStock") // Replace with your actual API endpoint
     suspend fun getAllItemCodeList(@Body clientCodeRequest: ClientCodeRequest): Response<List<ItemCodeResponse>>
 
-    // get all branchList
-    @POST("api/ClientOnboarding/GetAllBranchMaster")
-    suspend fun getAllBranchList(@Body clientCodeRequest: ClientCodeRequest): Response<List<BranchResponse>>
+
 
     //addCustomerOrder
     @POST("/api/Order/AddCustomOrder")

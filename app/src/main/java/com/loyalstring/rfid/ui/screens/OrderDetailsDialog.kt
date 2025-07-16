@@ -45,9 +45,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.OrderItem
+import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
 import com.loyalstring.rfid.data.model.login.Employee
-import com.loyalstring.rfid.data.model.order.BranchResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
+import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import com.loyalstring.rfid.ui.utils.GradientButtonIcon
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.viewmodel.OrderViewModel
@@ -77,8 +78,8 @@ fun OrderDetailsDialog(
 
     selectedCustomerId: Int?,
     selectedCustomer: EmployeeList?,
-    selectedItem: ItemCodeResponse?,
-    branchList: List<BranchResponse>,
+    selectedItem: ItemCodeResponse,
+    branchList: List<BranchModel>,
     onDismiss: () -> Unit,
     onSave: (OrderDetails) -> Unit,
     viewModel: SingleProductViewModel = hiltViewModel(),

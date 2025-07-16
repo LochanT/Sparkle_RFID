@@ -1,6 +1,11 @@
 package com.example.sparklepos.models.loginclasses.customerBill
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "customer")
 data class EmployeeList(
+    @PrimaryKey(autoGenerate = true) val empId: Int = 0,
     val Id: Int,
     val FirstName: String,
     val LastName: String,

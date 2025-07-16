@@ -1,12 +1,13 @@
 package com.loyalstring.rfid.repository
 
+import androidx.room.Query
 import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.loyalstring.rfid.data.local.dao.OrderItemDao
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
-import com.loyalstring.rfid.data.model.order.BranchResponse
+import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
@@ -33,9 +34,7 @@ class OrderRepository @Inject constructor(
         return apiService.getAllItemCodeList(clientCodeRequest)
     }
 
-    suspend fun getAllBranchList(clientCodeRequest: ClientCodeRequest): Response<List<BranchResponse>> {
-        return apiService.getAllBranchList(clientCodeRequest)
-    }
+
 
     suspend fun addOrder(customOrderRequest: CustomOrderRequest): Response<CustomOrderResponse> {
         return apiService.addOrder(customOrderRequest)
@@ -63,4 +62,18 @@ class OrderRepository @Inject constructor(
         orderItemDao.insertOrUpdate(items)
     }
 
+
+    /*local database get all employee data*/
+    suspend fun getAllEmpListFromRoom(clientCodeRequest: ClientCodeRequest): List<EmployeeList> {
+        return orderItemDao.getAllEmployees(clientCodeRequest.clientcode.toString())
+    }
+    /*local database save  all employee data*/
+    suspend fun saveEmpListToRoom(empList: List<EmployeeList>) {
+        orderItemDao.insertAll(empList)
+    }
+
+
+    suspend fun clearAllEmployees() {
+        orderItemDao.clearAllEmployees()
+    }
 }

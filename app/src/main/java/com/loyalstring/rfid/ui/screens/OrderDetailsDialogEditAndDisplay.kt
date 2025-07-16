@@ -48,8 +48,8 @@ import coil.compose.AsyncImage
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.OrderItem
+import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
 import com.loyalstring.rfid.data.model.login.Employee
-import com.loyalstring.rfid.data.model.order.BranchResponse
 import com.loyalstring.rfid.ui.utils.GradientButtonIcon
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.viewmodel.OrderViewModel
@@ -97,7 +97,7 @@ fun OrderDetailsDialogEditAndDisplay(
     selectedCustomerId: Int?,
     selectedCustomer: EmployeeList?,
     selectedItem: OrderItem?,
-    branchList: List<BranchResponse>,
+    branchList: List<BranchModel>,
     onDismiss: () -> Unit,
     onSave: (OrderDetailsData) -> Unit,
     viewModel: SingleProductViewModel = hiltViewModel(),
@@ -1418,9 +1418,9 @@ fun OrderDetailsDialogEditAndDisplay(
                                     qty = selectedItem?.qty.toString(),
                                     hallmarkAmt = selectedItem?.hallmarkAmt.toString(),
                                     mrp = selectedItem?.mrp.toString(),
-                                    image=selectedItem?.image.toString(),
-                                    netAmt="",
-                                    diamondAmt=selectedItem?.diamondAmt.toString(),
+                                    image =selectedItem?.image.toString(),
+                                    netAmt ="",
+                                    diamondAmt =selectedItem?.diamondAmt.toString(),
                                     categoryId = selectedItem?.categoryId!!,
                                     categoryName = selectedItem?.categoryName!!,
                                     productId = selectedItem?.productId!!,

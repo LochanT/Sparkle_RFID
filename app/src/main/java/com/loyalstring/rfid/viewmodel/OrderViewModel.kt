@@ -13,7 +13,7 @@ import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.google.gson.Gson
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
-import com.loyalstring.rfid.data.model.order.BranchResponse
+import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
@@ -47,8 +47,6 @@ class OrderViewModel @Inject constructor(
     val itemCodeResponse: StateFlow<List<ItemCodeResponse>> = _itemCodeResponse
     val isItemCodeLoading = MutableStateFlow(false)
 
-    private val _branchResponse = MutableStateFlow<List<BranchResponse>>(emptyList())
-    val branchResponse: StateFlow<List<BranchResponse>> = _branchResponse
 
     private val _lastOrderNOResponse = MutableStateFlow(LastOrderNoResponse())
     val lastOrderNoresponse: StateFlow<LastOrderNoResponse> = _lastOrderNOResponse
@@ -96,6 +94,7 @@ class OrderViewModel @Inject constructor(
     /*emp list function*/
     fun getAllEmpList(request: ClientCodeRequest) {
         viewModelScope.launch {
+           // delay(2000)
             _addEmpResponse.value = Resource.Loading()
             try {
                 val response = repository.getAllEmpList(request)
@@ -103,11 +102,18 @@ class OrderViewModel @Inject constructor(
                     _empListResponse.value = ((response.body()!!))
 
                     Log.d("SingleProductViewModel", "empList" + response.body())
+                    repository.clearAllEmployees()
+                    // Save to Room for offline use
+                    repository.saveEmpListToRoom(response.body()!!)
                 } else {
-                    _empListResponse.value = response.body()
+                    // Fallback to Room DB if API fails
+                    val localData = repository.getAllEmpListFromRoom(request)
+                    _empListResponse.value = localData
                 }
             } catch (e: Exception) {
-
+                // Fallback if there's an exception (like no internet)
+                val localData = repository.getAllEmpListFromRoom(request)
+                _empListResponse.value = localData
             }
         }
     }
@@ -135,31 +141,6 @@ class OrderViewModel @Inject constructor(
             }
         }
     }
-
-    /*get all branch response  list*/
-    fun getAllBranchList(request: ClientCodeRequest) {
-        viewModelScope.launch {
-            //isItemCodeLoading.value = true
-            delay(2000)
-            try {
-                val response = repository.getAllBranchList(request)
-                if (response.isSuccessful && response.body() != null) {
-                    _branchResponse.value = response.body()!!
-                    Log.d("OrderViewModel", "BranchName: ${response.body()}")
-                } else {
-                    _branchResponse.value = emptyList()
-                    Log.e("OrderViewModel", "Branch Response error: ${response.code()}")
-                }
-            } catch (e: Exception) {
-                _branchResponse.value = emptyList()
-                Log.e("OrderViewModel", "Branch Exception: ${e.message}")
-            }
-            finally {
-               // isItemCodeLoading.value = false
-            }
-        }
-    }
-
 
     /*customer order*/
     fun addOrderCustomer(request: CustomOrderRequest) {

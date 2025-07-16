@@ -5,7 +5,9 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.loyalstring.rfid.data.local.entity.OrderItem
+import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.model.order.OrderItemModel
 import kotlinx.coroutines.flow.Flow
 
@@ -204,4 +206,16 @@ interface OrderItemDao {
 
     @Query("SELECT * FROM orderItem")
     fun getAllOrderItem(): Flow<List<OrderItem>>
+
+    @Query("SELECT * FROM customer WHERE clientCode = :clientCode")
+    suspend  fun getAllEmployees(clientCode: String): List<EmployeeList>
+
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend  fun insertAll(employees: List<EmployeeList>)
+
+    @Query("DELETE FROM customer")
+    suspend fun clearAllEmployees()
+
+
 }

@@ -69,7 +69,7 @@ data class CustomOrderItem(
     val BranchId: Int,
     val BranchName: String,
     val Exhibition: String,
-    val CounterId: Int,
+    val CounterId: String,
     val EmployeeId: Int,
     val OrderNo: String?,
     val OrderStatus: String?,

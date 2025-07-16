@@ -93,6 +93,8 @@ import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.Payment
 import com.loyalstring.rfid.data.model.order.URDPurchase
 import com.loyalstring.rfid.data.remote.resource.Resource
+import com.loyalstring.rfid.data.remote.response.AlllabelResponse
+import com.loyalstring.rfid.data.remote.response.AlllabelResponse.LabelItem
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.GradientButtonIcon
 import com.loyalstring.rfid.ui.utils.UserPreferences
@@ -143,7 +145,7 @@ fun OrderScreen(
 
     LaunchedEffect(Unit) {
         employee?.clientCode?.let {
-            orderViewModel.getAllBranchList(ClientCodeRequest(it))
+            singleProductViewModel.getAllBranches(ClientCodeRequest(it))
         }
     }
 
@@ -219,6 +221,7 @@ fun OrderScreenContent(
     var totalNetWt by remember { mutableStateOf("") }
     var selectedItem by remember { mutableStateOf<ItemCodeResponse?>(null) }
     val orderViewModel: OrderViewModel = hiltViewModel()
+    val singleProductViewModel: SingleProductViewModel = hiltViewModel()
     var customerName by remember { mutableStateOf(TextFieldValue("")) }
     var customerId by remember { mutableStateOf<Int?>(null) }
     var itemCode by remember { mutableStateOf(TextFieldValue("")) }
@@ -514,7 +517,7 @@ fun OrderScreenContent(
     LaunchedEffect(scanTrigger) {
         scanTrigger?.let { type ->
             when (type) {
-                "scan" -> if (items.size != 1) bulkViewModel.startScanning(20)
+                "scan" -> if (items.size != 1) bulkViewModel.startScanning(30)
                 "barcode" -> bulkViewModel.startBarcodeScanning()
             }
             bulkViewModel.clearScanTrigger()
@@ -830,7 +833,12 @@ fun OrderScreenContent(
                                 .size(20.dp)
                                 .clickable {
                                     // Show the dialog on click
-                                    if (validateBeforeShowingDialog(selectedCustomer,productList,context)) {
+                                    if (validateBeforeShowingDialog(
+                                            selectedCustomer,
+                                            productList,
+                                            context
+                                        )
+                                    ) {
                                         showOrderDialog = true
                                     }
                                 },
@@ -842,11 +850,11 @@ fun OrderScreenContent(
 
             // Show the OrderDetailsDialog when showDialog is true
             if (showOrderDialog) {
-                val branchList by orderViewModel.branchResponse.collectAsState()
+                val branchList = singleProductViewModel.branches
                 OrderDetailsDialog(
                     customerId,
                     selectedCustomer,
-                    selectedItem,
+                    selectedItem!!,
                     branchList,
                     onDismiss = { showOrderDialog = false },
                   //  onConfirm = onConfirmOrderDetails,
@@ -1510,7 +1518,7 @@ fun OrderScreenContent(
                                     BranchId = 0,
                                     BranchName = product.branchName,
                                     Exhibition = product.exhibition,
-                                    CounterId = product.counterId,
+                                    CounterId = product.counterId.toString(),
                                     EmployeeId = 0,
                                     OrderNo = nextOrderNo.toString(),
                                     OrderStatus = "",
@@ -1578,7 +1586,7 @@ fun OrderScreenContent(
                 },
                 onList = {},
                 onScan = {
-                    bulkViewModel.startSingleScan(20) { tag ->
+                    bulkViewModel.startSingleScan(30) { tag ->
                         tag.epc?.let {
                             Log.d("Scanned EPC", it)
 
@@ -1723,7 +1731,7 @@ fun OrderScreenContent(
                 onGscan = {
                     if (!firstPress) {
                         firstPress = true
-                        bulkViewModel.startScanning(20)
+                        bulkViewModel.startScanning(30)
 
                     } else {
                         bulkViewModel.stopScanning() // Stop scanning after the first press
@@ -1741,7 +1749,7 @@ fun OrderScreenContent(
 
     }
     if (showEditOrderDialog) {
-        val branchList by orderViewModel.branchResponse.collectAsState()
+        val branchList = singleProductViewModel.branches
         OrderDetailsDialogEditAndDisplay(
             customerId,
             selectedCustomer,
