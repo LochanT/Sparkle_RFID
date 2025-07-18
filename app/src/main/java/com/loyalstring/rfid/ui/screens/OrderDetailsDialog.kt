@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.OrderItem
@@ -53,6 +55,8 @@ import com.loyalstring.rfid.ui.utils.GradientButtonIcon
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.viewmodel.OrderViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -85,6 +89,7 @@ fun OrderDetailsDialog(
     viewModel: SingleProductViewModel = hiltViewModel(),
 
     ) {
+
     Log.e("TAG", "RFID Code: ${selectedItem?.RFIDCode}")
 
     val orderViewModel: OrderViewModel = hiltViewModel()
@@ -103,6 +108,22 @@ fun OrderDetailsDialog(
     var wastage by remember { mutableStateOf("") }
     var orderDate by remember { mutableStateOf("") }
     var deliverDate by remember { mutableStateOf("") }
+
+    LaunchedEffect(selectedItem) {
+        branch = selectedItem.BranchName ?: ""
+        exhibition = "" // if you store this anywhere in selectedItem
+        remark = "" // same as above
+        purity = selectedItem.PurityName ?: ""
+        size = selectedItem.Size ?: ""
+        length = "" // if applicable
+        typeOfColors = selectedItem.Colour ?: ""
+        screwType = "" // if stored
+        polishType = "" // if stored
+        finePercentage = selectedItem.FinePercent ?: ""
+        wastage = selectedItem.WastagePercent ?: ""
+        orderDate = "" // if you want to show default
+        deliverDate = ""
+    }
 
 
     val purityList by singleProductViewModel.purityResponse1.collectAsState()
@@ -211,7 +232,7 @@ fun OrderDetailsDialog(
                         ) {
 
 
-                        if (branchList.isEmpty()) {
+                            if (branchList.isEmpty()) {
                                 //Text("Loading branches...", modifier = Modifier.padding(8.dp))
                             } else {
                                 DropdownMenuField(
@@ -762,16 +783,16 @@ fun OrderDetailsDialog(
                                     image = selectedItem?.Images.toString(),
                                     netAmt = "",
                                     diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
-                                     categoryId = selectedItem?.CategoryId!!,
-                                 categoryName = selectedItem?.CategoryName!!,
-                                 productId = selectedItem?.ProductId!!,
-                                 productCode = selectedItem?.ProductCode!!,
-                                 skuId =selectedItem?.SKUId!!,
-                                 designid = selectedItem?.DesignId!!,
-                                 designName =selectedItem?.DesignName!!,
-                                 purityid = selectedItem?.PurityId!!,
-                                 counterId = selectedItem?.CounterId!!,
-                                 counterName ="",
+                                    categoryId = selectedItem?.CategoryId!!,
+                                    categoryName = selectedItem?.CategoryName!!,
+                                    productId = selectedItem?.ProductId!!,
+                                    productCode = selectedItem?.ProductCode!!,
+                                    skuId =selectedItem?.SKUId!!,
+                                    designid = selectedItem?.DesignId!!,
+                                    designName =selectedItem?.DesignName!!,
+                                    purityid = selectedItem?.PurityId!!,
+                                    counterId = selectedItem?.CounterId!!,
+                                    counterName ="",
                                     companyId = 0,
                                     epc = selectedItem?.TIDNumber!!,
                                     tid = selectedItem?.TIDNumber!!,

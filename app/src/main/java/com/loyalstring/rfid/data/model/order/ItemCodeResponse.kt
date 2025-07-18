@@ -1,8 +1,15 @@
 package com.loyalstring.rfid.data.model.order
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
 import com.google.gson.annotations.SerializedName
+import com.loyalstring.rfid.data.local.converters.OrderTypeConverter
 
+@Entity(tableName = "itemcoderesponse")
+@TypeConverters(OrderTypeConverter::class)
 data class ItemCodeResponse(
+    @PrimaryKey
     @SerializedName("Id") var Id: Int? = null,
     @SerializedName("SKUId") var SKUId: Int? = null,
     @SerializedName("ProductTitle") var ProductTitle: String? = null,

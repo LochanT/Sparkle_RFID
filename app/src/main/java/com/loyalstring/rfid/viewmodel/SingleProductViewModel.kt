@@ -26,11 +26,13 @@ import com.loyalstring.rfid.data.reader.BarcodeReader
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.BulkRepository
+import com.loyalstring.rfid.repository.DropdownRepository
 import com.loyalstring.rfid.repository.SingleProductRepository
 import com.loyalstring.rfid.ui.utils.ToastUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -40,6 +42,7 @@ class SingleProductViewModel @Inject constructor(
     private val bulkRepository: BulkRepository,
     private val readerManager: RFIDReaderManager,
     internal val barcodeReader: BarcodeReader,
+    private  val dropdownRepository: DropdownRepository
 
 
     ) : ViewModel() {
@@ -117,13 +120,23 @@ class SingleProductViewModel @Inject constructor(
                 val response = repository.getAllSKUDetails(request)
                 if (response.isSuccessful && response.body() != null) {
                     _skuResponse.value = Resource.Success((response.body()!!))
+                    val skuResult = _skuResponse.value
+                    if (skuResult is Resource.Success) {
+                        skuResult.data?.forEach { apiBranch ->
+                            dropdownRepository.addSKU(apiBranch.Id.toString(), apiBranch.StockKeepingUnit)
+                        }
+                    }
 
                     Log.d("SingleProductViewModel", "SKU" + response.body())
                 } else {
                     _skuResponse.value = Resource.Error("sku fetch failed: ${response.message()}")
+                    val localData = dropdownRepository.sku.first() // ✅ fetch from Room
+                    _skuResponse.value = Resource.Success(localData)
                 }
             } catch (e: Exception) {
                 _skuResponse.value = Resource.Error("Exception: ${e.message}")
+                val localData = dropdownRepository.sku.first() // ✅ fetch from Room
+                _skuResponse.value = Resource.Success(localData)
             }
         }
     }
@@ -153,13 +166,20 @@ class SingleProductViewModel @Inject constructor(
                 val response = repository.getAllBranches(request)
                 if (response.isSuccessful) {
                     branches = response.body().orEmpty()
+                    branches.forEach { apiBranch ->
+                        dropdownRepository.addBranch(apiBranch.Id.toString(), apiBranch.BranchName)
+                    }
                 } else {
                     // Handle API error
                     Log.e("InventoryViewModel", "API error: ${response.code()}")
+                    val localData = dropdownRepository.branch.first() // ✅ fetch from Room
+                    branches = localData
                 }
             } catch (e: Exception) {
                 // Handle network or unexpected error
                 Log.e("InventoryViewModel", "Exception: ${e.message}")
+                val localData = dropdownRepository.branch.first() // ✅ fetch from Room
+                branches = localData
             }
         }
     }
@@ -250,13 +270,27 @@ class SingleProductViewModel @Inject constructor(
                     _purityResponse.value = Resource.Success((response.body()!!))
                     _purityResponse1.value = (response.body()!!)
 
+                    val purityResult = _skuResponse.value
+                    if (purityResult is Resource.Success) {
+                        purityResult.data?.forEach { apiPurity ->
+                            dropdownRepository.addPurirty(apiPurity.PurityId.toString(), apiPurity.PurityName)
+                        }
+                    }
+
                     Log.d("SingleProductViewModel", "Product" + response.body())
                 } else {
                     _purityResponse.value = Resource.Error("sku fetch failed: ${response.message()}")
                     _purityResponse1.value = (response.body()!!)
+
+                    val localData = dropdownRepository.purity.first() // ✅ fetch from Room
+                    _purityResponse.value = Resource.Success(localData)
+                    _purityResponse1.value=localData
                 }
             } catch (e: Exception) {
                 _purityResponse.value = Resource.Error("Exception: ${e.message}")
+                val localData = dropdownRepository.purity.first() // ✅ fetch from Room
+                _purityResponse.value = Resource.Success(localData)
+                _purityResponse1.value=localData
               //  _purityResponse1.value = (response.body()!!)
             }
         }

@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -138,33 +139,34 @@ fun OrderDetailsDialogEditAndDisplay(
     var hallMarkAmt by remember { mutableStateOf("") }
     var mrp by remember { mutableStateOf("") }
     var stoneAmt by remember { mutableStateOf("") }
-
-    branch=selectedItem?.branchName.toString()
-    productName =selectedItem?.productName.toString()
-    itemCode=selectedItem?.itemCode.toString()
-    totalWt=selectedItem?.totalWt.toString()
-    stoneWt=selectedItem?.stoneWt.toString()
-    dimondWt=selectedItem?.dimondWt.toString()
-    NetWt=selectedItem?.nWt.toString()
-    exhibition=selectedItem?.exhibition.toString()
-    sku=selectedItem?.sku.toString()
-    purity= selectedItem?.purity.toString()
-    size=selectedItem?.size.toString()
-    length=selectedItem?.length.toString()
-    stoneAmt=selectedItem?.stoneAmt.toString()
-    packingWt=selectedItem?.packingWt.toString()
-    NetWt=selectedItem?.nWt.toString()
-    remark=selectedItem?.remark.toString()
-    typeOfColors=selectedItem?.typeOfColor.toString()
-    screwType=selectedItem?.screwType.toString()
-    polishType=selectedItem?.polishType.toString()
-    finePercentage=selectedItem?.finePer.toString()
-    wastagePer=selectedItem?.wastage.toString()
-    orderDate=selectedItem?.orderDate.toString()
-    deliverDate=selectedItem?.deliverDate.toString()
-    qty=selectedItem?.qty.toString()
-    hallMarkAmt=selectedItem?.hallmarkAmt.toString()
-    mrp=selectedItem?.mrp.toString()
+    LaunchedEffect(selectedItem) {
+        branch = selectedItem?.branchName.toString()
+        productName = selectedItem?.productName.toString()
+        itemCode = selectedItem?.itemCode.toString()
+        totalWt = selectedItem?.totalWt.toString()
+        stoneWt = selectedItem?.stoneWt.toString()
+        dimondWt = selectedItem?.dimondWt.toString()
+        NetWt = selectedItem?.nWt.toString()
+        exhibition = selectedItem?.exhibition.toString()
+        sku = selectedItem?.sku.toString()
+        purity = selectedItem?.purity.toString()
+        size = selectedItem?.size.toString()
+        length = selectedItem?.length.toString()
+        stoneAmt = selectedItem?.stoneAmt.toString()
+        packingWt = selectedItem?.packingWt.toString()
+        NetWt = selectedItem?.nWt.toString()
+        remark = selectedItem?.remark.toString()
+        typeOfColors = selectedItem?.typeOfColor.toString()
+        screwType = selectedItem?.screwType.toString()
+        polishType = selectedItem?.polishType.toString()
+        finePercentage = selectedItem?.finePer.toString()
+        wastagePer = selectedItem?.wastage.toString()
+        orderDate = selectedItem?.orderDate.toString()
+        deliverDate = selectedItem?.deliverDate.toString()
+        qty = selectedItem?.qty.toString()
+        hallMarkAmt = selectedItem?.hallmarkAmt.toString()
+        mrp = selectedItem?.mrp.toString()
+    }
 
     val purityList by singleProductViewModel.purityResponse1.collectAsState()
     val skuList by singleProductViewModel.skuResponse1.collectAsState()
@@ -1180,7 +1182,7 @@ fun OrderDetailsDialogEditAndDisplay(
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     Row(
                         modifier = Modifier
@@ -1410,14 +1412,14 @@ fun OrderDetailsDialogEditAndDisplay(
                                     nWt = NetWt,
                                     stoneAmt =stoneAmt ,
                                     finePlusWt = selectedItem?.finePlusWt,
-                                    packingWt = selectedItem?.packingWt.toString(),
-                                    totalWt = selectedItem?.totalWt.toString(),
-                                    stoneWt = selectedItem?.stoneWt.toString(),
-                                    dimondWt = selectedItem?.dimondWt.toString(),
-                                    sku = selectedItem?.sku.toString(),
-                                    qty = selectedItem?.qty.toString(),
-                                    hallmarkAmt = selectedItem?.hallmarkAmt.toString(),
-                                    mrp = selectedItem?.mrp.toString(),
+                                    packingWt = packingWt,
+                                    totalWt = totalWt,
+                                    stoneWt = stoneWt,
+                                    dimondWt = dimondWt,
+                                    sku = sku,
+                                    qty = qty,
+                                    hallmarkAmt = hallMarkAmt,
+                                    mrp = mrp,
                                     image =selectedItem?.image.toString(),
                                     netAmt ="",
                                     diamondAmt =selectedItem?.diamondAmt.toString(),

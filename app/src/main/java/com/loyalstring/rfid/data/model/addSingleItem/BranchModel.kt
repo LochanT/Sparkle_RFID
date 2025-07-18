@@ -1,10 +1,13 @@
 package com.loyalstring.rfid.data.model.addSingleItem
 
 import androidx.room.Entity
+import androidx.room.PrimaryKey
 import java.io.Serializable
 
 @Entity(tableName = "branch")
 data class BranchModel(
+    @PrimaryKey
+    val Id: Int = 0,
     val BranchCode: String = "",
     val ClientCode: String = "",
     val CompanyId: Int = 0,
@@ -27,7 +30,6 @@ data class BranchModel(
     val BranchStatus: String = "",
     val FinancialYear: String = "",
     val BranchLoginStatus: String? = null,
-    val Id: Int = 0,
     val CreatedOn: String = "",
     val LastUpdated: String = "",
     val StatusType: Boolean = true

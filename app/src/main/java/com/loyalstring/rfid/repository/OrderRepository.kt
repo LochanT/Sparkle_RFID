@@ -72,8 +72,19 @@ class OrderRepository @Inject constructor(
         orderItemDao.insertAll(empList)
     }
 
-
     suspend fun clearAllEmployees() {
         orderItemDao.clearAllEmployees()
+    }
+
+    suspend fun getAllItemCodeFromRoom(clientCodeRequest: ClientCodeRequest): List<ItemCodeResponse> {
+        return orderItemDao.getAllItemCode(clientCodeRequest.clientcode.toString())
+    }
+    /*local database save  all employee data*/
+    suspend fun saveAllItemCodeToRoom(itemCodeList: List<ItemCodeResponse>) {
+        orderItemDao.insertAllItemCode(itemCodeList)
+    }
+
+    suspend fun clearAllItemCode() {
+        orderItemDao.clearAllItemCode()
     }
 }

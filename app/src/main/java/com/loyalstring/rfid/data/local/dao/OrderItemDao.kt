@@ -8,6 +8,7 @@ import androidx.room.Update
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.login.Employee
+import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.OrderItemModel
 import kotlinx.coroutines.flow.Flow
 
@@ -216,6 +217,16 @@ interface OrderItemDao {
 
     @Query("DELETE FROM customer")
     suspend fun clearAllEmployees()
+
+    @Query("SELECT * FROM itemcoderesponse WHERE clientCode = :clientCode")
+    suspend  fun getAllItemCode(clientCode: String): List<ItemCodeResponse>
+
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend  fun insertAllItemCode(employees: List<ItemCodeResponse>)
+
+    @Query("DELETE FROM itemcoderesponse")
+    suspend fun clearAllItemCode()
 
 
 }

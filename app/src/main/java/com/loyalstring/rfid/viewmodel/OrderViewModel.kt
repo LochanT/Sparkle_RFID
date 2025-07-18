@@ -2,7 +2,6 @@ package com.loyalstring.rfid.viewmodel
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.State
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -13,12 +12,10 @@ import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.google.gson.Gson
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
-import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
-import com.loyalstring.rfid.data.model.order.OrderItemModel
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.OrderRepository
 
@@ -30,7 +27,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
+sealed class UiState<out T> {
+    object Loading : UiState<Nothing>()
+    data class Success<out T>(val data: T) : UiState<T>()
+    data class Error(val message: String) : UiState<Nothing>()
+}
 
 @HiltViewModel
 class OrderViewModel @Inject constructor(
@@ -40,8 +41,14 @@ class OrderViewModel @Inject constructor(
     private val _addEmpResponse = MutableLiveData<Resource<EmployeeResponse>>()
     val addEmpReposnes: LiveData<Resource<EmployeeResponse>> = _addEmpResponse
 
-    private val _empListResponse = MutableLiveData<List<EmployeeList>>()
+   /* private val _empListResponse = MutableLiveData<List<EmployeeList>>()
     val empListResponse: LiveData<List<EmployeeList>> = _empListResponse
+    val empListFlow = _empListResponse.asStateFlow()*/
+
+    private val _empListFlow = MutableStateFlow<UiState<List<EmployeeList>>>(UiState.Loading)
+    val empListFlow: StateFlow<UiState<List<EmployeeList>>> = _empListFlow
+    val isEmpListLoading = MutableStateFlow(false)
+
 
     private val _itemCodeResponse = MutableStateFlow<List<ItemCodeResponse>>(emptyList())
     val itemCodeResponse: StateFlow<List<ItemCodeResponse>> = _itemCodeResponse
@@ -92,31 +99,76 @@ class OrderViewModel @Inject constructor(
     }
 
     /*emp list function*/
-    fun getAllEmpList(request: ClientCodeRequest) {
+
+    fun getAllEmpList(clientCode: String) {
         viewModelScope.launch {
-           // delay(2000)
-            _addEmpResponse.value = Resource.Loading()
+            isEmpListLoading.value = true
+
             try {
-                val response = repository.getAllEmpList(request)
+                val response = repository.getAllEmpList(ClientCodeRequest(clientCode)) // API call
+
                 if (response.isSuccessful && response.body() != null) {
-                    _empListResponse.value = ((response.body()!!))
+                    val data = response.body()!!
+
+                    // Save to Room
+                    // repository.clearAllEmployees()
+                    //repository.saveEmpListToRoom(data)
+
+                    _empListFlow.value = UiState.Success(data)
+
+                } else {
+                    // API failed => try loading from local DB
+                    val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
+                    _empListFlow.value = UiState.Success(localData)
+                }
+
+            } catch (e: Exception) {
+                // Exception (e.g., no internet) => try loading from local DB
+                val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
+                _empListFlow.value = UiState.Success(localData)
+            } finally {
+                isEmpListLoading.value = false
+            }
+        }
+    }
+
+    /*    fun getAllEmpList(request: String) {
+            viewModelScope.launch {//
+                isEmpListLoading.value=true
+                 delay(2000)
+
+                try {
+                    val response = repository.getAllEmpList(ClientCodeRequest(request))
+                    if (response.isSuccessful && response.body() != null) {
+                      *//*  _empListResponse.value = ((response.body()!!))
 
                     Log.d("SingleProductViewModel", "empList" + response.body())
                     repository.clearAllEmployees()
                     // Save to Room for offline use
-                    repository.saveEmpListToRoom(response.body()!!)
+                    repository.saveEmpListToRoom(response.body()!!)*//*
+                    val data = response.body()!!
+
+                    Log.d("SingleProductViewModel", "empList: $data")
+
+                   // repository.clearAllEmployees()
+                    repository.saveEmpListToRoom(data)
+
+                    _empListFlow.value =  UiState.Success(response.body()!!)
+
                 } else {
                     // Fallback to Room DB if API fails
-                    val localData = repository.getAllEmpListFromRoom(request)
-                    _empListResponse.value = localData
+                   // val localData = repository.getAllEmpListFromRoom(request.toString())
+                    //_empListFlow.value =  UiState.Success(localData)
                 }
             } catch (e: Exception) {
                 // Fallback if there's an exception (like no internet)
-                val localData = repository.getAllEmpListFromRoom(request)
-                _empListResponse.value = localData
+               // val localData = repository.getAllEmpListFromRoom(request)
+               // _empListFlow.value = UiState.Success( localData)
+            } finally {
+                isEmpListLoading.value = false
             }
         }
-    }
+    }*/
 
     /*get all item code list*/
     fun getAllItemCodeList(request: ClientCodeRequest) {
@@ -128,12 +180,15 @@ class OrderViewModel @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     _itemCodeResponse.value = response.body()!!
                     Log.d("OrderViewModel", "itemcode: ${response.body()}")
+                    repository.saveAllItemCodeToRoom(response.body()!!)
                 } else {
-                    _itemCodeResponse.value = emptyList()
+                    val localData = repository.getAllItemCodeFromRoom(request)
+                    _itemCodeResponse.value = localData
                     Log.e("OrderViewModel", "Response error: ${response.code()}")
                 }
             } catch (e: Exception) {
-                _itemCodeResponse.value = emptyList()
+                val localData = repository.getAllItemCodeFromRoom(request)
+                _itemCodeResponse.value = localData
                 Log.e("OrderViewModel", "Exception: ${e.message}")
             }
             finally {
