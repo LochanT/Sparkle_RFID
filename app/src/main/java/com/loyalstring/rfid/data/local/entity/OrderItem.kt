@@ -41,7 +41,7 @@ data class OrderItem(
     val netAmt: String,
     val diamondAmt: String,
 
-    val categoryId: Int,
+    val categoryId: String?,
     val categoryName: String,
     val productId: Int,
     val productCode: String,

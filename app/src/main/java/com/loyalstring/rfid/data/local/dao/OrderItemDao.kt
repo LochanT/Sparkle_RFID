@@ -7,9 +7,10 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.loyalstring.rfid.data.local.entity.OrderItem
-import com.loyalstring.rfid.data.model.login.Employee
+import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
-import com.loyalstring.rfid.data.model.order.OrderItemModel
+import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -123,7 +124,7 @@ interface OrderItemDao {
         image: String,
         netAmt: String,
         diamondAmt: String,
-        categoryId: Int,
+        categoryId: String?,
         categoryName: String,
         productId: Int,
         productCode: String,
@@ -227,6 +228,28 @@ interface OrderItemDao {
 
     @Query("DELETE FROM itemcoderesponse")
     suspend fun clearAllItemCode()
+
+    /************************* Last order N**********************/
+    @Query("SELECT * FROM lastorderno")
+    suspend  fun getLastOrderNo(): LastOrderNoResponse
+
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend  fun insertLastOrderNo(orderNo:LastOrderNoResponse)
+
+    @Query("DELETE FROM lastorderno")
+    suspend fun clearLastOrderNo()
+
+    /************ customer Order response **************/
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCustomerOrdre(customOrderResponse: CustomOrderResponse)
+
+    @Query("SELECT * FROM customer_order_response WHERE ClientCode = :clientCode")
+    suspend fun getAllCustomnerOrderReponse(clientCode: String): CustomOrderResponse
+
+    @Query("DELETE FROM customer_order_response WHERE syncStatus = 0")
+    suspend fun deleteUnsyncedOrder()
+
 
 
 }

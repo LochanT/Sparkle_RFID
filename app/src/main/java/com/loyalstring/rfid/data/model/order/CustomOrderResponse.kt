@@ -1,8 +1,15 @@
 package com.loyalstring.rfid.data.model.order
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
+import com.loyalstring.rfid.data.local.converters.CustomOrderTypeConverters
+import com.loyalstring.rfid.data.local.converters.OrderTypeConverter
 import java.io.Serializable
-
+@Entity(tableName = "customer_order_response")
+@TypeConverters(CustomOrderTypeConverters::class)
 data class CustomOrderResponse(
+    @PrimaryKey(autoGenerate = true)
     val CustomOrderId: Int,
     val CustomerId: Int,
     val ClientCode: String,
@@ -84,5 +91,6 @@ data class CustomOrderResponse(
     val BulkOrderId: String?,
     val CustomOrderItem: List<CustomOrderItem>,
     val Payments: List<Payment>,
-    val Customer: Customer
+    val Customer: Customer,
+    val syncStatus: Boolean = false
 ): Serializable

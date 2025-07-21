@@ -20,7 +20,7 @@ data class ItemCodeResponse(
     @SerializedName("Description") var Description: String? = null,
     @SerializedName("ProductCode") var ProductCode: String? = null,
     @SerializedName("MetalName") var MetalName: String? = null,
-    @SerializedName("CategoryId") var CategoryId: Int? = null,
+    @SerializedName("CategoryId") var CategoryId: String = "",
     @SerializedName("ProductId") var ProductId: Int? = null,
     @SerializedName("DesignId") var DesignId: Int? = null,
     @SerializedName("PurityId") var PurityId: Int? = null,

@@ -43,20 +43,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
-import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import com.loyalstring.rfid.ui.utils.GradientButtonIcon
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.viewmodel.OrderViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -783,25 +779,24 @@ fun OrderDetailsDialog(
                                     image = selectedItem?.Images.toString(),
                                     netAmt = "",
                                     diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
-                                    categoryId = selectedItem?.CategoryId!!,
-                                    categoryName = selectedItem?.CategoryName!!,
-                                    productId = selectedItem?.ProductId!!,
-                                    productCode = selectedItem?.ProductCode!!,
-                                    skuId =selectedItem?.SKUId!!,
-                                    designid = selectedItem?.DesignId!!,
-                                    designName =selectedItem?.DesignName!!,
-                                    purityid = selectedItem?.PurityId!!,
-                                    counterId = selectedItem?.CounterId!!,
-                                    counterName ="",
+                                    categoryId = selectedItem?.CategoryId?.toString(),
+                                    categoryName = selectedItem?.CategoryName ?: "",
+                                    productId = selectedItem?.ProductId ?: 0,
+                                    productCode = selectedItem?.ProductCode ?: "",
+                                    skuId = selectedItem?.SKUId ?: 0,
+                                    designid = selectedItem?.DesignId ?: 0,
+                                    designName = selectedItem?.DesignName ?: "",
+                                    purityid = selectedItem?.PurityId ?: 0,
+                                    counterId = selectedItem?.CounterId ?: 0,
+                                    counterName = "",
                                     companyId = 0,
-                                    epc = selectedItem?.TIDNumber!!,
-                                    tid = selectedItem?.TIDNumber!!,
-                                    todaysRate = selectedItem?.TodaysRate.toString(),
-                                    makingPercentage = selectedItem?.MakingPercentage.toString(),
-                                    makingFixedAmt = selectedItem?.MakingFixedAmt.toString(),
-                                    makingFixedWastage = selectedItem?.MakingFixedWastage.toString(),
-                                    makingPerGram = selectedItem?.MakingPerGram.toString()
-
+                                    epc = selectedItem?.TIDNumber ?: "",
+                                    tid = selectedItem?.TIDNumber ?: "",
+                                    todaysRate = selectedItem?.TodaysRate?.toString() ?: "0",
+                                    makingPercentage = selectedItem?.MakingPercentage?.toString() ?: "0",
+                                    makingFixedAmt = selectedItem?.MakingFixedAmt?.toString() ?: "0",
+                                    makingFixedWastage = selectedItem?.MakingFixedWastage?.toString() ?: "0",
+                                    makingPerGram = selectedItem?.MakingPerGram?.toString() ?: "0"
 
 
 

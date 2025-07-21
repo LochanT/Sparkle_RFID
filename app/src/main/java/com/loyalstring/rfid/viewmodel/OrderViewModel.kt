@@ -18,6 +18,7 @@ import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.OrderRepository
+import com.loyalstring.rfid.ui.utils.NetworkUtils
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -102,19 +103,20 @@ class OrderViewModel @Inject constructor(
 
     fun getAllEmpList(clientCode: String) {
         viewModelScope.launch {
+            delay(1000)
             isEmpListLoading.value = true
 
             try {
                 val response = repository.getAllEmpList(ClientCodeRequest(clientCode)) // API call
 
-                if (response.isSuccessful && response.body() != null) {
-                    val data = response.body()!!
+                if (response.isSuccessful && response.body() != null && response.body()!!.isNotEmpty()) {
+                    val data = response.body()
 
                     // Save to Room
                     // repository.clearAllEmployees()
-                    //repository.saveEmpListToRoom(data)
+                  // repository.saveEmpListToRoom(data!!)
 
-                    _empListFlow.value = UiState.Success(data)
+                    _empListFlow.value = UiState.Success(data!!)
 
                 } else {
                     // API failed => try loading from local DB
@@ -223,12 +225,18 @@ class OrderViewModel @Inject constructor(
                 val response = repository.getLastOrderNo(request)
                 if (response.isSuccessful && response.body() != null) {
                     _lastOrderNOResponse.value = response.body()!!
+                    //repository.clearLastOrderNo()
+                    repository.saveLastOrderNoToRoom(response.body()!!)
                     Log.d("OrderViewModel", "Last Order No: ${response.body()}")
                 } else {
                     Log.e("OrderViewModel", "Error: ${response.code()} ${response.message()}")
+                    val localData = repository.getLastOrderNoFromRoom(request)
+                    _lastOrderNOResponse.value = localData
                 }
             } catch (e: Exception) {
                 Log.e("OrderViewModel", "Exception: ${e.message}")
+                val localData = repository.getLastOrderNoFromRoom(request)
+                _lastOrderNOResponse.value = localData
             }
         }
     }
@@ -277,7 +285,83 @@ class OrderViewModel @Inject constructor(
     }
 
 
+    /*sync data to server*/
+    // Save the customer order to Room
+    fun saveOrder(customOrderResponse: CustomOrderResponse) {
+        viewModelScope.launch {
+            try {
+                repository.saveCustomerOrder(customOrderResponse)
+                _orderResponse.value = (customOrderResponse!!)
+            } catch (e: Exception) {
+                _orderResponse.value = (customOrderResponse!!)
+            }
+        }
+    }
 
+    // Fetch all customer orders based on the client code
+    fun getAllOrders(clientCode: String) {
+        viewModelScope.launch {
+            try {
+                val orders = repository.getAllCustomerOrders(clientCode)
+                _orderResponse.value = (orders)
+            } catch (e: Exception) {
+               // _orderResponse.value =("Failed to fetch orders: ${e.message}")
+            }
+        }
+    }
 
+    // Delete unsynced orders (syncStatus = 0)
+    fun deleteUnsyncedOrders() {
+        viewModelScope.launch {
+            try {
+                repository.deleteUnsyncedOrders()
+                //_orderResponse.value = ("Unsynced orders deleted successfully.")
+            } catch (e: Exception) {
+               // _orderResponse.value = UiState.Error("Failed to delete unsynced orders: ${e.message}")
+            }
+        }
+    }
 
+    fun syncDataWhenOnline() {
+        // Check if the device is online (Use a utility method or Network API to check connectivity)
+        if (NetworkUtils.isNetworkAvailable(context)) {
+            // Fetch unsynced data from Room and sync to server
+            viewModelScope.launch {
+                val unsyncedOrders = repository.getAllCustomerOrders("clientCode") // Replace with actual client code
+               /* unsyncedOrders.filter { !it.syncStatus } // Filter unsynced orders
+
+                unsyncedOrders.forEach { order ->
+                    val response = repository.addOrder(order)
+                    if (response.isSuccessful) {
+                        // Mark as synced after successful sync
+                        repository.deleteUnsyncedOrders() // Delete unsynced orders from Room after syncing
+                    }
+                }*/
+            }
+        } else {
+            Log.d("Sync", "No internet available. Will retry when online.")
+        }
+    }
+
+    // Sync orders to the server (if needed)
+    /*fun syncOrders(customOrderResponse: CustomOrderResponse) {
+        viewModelScope.launch {
+            try {
+                val response = repository.addOrder(customOrderResponse)
+                if (response.isSuccessful) {
+                  //  _orderResponse.value = UiState.Success("Orders synced successfully.")
+                } else {
+                  //  _orderResponse.value = UiState.Error("Failed to sync orders.")
+                }
+            } catch (e: Exception) {
+             //   _orderResponse.value = UiState.Error("Error syncing orders: ${e.message}")
+            }
+        }
+    }*/
 }
+
+
+
+
+
+

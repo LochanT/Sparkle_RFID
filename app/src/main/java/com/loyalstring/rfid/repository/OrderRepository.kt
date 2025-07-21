@@ -1,18 +1,15 @@
 package com.loyalstring.rfid.repository
 
-import androidx.room.Query
 import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.loyalstring.rfid.data.local.dao.OrderItemDao
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
-import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
-import com.loyalstring.rfid.data.model.order.OrderItemModel
 import com.loyalstring.rfid.data.remote.api.RetrofitInterface
 import kotlinx.coroutines.flow.Flow
 import retrofit2.Response
@@ -69,7 +66,9 @@ class OrderRepository @Inject constructor(
     }
     /*local database save  all employee data*/
     suspend fun saveEmpListToRoom(empList: List<EmployeeList>) {
+        if (true){
         orderItemDao.insertAll(empList)
+        }
     }
 
     suspend fun clearAllEmployees() {
@@ -87,4 +86,39 @@ class OrderRepository @Inject constructor(
     suspend fun clearAllItemCode() {
         orderItemDao.clearAllItemCode()
     }
+
+    /**************last order no *****************/
+    suspend fun getLastOrderNoFromRoom(clientCodeRequest: ClientCodeRequest): LastOrderNoResponse {
+        return orderItemDao.getLastOrderNo()
+    }
+    /*local database save  last order no data*/
+    suspend fun saveLastOrderNoToRoom(orderNo: LastOrderNoResponse) {
+        orderItemDao.insertLastOrderNo(orderNo)
+    }
+
+    suspend fun clearLastOrderNo() {
+        orderItemDao.clearLastOrderNo()
+    }
+
+
+    // Save the custom order response to Room
+    suspend fun saveCustomerOrder(customOrderResponse: CustomOrderResponse) {
+        orderItemDao.insertCustomerOrdre(customOrderResponse)
+    }
+
+    // Get all customer order responses from Room based on the client code
+    suspend fun getAllCustomerOrders(clientCode: String): CustomOrderResponse {
+        return orderItemDao.getAllCustomnerOrderReponse(clientCode)
+    }
+
+    // Delete unsynced orders (syncStatus = 0)
+    suspend fun deleteUnsyncedOrders() {
+        orderItemDao.deleteUnsyncedOrder()
+    }
+
+  /*  // Optionally, you can add syncing logic here (to handle sync with the server)
+    suspend fun syncOrdersToServer(customOrderResponse: CustomOrderResponse): Response<CustomOrderResponse> {
+        // Implement your API call here
+        return apiService.syncOrders(customOrderResponse)
+    }*/
 }
