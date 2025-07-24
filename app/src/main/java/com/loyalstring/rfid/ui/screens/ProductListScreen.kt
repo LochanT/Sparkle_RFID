@@ -407,9 +407,9 @@ fun ProductListScreen(
                                     item.stoneAmount to 100.dp,
                                     item.dustAmount to 100.dp,
                                     item.sku to 120.dp,
-                                    (item.uhfTagInfo?.epc ?: "") to 120.dp,
+                                    (item.uhfTagInfo?.epc ?: item.epc) to 120.dp,
                                     item.vendor to 120.dp,
-                                    (item.uhfTagInfo?.epc ?: "") to 90.dp
+                                    (item.uhfTagInfo?.epc ?: item.epc) to 90.dp
                                 ).forEach { (value, width) ->
                                     Text(
                                         value?.ifBlank { "-" } ?: "-",

@@ -4,6 +4,8 @@ import ScannedDataToService
 import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
+import com.loyalstring.rfid.data.local.entity.EpcDto
+import com.loyalstring.rfid.data.local.entity.TransferTypeEntity
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.addSingleItem.BoxModel
 import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
@@ -11,6 +13,7 @@ import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
 import com.loyalstring.rfid.data.model.addSingleItem.CounterModel
 import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
 import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
+import com.loyalstring.rfid.data.model.addSingleItem.PacketModel
 import com.loyalstring.rfid.data.model.addSingleItem.ProductModel
 import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
@@ -21,6 +24,7 @@ import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
+import com.loyalstring.rfid.data.remote.data.StockTransferRequest
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -77,6 +81,10 @@ interface RetrofitInterface {
     @POST("api/ProductMaster/GetAllLabeledStock")
     suspend fun getAllLabeledStock(@Body request: RequestBody): Response<List<AlllabelResponse.LabelItem>>
 
+    //Get all packets
+    @POST("api/ProductMaster/GetAllPacketMaster")
+    suspend fun getAllPackets(@Body request: ClientCodeRequest): Response<List<PacketModel>>
+
     /* insert single stock*/
     @POST("api/ProductMaster/InsertLabelledStock")
     suspend fun insertStock(
@@ -112,15 +120,18 @@ interface RetrofitInterface {
     @POST("api/ProductMaster/GetAllLabeledStock") // Replace with your actual API endpoint
     suspend fun getAllItemCodeList(@Body clientCodeRequest: ClientCodeRequest): Response<List<ItemCodeResponse>>
 
+    @POST("api/ClientOnboarding/GetAllBranchMaster")
+    suspend fun getAllBranchList(@Body clientCodeRequest: ClientCodeRequest): Response<List<BranchModel>>
 
-
-    //addCustomerOrder
     @POST("/api/Order/AddCustomOrder")
     suspend fun addOrder(@Body customerOrderRequest: CustomOrderRequest): Response<CustomOrderResponse>
 
     @POST("/api/ProductMaster/GetStockTransferTypes")
-    suspend fun getStockTransferTypes(@Body customerOrderRequest: CustomOrderRequest): Response<CustomOrderResponse>
+    suspend fun getStockTransferTypes(@Body clientCodeRequest: ClientCodeRequest): Response<List<TransferTypeEntity>>
 
+
+    @POST("/api/ProductMaster/GetAllRFID")
+    suspend fun getAllRFID(@Body request: RequestBody): Response<List<EpcDto>>
 
     //get last order no
     @POST("api/Order/LastOrderNo")
@@ -132,5 +143,8 @@ interface RetrofitInterface {
     suspend fun getAllOrderList(@Body clientCodeRequest: ClientCodeRequest): Response<List<CustomOrderResponse>>
 
 
-
+    @POST("/api/ProductMaster/AddStockTransfer")
+    suspend fun postStockTransfer(
+        @Body request: StockTransferRequest
+    ): Response<String>
 }

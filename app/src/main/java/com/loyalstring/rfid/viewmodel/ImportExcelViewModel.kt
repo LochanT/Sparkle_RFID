@@ -5,7 +5,10 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.loyalstring.rfid.data.local.entity.BulkItem
+import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.repository.BulkRepositoryImpl
+import com.loyalstring.rfid.ui.utils.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +23,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ImportExcelViewModel @Inject constructor(
-    private val repository: BulkRepositoryImpl
+    private val bulkRepository: BulkRepositoryImpl,
+    private val userPreferences: UserPreferences,
 ) : ViewModel() {
 
     private val _importProgress = MutableStateFlow(ImportProgress())
@@ -33,6 +37,8 @@ class ImportExcelViewModel @Inject constructor(
     val parsedItems: StateFlow<List<BulkItem>> = _parsedItems
 
     private var selectedUri: Uri? = null
+    private var syncedRFIDMap: Map<String, String>? = null
+
 
     fun setSelectedFile(uri: Uri) {
         selectedUri = uri
@@ -94,13 +100,27 @@ class ImportExcelViewModel @Inject constructor(
                     for (i in 1..sheet.lastRowNum) {
                         val row = sheet.getRow(i)
                         if (row == null || row.firstCellNum < 0) continue
-                        val epcRaw =
-                            getStringFromRow(row, rawHeaderIndexMap, normalizedFieldMapping["epc"])
-                        val epcVal = epcRaw.takeIf { it.isNotBlank() }
 
-                        if (!epcVal.isNullOrBlank() && !seenEpc.add(epcVal)) {
-                            failed.add("Duplicate EPC in row ${i + 1}")
-                            continue
+                        val rfid = getStringFromRow(
+                            row,
+                            rawHeaderIndexMap,
+                            normalizedFieldMapping["rfid"]
+                        )
+
+                        var epcVal = getStringFromRow(
+                            row,
+                            rawHeaderIndexMap,
+                            normalizedFieldMapping["epc"]
+                        ).trim()
+
+// If EPC is missing → fetch using itemCode
+                        if (epcVal.isBlank()) {
+                            epcVal = syncAndMapRow(rfid)
+                        }
+
+                        if (epcVal.isBlank()) {
+                            failed.add("Missing EPC for RFID $rfid at row ${i + 1}")
+                            continue // Skip row if EPC still not found
                         }
 
                         try {
@@ -134,6 +154,11 @@ class ImportExcelViewModel @Inject constructor(
                                     row,
                                     rawHeaderIndexMap,
                                     normalizedFieldMapping["purity"]
+                                ),
+                                design = getStringFromRow(
+                                    row,
+                                    rawHeaderIndexMap,
+                                    normalizedFieldMapping["design"]
                                 ),
                                 grossWeight = getStringFromRow(
                                     row,
@@ -172,12 +197,11 @@ class ImportExcelViewModel @Inject constructor(
                                 ),
                                 id = 0,
                                 dustWeight = "",
-                                design = "",
                                 dustAmount = "",
                                 sku = "",
                                 epc = epcVal,
                                 vendor = "",
-                                tid = "",
+                                tid = epcVal,
                                 box = "",
                                 designCode = "",
                                 productCode = "",
@@ -204,7 +228,9 @@ class ImportExcelViewModel @Inject constructor(
                                 branchName = "",
                                 categoryId = 0,
                                 productId = 0,
-                                designId = 0
+                                designId = 0,
+                                packetId = 0,
+                                packetName = ""
                             ).apply {
                                 uhfTagInfo = null
                             }
@@ -224,8 +250,8 @@ class ImportExcelViewModel @Inject constructor(
                     }
 
 
-                    repository.clearAllItems()
-                    repository.insertBulkItems(items)
+                    bulkRepository.clearAllItems()
+                    bulkRepository.insertBulkItems(items)
                     _parsedItems.value = items
                     _isImportDone.value = true
                 }
@@ -235,6 +261,28 @@ class ImportExcelViewModel @Inject constructor(
             }
         }
     }
+
+    fun syncAndMapRow(itemCode: String): String {
+        return syncedRFIDMap?.get(itemCode) ?: ""
+    }
+
+    suspend fun syncRFIDDataIfNeeded(context: Context) {
+        if (syncedRFIDMap != null) return // Already synced
+
+        val employee = userPreferences.getEmployee(Employee::class.java)
+        val clientCode = employee?.clientCode ?: return
+
+        val response = bulkRepository.syncRFIDItemsFromServer(ClientCodeRequest(clientCode))
+        bulkRepository.insertRFIDTags(response)
+
+        // Cache mapping in memory (itemCode -> EPC)
+        syncedRFIDMap = response.associateBy(
+            { it.BarcodeNumber },
+            { it.TidValue }
+        )
+    }
+
+
 
     private fun getStringFromRow(
         row: Row,

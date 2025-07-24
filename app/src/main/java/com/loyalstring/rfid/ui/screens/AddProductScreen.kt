@@ -3,6 +3,7 @@ package com.loyalstring.rfid.ui.screens
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -84,7 +87,6 @@ import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.EditProductViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import java.io.File
-import java.util.jar.Manifest
 
 // Imports skipped for brevity — keep your existing ones
 
@@ -116,7 +118,7 @@ private val sampleFields = listOf(
     FormField("Fix Wastage", false),
     FormField("Stone Amount", false),
     FormField("Diamond Amount", false),
-    FormField("Image Upload", false)
+    // FormField("Image Upload", false)
 )
 @Composable
 fun AddProductScreen(
@@ -225,6 +227,7 @@ fun AddProductScreen(
     }
 
     LaunchedEffect(Unit) {
+        viewModel.barcodeReader.openIfNeeded()
         viewModel.barcodeReader.setOnBarcodeScanned { scanned ->
             bulkViewModel.onBarcodeScanned(scanned)
             bulkViewModel.setRfidForAllTags(scanned)
@@ -292,6 +295,16 @@ fun AddProductScreen(
         )
     }
 
+
+    CameraImagePicker(
+        imageUri = imageUri,
+        onImageSelected = { uri ->
+            bulkViewModel
+
+            Log.d("ImageSelected", "URI: $uri")
+        }
+    )
+
     fun onSkuSelected(sku: SKUModel) {
         updateField(
             "Category",
@@ -325,6 +338,7 @@ fun AddProductScreen(
         bottomBar = {
             ScanBottomBar(
                 onSave = {
+                    viewModel.barcodeReader.close()
 
                     formFields.forEach { field ->
 
@@ -515,33 +529,33 @@ fun AddProductScreen(
             }
         }
 
-        if (showDialog.value) {
-            ImageUploadDialog(
-                showDialog = showDialog.value,
-                onDismiss = { showDialog.value = false },
-                onConfirm = {
-                    updateField("Image Upload", imageUri.value.orEmpty())
-                    showDialog.value = false
-                },
-                onTakePhoto = {
-                    val uri = File(
-                        context.cacheDir,
-                        "${System.currentTimeMillis()}.jpg"
-                    ).apply { createNewFile() }.let {
-                        FileProvider.getUriForFile(context, "${context.packageName}.provider", it)
-                    }
-                    photoUri.value = uri
-                    cameraLauncher.launch(uri)
-                },
-                onAttachFile = {
-                    galleryLauncher.launch("image/*")
-                },
-                imageUrl = imageUrl.value,
-                onImageUrlChange = { imageUrl.value = it },
-                imageUri = imageUri.value,
-                onImageUriChange = { imageUri.value = it }
-            )
-        }
+//        if (showDialog.value) {
+//            ImageUploadDialog(
+//                showDialog = showDialog.value,
+//                onDismiss = { showDialog.value = false },
+//                onConfirm = {
+//                    updateField("Image Upload", imageUri.value.orEmpty())
+//                    showDialog.value = false
+//                },
+//                onTakePhoto = {
+//                    val uri = File(
+//                        context.cacheDir,
+//                        "${System.currentTimeMillis()}.jpg"
+//                    ).apply { createNewFile() }.let {
+//                        FileProvider.getUriForFile(context, "${context.packageName}.provider", it)
+//                    }
+//                    photoUri.value = uri
+//                    cameraLauncher.launch(uri)
+//                },
+//                onAttachFile = {
+//                    galleryLauncher.launch("image/*")
+//                },
+//                imageUrl = imageUrl.value,
+//                onImageUrlChange = { imageUrl.value = it },
+//                imageUri = imageUri.value,
+//                onImageUriChange = { imageUri.value = it }
+//            )
+//        }
     }
 }
 
@@ -832,6 +846,112 @@ fun FormRow(
             }
 
         }
+    }
+}
+
+@Composable
+fun CameraImagePicker(
+    imageUri: MutableState<String?>,
+    onImageSelected: (Uri) -> Unit,
+) {
+    val context = LocalContext.current
+    val photoUri = remember { mutableStateOf<Uri?>(null) }
+    val shouldLaunchCamera = remember { mutableStateOf(false) }
+
+    // Camera Permission Launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            shouldLaunchCamera.value = true
+        } else {
+            Toast.makeText(context, "Camera permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Camera Launcher
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            photoUri.value?.let {
+                imageUri.value = it.toString()
+                onImageSelected(it)
+            }
+        }
+    }
+
+    // Gallery Launcher
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            imageUri.value = it.toString()
+            onImageSelected(it)
+        }
+    }
+
+    // Launch camera if permission is granted
+    LaunchedEffect(shouldLaunchCamera.value) {
+        if (shouldLaunchCamera.value) {
+            val photoFile = File(
+                context.cacheDir,
+                "${System.currentTimeMillis()}.jpg"
+            ).apply {
+                createNewFile()
+            }
+
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                photoFile
+            )
+
+            photoUri.value = uri
+            shouldLaunchCamera.value = false
+
+            try {
+                cameraLauncher.launch(uri)
+            } catch (e: Exception) {
+                Toast.makeText(context, "Camera error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // UI Buttons
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Button(onClick = {
+            val permission = android.Manifest.permission.CAMERA
+            if (ContextCompat.checkSelfPermission(
+                    context,
+                    permission
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                shouldLaunchCamera.value = true
+            } else {
+                cameraPermissionLauncher.launch(permission)
+            }
+        }) {
+            Text("Camera")
+        }
+
+        Button(onClick = {
+            galleryLauncher.launch("image/*")
+        }) {
+            Text("Gallery")
+        }
+    }
+
+    // Show selected image preview
+    imageUri.value?.let { uri ->
+        Spacer(modifier = Modifier.height(12.dp))
+        AsyncImage(
+            model = uri,
+            contentDescription = null,
+            modifier = Modifier
+                .size(200.dp)
+                .clip(RoundedCornerShape(12.dp))
+        )
     }
 }
 
