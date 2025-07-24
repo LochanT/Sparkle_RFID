@@ -22,10 +22,12 @@ import com.loyalstring.rfid.ui.utils.NetworkUtils
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 sealed class UiState<out T> {
@@ -41,6 +43,9 @@ class OrderViewModel @Inject constructor(
 ) : ViewModel() {
     private val _addEmpResponse = MutableLiveData<Resource<EmployeeResponse>>()
     val addEmpReposnes: LiveData<Resource<EmployeeResponse>> = _addEmpResponse
+
+
+
 
    /* private val _empListResponse = MutableLiveData<List<EmployeeList>>()
     val empListResponse: LiveData<List<EmployeeList>> = _empListResponse
@@ -64,6 +69,14 @@ class OrderViewModel @Inject constructor(
 
     private val _allOrderItems = MutableStateFlow<List<OrderItem>>(emptyList())
     val allOrderItems: StateFlow<List<OrderItem>> = _allOrderItems
+
+
+    private val _insertOrderOffline = MutableStateFlow<CustomOrderRequest?>(null) // ✅
+    val insertOrderOffline: StateFlow<CustomOrderRequest?> = _insertOrderOffline
+
+
+    private val _getAllOrderList = MutableStateFlow<List<CustomOrderResponse>>(emptyList())
+    val getAllOrderList: StateFlow<List<CustomOrderResponse>> = _getAllOrderList
 
     fun setOrderResponse(response: CustomOrderResponse) {
         _orderResponse.value = response
@@ -101,9 +114,9 @@ class OrderViewModel @Inject constructor(
 
     /*emp list function*/
 
-    fun getAllEmpList(clientCode: String) {
+  /*  fun getAllEmpList(clientCode: String) {
         viewModelScope.launch {
-            delay(1000)
+           // delay(1000)
             isEmpListLoading.value = true
 
             try {
@@ -116,23 +129,167 @@ class OrderViewModel @Inject constructor(
                     // repository.clearAllEmployees()
                   // repository.saveEmpListToRoom(data!!)
 
+                  *//*  if (!data.isNullOrEmpty()) {
+                        withContext(Dispatchers.IO) {
+                            val chunkSize = 10 // try with 500–1000
+                            data.chunked(chunkSize).forEach { chunk ->
+                                repository.saveEmpListToRoom(chunk)
+                            }
+                        }
+                    }*//*
+                   // repository.saveEmpListToRoom(data!!)
                     _empListFlow.value = UiState.Success(data!!)
 
                 } else {
-                    // API failed => try loading from local DB
                     val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
                     _empListFlow.value = UiState.Success(localData)
+
+                    // API failed => try loading from local DB
+                  *//*  val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
+                    val employeeList = localData.map { it.toEmployeeList() }  // Convert to List<EmployeeList>
+                    _empListFlow.value = UiState.Success(employeeList!!)*//*
                 }
 
             } catch (e: Exception) {
-                // Exception (e.g., no internet) => try loading from local DB
                 val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
                 _empListFlow.value = UiState.Success(localData)
+                // Exception (e.g., no internet) => try loading from local DB
+              *//*  val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
+                val employeeList = localData.map { it.toEmployeeList() }  // Convert to List<EmployeeList>
+                _empListFlow.value = UiState.Success(employeeList!!)*//*
             } finally {
                 isEmpListLoading.value = false
             }
         }
     }
+*/
+
+    fun getAllEmpList(clientCode: String) {
+        viewModelScope.launch {
+          //  delay(1000)
+            isEmpListLoading.value = true
+
+            try {
+                val response = repository.getAllEmpList(ClientCodeRequest(clientCode)) // API call
+
+                if (response.isSuccessful && response.body() != null && response.body()!!.isNotEmpty()) {
+                    val data = response.body()
+
+                    // Save to Room
+                    // repository.clearAllEmployees()
+                     repository.saveEmpListToRoom(data!!)
+
+                    _empListFlow.value = UiState.Success(data!!)
+
+                } else {
+                    // API failed => try loading from local DB
+                   /* val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
+                    _empListFlow.value = UiState.Success(localData)*/
+                }
+
+            } catch (e: Exception) {
+                // Exception (e.g., no internet) => try loading from local DB
+               /* val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
+                _empListFlow.value = UiState.Success(localData)*/
+            } finally {
+                isEmpListLoading.value = false
+            }
+        }
+    }
+    fun AddEmployeeRequest.toEmployeeList(): EmployeeList {
+        return EmployeeList(
+            custId = 0, // auto-generate in Room
+            Id = this.Id?.toIntOrNull() ?: 0,
+            FirstName = this.FirstName.orEmpty(),
+            LastName = this.LastName.orEmpty(),
+            PerAddStreet = this.PerAddStreet.orEmpty(),
+            CurrAddStreet = this.CurrAddStreet.orEmpty(),
+            Mobile = this.Mobile.orEmpty(),
+            Email = this.Email.orEmpty(),
+            Password = this.Password.orEmpty(),
+            CustomerLoginId = this.CustomerLoginId.orEmpty(),
+            DateOfBirth = this.DateOfBirth.orEmpty(),
+            MiddleName = this.MiddleName.orEmpty(),
+            PerAddPincode = this.PerAddPincode.orEmpty(),
+            Gender = this.Gender,
+            OnlineStatus = this.OnlineStatus,
+            CurrAddTown = this.PerAddTown, // using PerAddTown because CurrAddTown not in API
+            CurrAddPincode = this.CurrAddPincode.orEmpty(),
+            CurrAddState = this.CurrAddState.orEmpty(),
+            PerAddTown = this.PerAddTown.orEmpty(),
+            PerAddState = this.PerAddState,
+            GstNo = this.GstNo.orEmpty(),
+            PanNo = this.PanNo.orEmpty(),
+            AadharNo = this.AadharNo.orEmpty(),
+            BalanceAmount = this.BalanceAmount.orEmpty(),
+            AdvanceAmount = this.AdvanceAmount.orEmpty(),
+            Discount = this.Discount.orEmpty(),
+            CreditPeriod = this.CreditPeriod,
+            FineGold = this.FineGold.orEmpty(),
+            FineSilver = this.FineSilver.orEmpty(),
+            ClientCode = this.ClientCode.orEmpty(),
+            VendorId = this.VendorId ?: 0,
+            AddToVendor = this.AddToVendor ?: false,
+            CustomerSlabId = this.CustomerSlabId ?: 0,
+            CreditPeriodId = this.CreditPeriodId ?: 0,
+            RateOfInterestId = this.RateOfInterestId ?: 0,
+            CustomerSlab = null,
+            RateOfInterest = null,
+            CreatedOn = "", // not in API, can be current time or empty
+            LastUpdated = "", // not in API
+            StatusType = true,
+            Remark = this.Remark.orEmpty(),
+            Area = this.Area.orEmpty(),
+            City = this.City.orEmpty(),
+            Country = this.Country.orEmpty()
+        )
+    }
+
+
+
+    fun EmployeeList.toAddEmployeeRequest(): AddEmployeeRequest {
+        return AddEmployeeRequest(
+            Id = this.Id.toString(),
+            FirstName = this.FirstName,
+            MiddleName = this.MiddleName,
+            LastName = this.LastName,
+            Email = this.Email,
+            CustomerLoginId = this.CustomerLoginId,
+            Password = this.Password,
+            Gender = this.Gender,
+            CustomerSlabId = this.CustomerSlabId,
+            CreditPeriodId = this.CreditPeriodId,
+            RateOfInterestId = this.RateOfInterestId,
+            Mobile = this.Mobile,
+            OnlineStatus = this.OnlineStatus,
+            DateOfBirth = this.DateOfBirth,
+            AdvanceAmount = this.AdvanceAmount,
+            BalanceAmount = this.BalanceAmount,
+            CurrAddStreet = this.CurrAddStreet,
+            Area = this.Area,
+            PerAddTown = this.PerAddTown,
+            City = this.City,
+            CurrAddState = this.CurrAddState,
+            CurrAddPincode = this.CurrAddPincode,
+            PerAddStreet = this.PerAddStreet,
+            PerAddState = this.PerAddState,
+            PerAddPincode = this.PerAddPincode,
+            Country = this.Country,
+            PerAddCountry = null, // You don't have PerAddCountry in EmployeeList, so set null
+            AadharNo = this.AadharNo,
+            Discount = this.Discount,
+            CreditPeriod = this.CreditPeriod,
+            PanNo = this.PanNo,
+            FineGold = this.FineGold,
+            FineSilver = this.FineSilver,
+            GstNo = this.GstNo,
+            ClientCode = this.ClientCode,
+            VendorId = this.VendorId,
+            Remark = this.Remark,
+            AddToVendor = this.AddToVendor
+        )
+    }
+
 
     /*    fun getAllEmpList(request: String) {
             viewModelScope.launch {//
@@ -210,6 +367,8 @@ class OrderViewModel @Inject constructor(
                 } else {
                     _orderResponse.value = response.body()// ✅ Use default object
                     Log.e("OrderViewModel", "Custom Order Response error: ${response.code()}")
+
+
                 }
             } catch (e: Exception) {
                 _orderResponse.value = _orderResponse.value
@@ -241,6 +400,29 @@ class OrderViewModel @Inject constructor(
         }
     }
 
+    /*get All order list in list screen*/
+    /*last order no*/
+    fun fetchAllOrderListFromApi(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            try {
+                val response = repository.getAllOrderList(request)
+                if (response.isSuccessful && response.body() != null) {
+                    _getAllOrderList.value = response.body()!!
+                    //repository.clearLastOrderNo()
+                   // repository.saveLastOrderNoToRoom(response.body()!!)
+                    Log.d("OrderViewModel", "get All order list: ${response.body()}")
+                } else {
+                    Log.e("OrderViewModel", "Error: ${response.code()} ${response.message()}")
+                    /*val localData = repository.getLastOrderNoFromRoom(request)
+                    _lastOrderNOResponse.value = localData*/
+                }
+            } catch (e: Exception) {
+                Log.e("OrderViewModel", "Exception: ${e.message}")
+              /*  val localData = repository.getLastOrderNoFromRoom(request)
+                _lastOrderNOResponse.value = localData*/
+            }
+        }
+    }
 
     /*insert order item locally*/
     fun insertOrderItemToRoom(item: OrderItem) {
@@ -287,13 +469,15 @@ class OrderViewModel @Inject constructor(
 
     /*sync data to server*/
     // Save the customer order to Room
-    fun saveOrder(customOrderResponse: CustomOrderResponse) {
+    fun saveOrder(customerOrderRequest: CustomOrderRequest) {
         viewModelScope.launch {
             try {
-                repository.saveCustomerOrder(customOrderResponse)
-                _orderResponse.value = (customOrderResponse!!)
+                repository.saveCustomerOrder(customerOrderRequest)
+                _insertOrderOffline.value = (customerOrderRequest!!)
+                Log.d("@@","@@"+customerOrderRequest)
             } catch (e: Exception) {
-                _orderResponse.value = (customOrderResponse!!)
+                _insertOrderOffline.value = (customerOrderRequest!!)
+                Log.d("@@","@@"+e.toString())
             }
         }
     }
@@ -303,7 +487,7 @@ class OrderViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val orders = repository.getAllCustomerOrders(clientCode)
-                _orderResponse.value = (orders)
+               // _orderResponse.value = (orders)
             } catch (e: Exception) {
                // _orderResponse.value =("Failed to fetch orders: ${e.message}")
             }
@@ -322,13 +506,13 @@ class OrderViewModel @Inject constructor(
         }
     }
 
-    fun syncDataWhenOnline() {
+   /* fun syncDataWhenOnline() {
         // Check if the device is online (Use a utility method or Network API to check connectivity)
         if (NetworkUtils.isNetworkAvailable(context)) {
             // Fetch unsynced data from Room and sync to server
             viewModelScope.launch {
                 val unsyncedOrders = repository.getAllCustomerOrders("clientCode") // Replace with actual client code
-               /* unsyncedOrders.filter { !it.syncStatus } // Filter unsynced orders
+               *//* unsyncedOrders.filter { !it.syncStatus } // Filter unsynced orders
 
                 unsyncedOrders.forEach { order ->
                     val response = repository.addOrder(order)
@@ -336,12 +520,30 @@ class OrderViewModel @Inject constructor(
                         // Mark as synced after successful sync
                         repository.deleteUnsyncedOrders() // Delete unsynced orders from Room after syncing
                     }
-                }*/
+                }*//*
             }
         } else {
             Log.d("Sync", "No internet available. Will retry when online.")
         }
-    }
+    }*/
+   fun syncDataWhenOnline() {
+       viewModelScope.launch {
+           val unsyncedOrders = repository.getAllCustomerOrders("clientCode")
+           for (order in unsyncedOrders) {
+               try {
+                   val response = repository.addOrder(order)
+                   if (response.isSuccessful) {
+                       repository.addOrder(order)
+                       Log.e("Sync", "Successfully done")
+                   }
+               } catch (e: Exception) {
+                   Log.e("Sync", "Failed to sync: ${e.message}")
+               }
+           }
+       }
+   }
+
+
 
     // Sync orders to the server (if needed)
     /*fun syncOrders(customOrderResponse: CustomOrderResponse) {

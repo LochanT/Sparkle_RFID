@@ -4,6 +4,9 @@ import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.os.Build
@@ -78,7 +81,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.zIndex
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
@@ -97,6 +102,7 @@ import com.loyalstring.rfid.data.model.order.Payment
 import com.loyalstring.rfid.data.model.order.URDPurchase
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.GradientButtonIcon
+import com.loyalstring.rfid.ui.utils.NetworkUtils
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
@@ -104,11 +110,15 @@ import com.loyalstring.rfid.viewmodel.OrderViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import com.loyalstring.rfid.viewmodel.UiState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.net.URL
 
 @RequiresApi(Build.VERSION_CODES.R)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -193,6 +203,9 @@ fun OrderScreenContent(
     onCustomerSelected: (EmployeeList) -> Unit
 ) {
     val context = LocalContext.current
+    val isOnline = remember {
+        NetworkUtils.isNetworkAvailable(context)
+    }
 
 // Retrieve logged-in employee from preferences
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
@@ -237,6 +250,8 @@ fun OrderScreenContent(
     val scanTrigger by bulkViewModel.scanTrigger.collectAsState()
     val productList by orderViewModel.allOrderItems.collectAsState()
     val stateorder by orderViewModel.lastOrderNoresponse.collectAsState()
+    val orderRequest by orderViewModel.insertOrderOffline.collectAsState()
+
 
 
 // Trigger for refreshing components like dropdowns
@@ -257,24 +272,41 @@ fun OrderScreenContent(
 // --------------------------
 // Customer Suggestions Logic
 // --------------------------
+
     val customerSuggestions by orderViewModel.empListFlow.collectAsState(UiState.Loading)
-
-    val filteredCustomers = when (customerSuggestions) {
-        is UiState.Success<*> -> {
-            val items = (customerSuggestions as UiState.Success<List<EmployeeList>>).data
-            items.filter {
-                val fullName = "${it.FirstName} ${it.LastName}".trim().lowercase()
-                fullName.contains(customerName.trim().lowercase())
+/*
+    val filteredCustomers = remember(customerName, customerSuggestions) {
+        when (customerSuggestions) {
+            is UiState.Success<*> -> {
+                val items = (customerSuggestions as UiState.Success<Any?>)!!.data as List<EmployeeList>
+                items.filter {
+                    val fullName = "${it.FirstName} ${it.LastName}".trim().lowercase()
+                    fullName.contains(customerName.trim().lowercase())
+                }
             }
-        }
 
-        else -> emptyList()
+            else -> emptyList()
+        }
+    }*/
+
+    val filteredCustomers = remember(customerName, customerSuggestions) {
+        when (customerSuggestions) {
+            is UiState.Success<*> -> {
+                val items = (customerSuggestions as UiState.Success<Any?>)!!.data as List<EmployeeList>
+                items.filter {
+                    val fullName = "${it.FirstName} ${it.LastName}".trim().lowercase()
+                    fullName.contains(customerName.trim().lowercase())
+                }.take(20) // ✅ LIMIT to 20
+            }
+            else -> emptyList()
+        }
     }
 
     LaunchedEffect(customerSuggestions) {
         if (customerSuggestions is UiState.Success) {
             val data = (customerSuggestions as UiState.Success<List<EmployeeList>>).data
             Log.d("CustomerList", Gson().toJson(data))
+
         }
     }
 
@@ -328,7 +360,29 @@ fun OrderScreenContent(
 // -------------------------
 // Invoice Generation Trigger
 // -------------------------
+
     var showInvoice by remember { mutableStateOf(false) }
+
+
+    LaunchedEffect(orderRequest) {
+
+        /* Log.d("orderRequest", Gson().toJson(orderRequest))
+         Toast.makeText(context, "Customer order added successfully", Toast.LENGTH_SHORT).show()
+         generateInvoicePdfAndOpen(context, it, employee)
+         showInvoice = true*/
+
+        orderRequest?.let {
+            val orderResponse = it.toCustomOrderResponse()
+            orderViewModel.setOrderResponse(orderResponse)
+
+            orderViewModel.setOrderResponse(orderResponse)
+            Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
+            generateInvoicePdfAndOpen(context, orderResponse, employee)
+            showInvoice = true
+        }
+
+
+    }
 
     LaunchedEffect(orderSuccess) {
         orderSuccess?.let {
@@ -336,6 +390,12 @@ fun OrderScreenContent(
             Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
             generateInvoicePdfAndOpen(context, it, employee)
             showInvoice = true
+        }
+    }
+
+    LaunchedEffect(addEmpResponse) {
+        if (addEmpResponse != null) {
+            Toast.makeText(context, "Customer added successfully", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -526,17 +586,32 @@ fun OrderScreenContent(
 
     // ✅ Set barcode scan callback ONCE
     LaunchedEffect(Unit) {
+        bulkViewModel.barcodeReader.openIfNeeded()
         bulkViewModel.barcodeReader.setOnBarcodeScanned { scanned ->
             bulkViewModel.onBarcodeScanned(scanned)
             bulkViewModel.setRfidForAllTags(scanned)
             Log.d("RFID Code", scanned)
         }
     }
+    LaunchedEffect(productList) {
+        totalStoneAmt = productList.sumOf { it.stoneAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+        totalNetAmt = productList.sumOf { it.netAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+        // totalGstAmt= productList.sumOf { it.to?.toDoubleOrNull() ?: 0.0 }.toString()
+        totalPupaseAmt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+        // totalStoneAmt = productList.sumOf { it.stoneAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+        totalStoneWt = productList.sumOf { it.stoneWt?.toDoubleOrNull() ?: 0.0 }.toString()
+        totalDiamondAMt = productList.sumOf { it.diamondAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+        totalDiamondWt = productList.sumOf { it.dimondWt?.toDoubleOrNull() ?: 0.0 }.toString()
+        totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+    }
 
     Scaffold(
         bottomBar = {
+            Spacer(modifier = Modifier.height(4.dp))
             ScanBottomBar(
                 onSave = run@{
+                    bulkViewModel.barcodeReader.close()
+
                     if (selectedCustomer == null) {
                         Toast.makeText(context, "Please select a customer.", Toast.LENGTH_SHORT)
                             .show()
@@ -556,9 +631,10 @@ fun OrderScreenContent(
                     orderViewModel.fetchLastOrderNo(clientCodeRequest)
                     val nextOrderNo = lastOrder.LastOrderNo.toIntOrNull()?.plus(1) ?: 1
 
+
                     coroutineScope.launch {
                         val gstPercent = 3.0
-                        val gstApplied = "true"
+                        //val gstApplied = "true"
                         val taxableAmt = totalAMt.toDoubleOrNull() ?: 0.0
                         val isGstApplied: Boolean
 
@@ -646,9 +722,9 @@ fun OrderScreenContent(
                             BalanceMetal = "0.0",
                             AdvanceAmt = "0",
                             PaidAmt = "25000",
-                            TaxableAmt = "47000",
-                            GstAmount = "2500",
-                            GstCheck = "true",
+                            TaxableAmt = taxableAmt.toString(),
+                            GstAmount = gstAmt.toString(),
+                            GstCheck = isGstChecked.toString(),
                             Category = "Ring",
                             TDSCheck = "false",
                             Remark = "Urgent order",
@@ -789,11 +865,16 @@ fun OrderScreenContent(
                                 StatusType = true
                             )
                         )
-
-                        orderViewModel.addOrderCustomer(request)
+                        if (isOnline) {
+                            orderViewModel.addOrderCustomer(request)
+                        } else {
+                            orderViewModel.saveOrder(request)
+                        }
                     }
                 },
-                onList = {},
+                onList = {
+                    navController.navigate("order_list")
+                },
                 onScan = {
                    // resetScan(bulkViewModel,firstPress)
                     bulkViewModel.startSingleScan(30) { tag ->
@@ -975,7 +1056,7 @@ fun OrderScreenContent(
                 .padding(bottom = 80.dp)
         ) {
             Spacer(modifier = Modifier.height(4.dp))
-            CustomerNameInput(
+            /*CustomerNameInput(
                 customerName = customerName,
                 onCustomerNameChange = { customerName = it },
                 onClear = {
@@ -998,8 +1079,8 @@ fun OrderScreenContent(
                 filteredCustomers = filteredCustomers,
                 isLoading = isLoadingEmp,
                 onCustomerSelected = {
-                    customerName = it.FirstName
-                    customerId = it.Id.toInt()
+                    customerName = it.FirstName.toString()
+                    customerId = it.Id?.toInt()
                     onCustomerSelected(it)
                 },
                 coroutineScope = coroutineScope,
@@ -1007,7 +1088,45 @@ fun OrderScreenContent(
                     orderViewModel.getAllEmpList(employee?.clientCode!!)
                 },
                 expanded = false
+            )*/
+            val coroutineScope = rememberCoroutineScope()
+
+            CustomerNameInput(
+                customerName = customerName,
+                onCustomerNameChange = { customerName = it },
+                onClear = {
+                    customerName = ""
+                    expandedCustomer = false
+                },
+                onAddCustomerClick = {
+                    customerNameadd = ""
+                    mobileNumber = ""
+                    email = ""
+                    panNumber = ""
+                    gstNumber = ""
+                    street = ""
+                    city = ""
+                    state = ""
+                    country = ""
+                    showAddCustomerDialog = true
+                },
+                filteredCustomers = filteredCustomers,
+                isLoading = false,
+                onCustomerSelected = {
+                    customerName = "${it.FirstName.orEmpty()} ${it.LastName.orEmpty()}".trim()
+                    customerId = it.Id ?: 0
+                    onCustomerSelected(it)
+                },
+                coroutineScope = coroutineScope, // ✅ Required argument
+                fetchSuggestions = {
+                 //   orderViewModel.getAllEmpList(employee?.clientCode ?: "")
+                },
+
+                expanded = false,
+
             )
+
+
 
             // Spacer(modifier = Modifier.height(5.dp))
 
@@ -1347,11 +1466,11 @@ fun OrderScreenContent(
                                             Toast.LENGTH_SHORT
                                         ).show()
 
-                                        !isValidPhone(mobileNumber) -> Toast.makeText(
-                                            context,
-                                            "Invalid phone",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        /*   !isValidPhone(mobileNumber) -> Toast.makeText(
+                                               context,
+                                               "Invalid phone",
+                                               Toast.LENGTH_SHORT
+                                           ).show()*/
 
                                         email.isNotEmpty() && !isValidEmail(email) -> Toast.makeText(
                                             context,
@@ -1454,6 +1573,95 @@ fun OrderScreenContent(
 
 }
 
+fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
+    return CustomOrderResponse(
+        CustomOrderId = this.CustomOrderId,
+        CustomerId = this.CustomerId.toIntOrNull() ?: 0,
+        ClientCode = this.ClientCode,
+        OrderId = this.OrderId,
+        TotalAmount = this.TotalAmount,
+        PaymentMode = this.PaymentMode,
+        Offer = this.Offer,
+        Qty = this.Qty,
+        GST = this.GST,
+        OrderStatus = this.OrderStatus,
+        MRP = this.MRP,
+        VendorId = this.VendorId,
+        TDS = this.TDS,
+        PurchaseStatus = this.PurchaseStatus,
+        GSTApplied = this.GSTApplied,
+        Discount = this.Discount,
+        TotalNetAmount = this.TotalNetAmount,
+        TotalGSTAmount = this.TotalGSTAmount,
+        TotalPurchaseAmount = this.TotalPurchaseAmount,
+        ReceivedAmount = this.ReceivedAmount,
+        TotalBalanceMetal = this.TotalBalanceMetal,
+        BalanceAmount = this.BalanceAmount,
+        TotalFineMetal = this.TotalFineMetal,
+        CourierCharge = this.CourierCharge,
+        SaleType = this.SaleType,
+        OrderDate = this.OrderDate,
+        OrderCount = this.OrderCount,
+        AdditionTaxApplied = this.AdditionTaxApplied,
+        CategoryId = this.CategoryId,
+        OrderNo = this.OrderNo,
+        DeliveryAddress = this.DeliveryAddress,
+        BillType = this.BillType,
+        UrdPurchaseAmt = this.UrdPurchaseAmt,
+        BilledBy = this.BilledBy,
+        SoldBy = this.SoldBy,
+        CreditSilver = this.CreditSilver,
+        CreditGold = this.CreditGold,
+        CreditAmount = this.CreditAmount,
+        BalanceAmt = this.BalanceAmt,
+        BalanceSilver = this.BalanceSilver,
+        BalanceGold = this.BalanceGold,
+        TotalSaleGold = this.TotalSaleGold,
+        TotalSaleSilver = this.TotalSaleSilver,
+        TotalSaleUrdGold = this.TotalSaleUrdGold,
+        TotalSaleUrdSilver = this.TotalSaleUrdSilver,
+        FinancialYear = this.FinancialYear,
+        BaseCurrency = this.BaseCurrency,
+        TotalStoneWeight = this.TotalStoneWeight,
+        TotalStoneAmount = this.TotalStoneAmount,
+        TotalStonePieces = this.TotalStonePieces,
+        TotalDiamondWeight = this.TotalDiamondWeight,
+        TotalDiamondPieces = this.TotalDiamondPieces,
+        TotalDiamondAmount = this.TotalDiamondAmount,
+        FineSilver = this.FineSilver,
+        FineGold = this.FineGold,
+        DebitSilver = this.DebitSilver,
+        DebitGold = this.DebitGold,
+        PaidMetal = this.PaidMetal,
+        PaidAmount = this.PaidAmount,
+        TotalAdvanceAmt = this.TotalAdvanceAmt,
+        TaxableAmount = this.TaxableAmount,
+        TDSAmount = this.TDSAmount ?: "",
+        CreatedOn = this.CreatedOn ?: "",
+        LastUpdated = this.LastUpdated ?: "",
+        StatusType = this.StatusType ?: true,
+        FineMetal = this.FineMetal,
+        BalanceMetal = this.BalanceMetal,
+        AdvanceAmt = this.AdvanceAmt,
+        PaidAmt = this.PaidAmt,
+        TaxableAmt = this.TaxableAmt,
+        GstAmount = this.GstAmount,
+        GstCheck = this.GstCheck,
+        Category = this.Category,
+        TDSCheck = this.TDSCheck,
+        Remark = this.Remark,
+        OrderItemId = this.OrderItemId ?: 0,
+        StoneStatus = this.StoneStatus,
+        DiamondStatus = this.DiamondStatus,
+        BulkOrderId = this.BulkOrderId,
+        CustomOrderItem = this.CustomOrderItem,
+        Payments = this.Payments,
+        Customer = this.Customer,
+        syncStatus = this.syncStatus
+    )
+}
+
+
 fun resetScan(model: BulkViewModel, firstPress: Boolean) {
     // Add logic to stop or clear scanning state
     model.resetData()
@@ -1546,7 +1754,9 @@ fun GstRowView(
                 }
             )
         }
+
     }
+
 }
 
 fun mapItemCodeToOrderItem(item: ItemCodeResponse): OrderItem {
@@ -1855,7 +2065,10 @@ fun OrderItemTableScreen(
                         .padding(vertical = 6.dp, horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+
                     listOf(
+
+
                         "Total" to 160.dp,
                         "$totalQty" to 80.dp,
                         String.format("%.3f", totalGrWt) to 80.dp,
@@ -1876,6 +2089,8 @@ fun OrderItemTableScreen(
                         }
                     }
                 }
+                totalNetWt
+
             }
         }
     }
@@ -2426,7 +2641,7 @@ fun ItemCodeInputRow(
 }
 
 
-@Composable
+/*@Composable
 fun CustomerNameInput(
     customerName: String,
     onCustomerNameChange: (String) -> Unit,
@@ -2467,7 +2682,7 @@ fun CustomerNameInput(
 
                         if (it.length >= 1) {
                             coroutineScope.launch {
-                                delay(100)
+                              //  delay(100)
                                 fetchSuggestions()
                                 expanded = true
                             }
@@ -2548,7 +2763,7 @@ fun CustomerNameInput(
                                     expanded = false
                                 }
                             ) {
-                                Text(text = customer.FirstName)
+                                Text(text = customer.FirstName.toString())
                             }
                         }
                     }
@@ -2557,8 +2772,175 @@ fun CustomerNameInput(
 
 
         }
+
+
+
+    }
+}*/
+@Composable
+fun CustomerNameInput(
+    customerName: String,
+    onCustomerNameChange: (String) -> Unit,
+    onClear: () -> Unit,
+    onAddCustomerClick: () -> Unit,
+    filteredCustomers: List<EmployeeList>,
+    isLoading: Boolean,
+    onCustomerSelected: (EmployeeList) -> Unit,
+    modifier: Modifier = Modifier,
+    coroutineScope: CoroutineScope,
+    fetchSuggestions: suspend () -> Unit,
+    expanded: Boolean,
+) {
+    var localExpanded by remember { mutableStateOf(expanded) }
+    var debounceJob by remember { mutableStateOf<Job?>(null) }
+
+    Column(modifier = modifier) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .padding(horizontal = 10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .height(35.dp)
+                    .weight(1f)
+                    .gradientBorderBox()
+                    .padding(horizontal = 8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    BasicTextField(
+                        value = customerName,
+                        onValueChange = {
+                            onCustomerNameChange(it)
+                            debounceJob?.cancel()
+                            if (it.length >= 1) {
+                                debounceJob = coroutineScope.launch {
+                                    delay(300)
+                                    // ✅ REMOVE fetchSuggestions if not needed
+                                    try {
+                                        fetchSuggestions()
+                                        localExpanded = true
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                        // You can show a Toast/snackbar or log it
+                                    }
+                                }
+                            } else {
+                                localExpanded = false
+                            }
+                        },
+                        singleLine = true,
+                        textStyle = TextStyle(fontSize = 14.sp, color = Color.Black),
+                        decorationBox = { innerTextField ->
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                if (customerName.isEmpty()) {
+                                    Text("Customer Name", fontSize = 13.sp, color = Color.Gray)
+                                }
+                                innerTextField()
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    IconButton(
+                        onClick = {
+                            if (customerName.isEmpty()) {
+                                onAddCustomerClick()
+                            } else {
+                                onClear()
+                                localExpanded = false
+                            }
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        if (customerName.isEmpty()) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.vector_add),
+                                contentDescription = "Add",
+                                modifier = Modifier.size(20.dp),
+                                tint = Color.Unspecified
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Clear",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // ✅ Custom dropdown — do NOT use DropdownMenuItem outside DropdownMenu
+        if (localExpanded && (filteredCustomers.isNotEmpty() || isLoading)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(horizontal = 16.dp)
+                    .border(1.dp, Color.LightGray, RoundedCornerShape(4.dp))
+            ) {
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    }
+                } else if (filteredCustomers.isNotEmpty()) {
+                    filteredCustomers.take(10).forEach { customer ->
+                        val fullName = "${customer.FirstName.orEmpty()} ${customer.LastName.orEmpty()}".trim()
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onCustomerSelected(customer)
+                                    onCustomerNameChange(fullName)
+                                    localExpanded = false
+                                }
+                                .padding(vertical = 8.dp, horizontal = 12.dp)
+                        ) {
+                            Text(text = fullName)
+                        }
+                    }
+                } else {
+                    Row(modifier = Modifier.padding(12.dp)) {
+                        Text("No customer found")
+                    }
+                }
+            }
+        }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 fun Modifier.gradientBorderBox(
@@ -2575,7 +2957,7 @@ fun Modifier.gradientBorderBox(
         .clip(RoundedCornerShape(borderRadius))
 }
 
-fun generateInvoicePdfAndOpen(context: Context, order: CustomOrderResponse, employee: Employee?) {
+/*fun generateInvoicePdfAndOpen(context: Context, order: CustomOrderResponse, employee: Employee?) {
     val document = PdfDocument()
     val paint = Paint()
 
@@ -2589,7 +2971,7 @@ fun generateInvoicePdfAndOpen(context: Context, order: CustomOrderResponse, empl
     // ---------- Header ----------
     paint.textSize = 14f
     paint.isFakeBoldText = true
-    canvas.drawText("Proforma Invoice", 220f, y.toFloat(), paint)
+    canvas.drawText("Order Receipt", 220f, y.toFloat(), paint)
 
     y += 50
     paint.textSize = 10f
@@ -2754,7 +3136,278 @@ fun generateInvoicePdfAndOpen(context: Context, order: CustomOrderResponse, empl
     } catch (e: ActivityNotFoundException) {
         Toast.makeText(context, "No PDF viewer found", Toast.LENGTH_SHORT).show()
     }
+}*/
+
+
+/*fun generateInvoicePdfAndOpen(
+    context: Context,
+    order: CustomOrderResponse,
+    employee: Employee?
+) {
+    CoroutineScope(Dispatchers.Main).launch {
+        // Preload images first
+        val imageBitmaps = mutableListOf<Bitmap?>()
+        for (item in order.CustomOrderItem) {
+            Log.d("@@","image@@"+item.Image)
+            val bitmap = loadBitmapFromUrl("https://rrgold.loyalstring.co.in/"+item.Image ?: "")
+            imageBitmaps.add(bitmap)
+        }
+
+        // Now draw PDF with loaded bitmaps
+        val document = PdfDocument()
+        val paint = Paint()
+
+        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+        val page = document.startPage(pageInfo)
+        val canvas = page.canvas
+
+        val boldTextSize = 12f
+        val regularTextSize = 11f
+        var y = 30
+
+        paint.textSize = boldTextSize
+        paint.isFakeBoldText = true
+        canvas.drawText("Bill Report", 20f, y.toFloat(), paint)
+        y += 20
+
+        val leftX = 25f
+        val rightX = 320f
+
+        paint.textSize = regularTextSize
+        paint.isFakeBoldText = false
+
+        for ((index, item) in order.CustomOrderItem.withIndex()) {
+            // Box
+            val boxLeft = 20f
+            val boxTop = y.toFloat()
+            val boxRight = 575f
+            val boxHeight = 80f
+            val boxBottom = boxTop + boxHeight
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 1f
+            canvas.drawRect(boxLeft, boxTop, boxRight, boxBottom, paint)
+
+            // Left Column
+            paint.style = Paint.Style.FILL
+            var leftTextY = y + 15f
+            canvas.drawText(
+                "Customer Name : ${order.Customer?.FirstName.orEmpty()} ${order.Customer?.LastName.orEmpty()}",
+                leftX,
+                leftTextY,
+                paint
+            )
+            leftTextY += 18
+            canvas.drawText("Order No       : ${item.OrderNo}", leftX, leftTextY, paint)
+            leftTextY += 18
+            canvas.drawText("Itemcode       : ${item.ItemCode}", leftX, leftTextY, paint)
+            leftTextY += 18
+            canvas.drawText("Notes          : ${"" ?: "null"}", leftX, leftTextY, paint)
+
+            // Right Column
+            var rightTextY = y + 15f
+            canvas.drawText("G wt  : ${item.GrossWt}", rightX, rightTextY, paint)
+            rightTextY += 18
+            canvas.drawText("S wt  : ${item.StoneWt}", rightX, rightTextY, paint)
+            rightTextY += 18
+            canvas.drawText("N Wt  : ${item.NetWt}", rightX, rightTextY, paint)
+
+            y += boxHeight.toInt() + 10
+
+            // Draw Image from preloaded list
+            imageBitmaps.getOrNull(index)?.let { bitmap ->
+                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 400, 600, true)
+                val imageX = (595 - scaledBitmap.width) / 2f
+                canvas.drawBitmap(scaledBitmap, imageX, y.toFloat(), null)
+                y += scaledBitmap.height + 10
+            }
+        }
+
+        document.finishPage(page)
+
+        try {
+            val file = File(
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+                "Bill_Report_${System.currentTimeMillis()}.pdf"
+            )
+            document.writeTo(FileOutputStream(file))
+            document.close()
+
+            val uri = FileProvider.getUriForFile(
+                context,
+                context.packageName + ".provider",
+                file
+            )
+
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            context.startActivity(Intent.createChooser(intent, "Open PDF with..."))
+
+        } catch (e: IOException) {
+            e.printStackTrace()
+            Toast.makeText(context, "Error saving PDF: ${e.message}", Toast.LENGTH_LONG).show()
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, "No PDF viewer found", Toast.LENGTH_SHORT).show()
+        }
+    }
+}*/
+fun generateInvoicePdfAndOpen(
+    context: Context,
+    order: CustomOrderResponse,
+    employee: Employee?
+) {
+    CoroutineScope(Dispatchers.Main).launch {
+        val imageBitmaps = mutableListOf<Bitmap?>()
+        for (item in order.CustomOrderItem) {
+            val bitmap = loadBitmapFromUrl("https://rrgold.loyalstring.co.in/" + (item.Image ?: ""))
+            imageBitmaps.add(bitmap)
+        }
+
+        val document = PdfDocument()
+        val paint = Paint()
+
+        val pageWidth = 595
+        val pageHeight = 842
+        val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create()
+
+        var currentPage = document.startPage(pageInfo)
+        var canvas = currentPage.canvas
+
+        val boldTextSize = 12f
+        val regularTextSize = 11f
+        val marginTop = 30
+        val marginBottom = 30
+        var y = marginTop
+
+        // Header
+        paint.textSize = boldTextSize
+        paint.isFakeBoldText = true
+        canvas.drawText("Bill Report", 20f, y.toFloat(), paint)
+        y += 20
+        paint.textSize = regularTextSize
+        paint.isFakeBoldText = false
+
+        val leftX = 25f
+        val rightX = 320f
+
+        for ((index, item) in order.CustomOrderItem.withIndex()) {
+            val boxHeight = 80
+            val imageHeight = 600
+            val spaceNeeded = boxHeight + 10 + imageHeight + 10
+
+            if (y + spaceNeeded > pageHeight - marginBottom) {
+                document.finishPage(currentPage)
+                currentPage = document.startPage(pageInfo)
+                canvas = currentPage.canvas
+                y = marginTop
+            }
+
+            // Draw box
+            val boxLeft = 20f
+            val boxTop = y.toFloat()
+            val boxRight = 575f
+            val boxBottom = boxTop + boxHeight
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 1f
+            canvas.drawRect(boxLeft, boxTop, boxRight, boxBottom, paint)
+
+            // Left Column
+            paint.style = Paint.Style.FILL
+            var leftTextY = y + 15f
+            canvas.drawText(
+                "Customer Name : ${order.Customer?.FirstName.orEmpty()} ${order.Customer?.LastName.orEmpty()}",
+                leftX,
+                leftTextY,
+                paint
+            )
+            leftTextY += 18
+            canvas.drawText("Order No       : ${item.OrderNo}", leftX, leftTextY, paint)
+            leftTextY += 18
+            canvas.drawText("Itemcode       : ${item.ItemCode}", leftX, leftTextY, paint)
+            leftTextY += 18
+            canvas.drawText("Notes          : ${"" ?: "null"}", leftX, leftTextY, paint)
+
+            // Right Column
+            var rightTextY = y + 15f
+            canvas.drawText("G wt  : ${item.GrossWt}", rightX, rightTextY, paint)
+            rightTextY += 18
+            canvas.drawText("S wt  : ${item.StoneWt}", rightX, rightTextY, paint)
+            rightTextY += 18
+            canvas.drawText("N Wt  : ${item.NetWt}", rightX, rightTextY, paint)
+
+            y += boxHeight + 10
+
+            // Image
+            imageBitmaps.getOrNull(index)?.let { bitmap ->
+                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 400, 600, true)
+                val imageX = (pageWidth - scaledBitmap.width) / 2f
+
+                if (y + scaledBitmap.height > pageHeight - marginBottom) {
+                    document.finishPage(currentPage)
+                    currentPage = document.startPage(pageInfo)
+                    canvas = currentPage.canvas
+                    y = marginTop
+                }
+
+                canvas.drawBitmap(scaledBitmap, imageX, y.toFloat(), null)
+                y += scaledBitmap.height + 10
+            }
+        }
+
+        document.finishPage(currentPage)
+
+        try {
+            val file = File(
+                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
+                "Bill_Report_${System.currentTimeMillis()}.pdf"
+            )
+            document.writeTo(FileOutputStream(file))
+            document.close()
+
+            val uri = FileProvider.getUriForFile(
+                context,
+                context.packageName + ".provider",
+                file
+            )
+
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            context.startActivity(Intent.createChooser(intent, "Open PDF with..."))
+        } catch (e: IOException) {
+            e.printStackTrace()
+            Toast.makeText(context, "Error saving PDF: ${e.message}", Toast.LENGTH_LONG).show()
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, "No PDF viewer found", Toast.LENGTH_SHORT).show()
+        }
+    }
 }
+
+
+
+suspend fun loadBitmapFromUrl(urlString: String): Bitmap? = withContext(Dispatchers.IO) {
+    try {
+        val url = URL(urlString)
+        val inputStream = url.openStream()
+        val bitmap = BitmapFactory.decodeStream(inputStream)
+        inputStream.close()
+        bitmap
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+
+
+
+
+
+
 
 
 

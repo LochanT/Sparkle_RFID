@@ -17,4 +17,13 @@ class SparkleRFIDApplication : Application() {
 
         mReader?.init()
     }
+
+    override fun onCreate() {
+        super.onCreate()
+/*
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            Log.e("UncaughtException", "App crashed with: ${throwable.message}", throwable)
+        }*/
+    }
+
 }

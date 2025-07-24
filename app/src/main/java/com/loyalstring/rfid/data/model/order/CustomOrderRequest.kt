@@ -1,6 +1,15 @@
 package com.loyalstring.rfid.data.model.order
 
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
+import com.loyalstring.rfid.data.local.converters.CustomOrderConverters
+
+@Entity(tableName = "customerorderequest")
+@TypeConverters(CustomOrderConverters::class)
 data class CustomOrderRequest(
+    @PrimaryKey(autoGenerate = true)
     val CustomOrderId: Int,
     val CustomerId: String,
     val ClientCode: String,
@@ -83,5 +92,10 @@ data class CustomOrderRequest(
     val CustomOrderItem: List<CustomOrderItem>,
     val Payments: List<Payment>,
     val uRDPurchases: List<URDPurchase>,
-    val Customer: Customer
+    val Customer: Customer,
+    @ColumnInfo(name = "syncStatus")
+    val syncStatus: Boolean = false,
+
+    @ColumnInfo(name = "LastUpdated")
+    val LastUpdated: String? = null
 )

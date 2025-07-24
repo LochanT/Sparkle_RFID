@@ -20,6 +20,7 @@ import com.loyalstring.rfid.data.local.entity.UHFTAGEntity
 import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
 import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
+import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
@@ -27,7 +28,8 @@ import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 @TypeConverters(UHFTAGInfoConverter::class)
 @Database(
     entities = [UHFTAGEntity::class, Category::class, Product::class, Design::class, BulkItem::class, OrderItem::class, EmployeeList::class,
-        ItemCodeResponse::class, BranchModel::class, SKUModel::class, PurityModel::class,LastOrderNoResponse::class, CustomOrderResponse::class],
+        ItemCodeResponse::class, BranchModel::class, SKUModel::class, PurityModel::class,LastOrderNoResponse::class, CustomOrderResponse::class,
+        CustomOrderRequest::class],
     version = 1
 )
 abstract class AppDatabase : RoomDatabase() {

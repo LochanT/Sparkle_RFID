@@ -57,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -67,6 +68,7 @@ import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.navigation.listOfNavItems
 import com.loyalstring.rfid.ui.theme.SparkleRFIDTheme
 import com.loyalstring.rfid.ui.utils.BackgroundGradient
+import com.loyalstring.rfid.ui.utils.NetworkMonitor
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
@@ -81,21 +83,32 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var userPreferences: UserPreferences
     private val viewModel: BulkViewModel by viewModels()
-
+    lateinit var networkMonitor: NetworkMonitor
+    val orderViewModel: OrderViewModel by viewModels()
 
 
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        networkMonitor = NetworkMonitor(this) {
+            orderViewModel.syncDataWhenOnline()
+        }
+        networkMonitor.startMonitoring()
         setContent {
             SparkleRFIDTheme {
                 SetupNavigation(baseContext, userPreferences)
             }
         }
 
+
 //        val nfcAdapter = NfcAdapter.getDefaultAdapter(this)
 //        nfcAdapter?.disableReaderMode(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        networkMonitor.stopMonitoring()
     }
 
     @SuppressLint("RestrictedApi")

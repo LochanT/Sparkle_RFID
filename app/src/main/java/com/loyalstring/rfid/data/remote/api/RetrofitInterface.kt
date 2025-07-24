@@ -126,6 +126,11 @@ interface RetrofitInterface {
     @POST("api/Order/LastOrderNo")
     suspend fun getLastOrderNo(@Body clientCodeRequest: ClientCodeRequest): Response<LastOrderNoResponse>
 
+    /*get all order list*/
+
+    @POST("api/Order/GetAllOrders")
+    suspend fun getAllOrderList(@Body clientCodeRequest: ClientCodeRequest): Response<List<CustomOrderResponse>>
+
 
 
 }

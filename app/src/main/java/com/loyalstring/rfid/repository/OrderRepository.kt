@@ -27,6 +27,7 @@ class OrderRepository @Inject constructor(
         return apiService.getAllEmpList(clientCodeRequest)
     }
 
+
     suspend fun getAllItemCodeList(clientCodeRequest: ClientCodeRequest): Response<List<ItemCodeResponse>> {
         return apiService.getAllItemCodeList(clientCodeRequest)
     }
@@ -41,6 +42,13 @@ class OrderRepository @Inject constructor(
     suspend fun getLastOrderNo(clientCodeRequest: ClientCodeRequest): Response<LastOrderNoResponse> {
         return apiService.getLastOrderNo(clientCodeRequest)
     }
+
+    /*get All order list*/
+    suspend fun getAllOrderList(clientCodeRequest: ClientCodeRequest): Response<List<CustomOrderResponse>> {
+        return apiService.getAllOrderList(clientCodeRequest)
+    }
+
+
 
 
 
@@ -66,10 +74,13 @@ class OrderRepository @Inject constructor(
     }
     /*local database save  all employee data*/
     suspend fun saveEmpListToRoom(empList: List<EmployeeList>) {
-        if (true){
+
         orderItemDao.insertAll(empList)
-        }
+
     }
+  /*  suspend fun getAllEmpListLocal(clientCodeRequest: ClientCodeRequest): Response<List<AddEmployeeRequest>> {
+        return apiService.getAllEmpList(clientCodeRequest)
+    }*/
 
     suspend fun clearAllEmployees() {
         orderItemDao.clearAllEmployees()
@@ -102,12 +113,12 @@ class OrderRepository @Inject constructor(
 
 
     // Save the custom order response to Room
-    suspend fun saveCustomerOrder(customOrderResponse: CustomOrderResponse) {
-        orderItemDao.insertCustomerOrdre(customOrderResponse)
+    suspend fun saveCustomerOrder(request: CustomOrderRequest) {
+        orderItemDao.insertCustomerOrder(request)
     }
 
     // Get all customer order responses from Room based on the client code
-    suspend fun getAllCustomerOrders(clientCode: String): CustomOrderResponse {
+    suspend fun getAllCustomerOrders(clientCode: String): List<CustomOrderRequest> {
         return orderItemDao.getAllCustomnerOrderReponse(clientCode)
     }
 

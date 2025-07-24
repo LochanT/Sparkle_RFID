@@ -5,9 +5,11 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
+import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.loyalstring.rfid.data.local.entity.OrderItem
-import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
@@ -242,12 +244,12 @@ interface OrderItemDao {
 
     /************ customer Order response **************/
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCustomerOrdre(customOrderResponse: CustomOrderResponse)
+    suspend fun insertCustomerOrder(customerOrderRequest: CustomOrderRequest)
 
-    @Query("SELECT * FROM customer_order_response WHERE ClientCode = :clientCode")
-    suspend fun getAllCustomnerOrderReponse(clientCode: String): CustomOrderResponse
+    @Query("SELECT * FROM customerorderequest WHERE ClientCode = :clientCode")
+    suspend fun getAllCustomnerOrderReponse(clientCode: String): List<CustomOrderRequest>
 
-    @Query("DELETE FROM customer_order_response WHERE syncStatus = 0")
+    @Query("DELETE FROM customerorderequest WHERE syncStatus = 0")
     suspend fun deleteUnsyncedOrder()
 
 
