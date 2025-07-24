@@ -86,6 +86,11 @@ fun ImportExcelScreen(
         "uhftagInfo"
     )
 
+
+    LaunchedEffect(Unit) {
+        viewModel.syncRFIDDataIfNeeded(context)
+    }
+
     LaunchedEffect(isImportDone) {
         if (isImportDone) {
             showOverlay = false
@@ -159,6 +164,8 @@ fun ImportExcelScreen(
                         selectedUri?.let {
                             showOverlay = true
                             viewModel.importMappedData(context, mapping)
+
+
                             showMappingDialog = false
                         }
                     },

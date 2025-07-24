@@ -43,6 +43,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.BufferedReader
 import java.io.File
@@ -457,7 +461,9 @@ class BulkViewModel @Inject constructor(
                     branchName = "",
                     categoryId = 0,
                     productId = 0,
-                    designId = 0
+                    designId = 0,
+                    packetId = 0,
+                    packetName = ""
                 ).apply {
                     uhfTagInfo = tag
                 }
@@ -625,6 +631,20 @@ class BulkViewModel @Inject constructor(
 
     fun getAllItems() {
         bulkRepository.getAllBulkItems()
+    }
+    suspend fun uploadImage(clientCode: String, itemCode: String, imageUri: File) {
+
+        val clientCodePart = clientCode.toRequestBody("text/plain".toMediaTypeOrNull())
+        val itemCodePart = itemCode.toRequestBody("text/plain".toMediaTypeOrNull())
+
+        val requestFile = imageUri.asRequestBody("image/*".toMediaTypeOrNull())
+        val multipartBody = MultipartBody.Part.createFormData(
+            name = "File",
+            filename = imageUri.name,
+            body = requestFile
+        )
+
+        apiService.uploadLabelStockImage(clientCodePart, itemCodePart, listOf(multipartBody))
     }
 
     fun getAllItems(context: Context) {

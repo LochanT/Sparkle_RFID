@@ -67,6 +67,7 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
 
     // ✅ Set barcode scan callback ONCE
     LaunchedEffect(Unit) {
+        viewModel.barcodeReader.openIfNeeded()
         viewModel.barcodeReader.setOnBarcodeScanned { scanned ->
             viewModel.onBarcodeScanned(scanned)
             clickedIndex?.let { index ->
@@ -110,9 +111,9 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
         },
         bottomBar = {
 
-
             ScanBottomBar(
                 onSave = {
+                    viewModel.barcodeReader.close()
                     Log.d("save scanned items", "CLICKED")
                     val androidId = Settings.Secure.getString(
                         context.contentResolver,
@@ -126,7 +127,7 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
                     }
                 },
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
-                onScan = { /* TODO */ },
+                onScan = { viewModel.startScanning(20) },
                 onGscan = {
                     if (!firstPress) {
                         firstPress = true

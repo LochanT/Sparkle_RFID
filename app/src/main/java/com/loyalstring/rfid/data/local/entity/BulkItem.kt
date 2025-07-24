@@ -58,10 +58,13 @@ data class BulkItem(
     val boxName: String?,
     val branchId: Int?,
     val branchName: String?,
+    val packetId: Int?,
+    val packetName: String?,
     val scannedStatus: String?,
     val categoryId: Int?,
     val productId: Int?,
     val designId: Int?
+
 ) : Parcelable {
     // ❗ Declare outside constructor, so it's excluded from Parcelable
     @IgnoredOnParcel

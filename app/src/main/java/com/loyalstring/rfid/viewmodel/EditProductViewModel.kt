@@ -1,7 +1,6 @@
 package com.loyalstring.rfid.viewmodel
 
 import androidx.compose.runtime.mutableStateOf
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.loyalstring.rfid.data.local.dao.BulkItemDao

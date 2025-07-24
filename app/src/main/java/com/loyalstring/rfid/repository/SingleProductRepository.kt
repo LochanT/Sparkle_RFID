@@ -7,6 +7,7 @@ import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
 import com.loyalstring.rfid.data.model.addSingleItem.CounterModel
 import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
 import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
+import com.loyalstring.rfid.data.model.addSingleItem.PacketModel
 import com.loyalstring.rfid.data.model.addSingleItem.ProductModel
 import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
@@ -55,6 +56,9 @@ class SingleProductRepository @Inject constructor(
 
     suspend fun getAllExhibitions(request: ClientCodeRequest): Response<List<BranchModel>> {
         return apiService.getAllBranches(request)
+    }
+    suspend fun getAllPackets(request: ClientCodeRequest): Response<List<PacketModel>> {
+        return apiService.getAllPackets(request)
     }
 
 

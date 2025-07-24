@@ -1,6 +1,7 @@
 package com.loyalstring.rfid.di
 
 import com.loyalstring.rfid.data.local.dao.BulkItemDao
+import com.loyalstring.rfid.data.local.dao.EpcDao
 import com.loyalstring.rfid.data.remote.api.RetrofitInterface
 import com.loyalstring.rfid.repository.BulkRepository
 import com.loyalstring.rfid.repository.BulkRepositoryImpl
@@ -16,10 +17,13 @@ object SyncRepositoryModule {
     @Provides
     fun provideBulkRepository(
         apiService: RetrofitInterface,
-        bulkItemDao: BulkItemDao
-    ): BulkRepository = BulkRepositoryImpl(
-        apiService,
-        bulkItemDao
-    )
-
+        bulkItemDao: BulkItemDao,
+        epcDao: EpcDao
+    ): BulkRepository {
+        return BulkRepositoryImpl(
+            apiService = apiService,
+            bulkItemDao = bulkItemDao,
+            epcDao = epcDao
+        )
+    }
 }

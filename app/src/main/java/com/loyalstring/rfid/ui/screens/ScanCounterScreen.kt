@@ -157,8 +157,8 @@ fun ScanCounterScreen(onBack: () -> Unit, navController: NavHostController) {
     }
 
     LaunchedEffect(selectedCategories, selectedProducts, selectedDesigns, currentLevel) {
-        println("▶️ Filters — Category: $selectedCategories, Product: $selectedProducts, Design: $selectedDesigns")
-        println("▶️ Level: $currentLevel | Category: $currentCategory | Product: $currentProduct")
+        println("Filters — Category: $selectedCategories, Product: $selectedProducts, Design: $selectedDesigns")
+        println("Level: $currentLevel | Category: $currentCategory | Product: $currentProduct")
     }
 
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)

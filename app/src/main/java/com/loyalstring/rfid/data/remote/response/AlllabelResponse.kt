@@ -94,60 +94,8 @@ data class AlllabelResponse(
         @SerializedName("CounterId") val counterId: String?,
         @SerializedName("BoxId") val boxId: String?,
         @SerializedName("BoxName") val boxName: String?,
-
-        // ---------- NEWLY ADDED FIELDS ----------
-        @SerializedName("MetalName") val metalName: String?,                      // NEW
-    @SerializedName("Colour") val colour: String?,                           // NEW
-    @SerializedName("Size") val size: String?,                               // NEW
-    @SerializedName("WeightCategory") val weightCategory: String?,           // NEW
-    @SerializedName("CollectionName") val collectionName: String?,           // NEW
-    @SerializedName("OccassionName") val occassionName: String?,             // NEW
-    @SerializedName("HallmarkAmount") val hallmarkAmount: String?,           // NEW
-    @SerializedName("FinePercent") val finePercent: String?,                 // NEW
-    @SerializedName("WastagePercent") val wastagePercent: String?,           // NEW
-    @SerializedName("BlackBeads") val blackBeads: String?,                   // NEW
-    @SerializedName("Height") val height: String?,                           // NEW
-    @SerializedName("Width") val width: String?,                             // NEW
-    @SerializedName("OrderedItemId") val orderedItemId: String?,             // NEW
-    @SerializedName("CuttingGrossWt") val cuttingGrossWt: String?,           // NEW
-    @SerializedName("CuttingNetWt") val cuttingNetWt: String?,               // NEW
-    @SerializedName("MetalRate") val metalRate: String?,                     // NEW
-    @SerializedName("LotNumber") val lotNumber: String?,                     // NEW
-    @SerializedName("DeptId") val deptId: Int?,                              // NEW
-    @SerializedName("PurchaseCost") val purchaseCost: String?,               // NEW
-    @SerializedName("Margin") val margin: String?,                           // NEW
-    @SerializedName("EstimatedDays") val estimatedDays: String?,             // NEW
-    @SerializedName("OfferPrice") val offerPrice: String?,                   // NEW
-    @SerializedName("Rating") val rating: String?,                           // NEW
-    @SerializedName("Ranking") val ranking: String?,                         // NEW
-    @SerializedName("UpdatedFrom") val updatedFrom: String?,                 // NEW
-    @SerializedName("count") val count: Int?,                                // NEW
-    @SerializedName("TotalCount") val totalCount: Int?,                      // NEW
-    @SerializedName("CreatedOn") val createdOn: String?,                     // NEW
-    @SerializedName("LastUpdated") val lastUpdated: String?,                 // NEW
-    @SerializedName("TaxId") val taxId: Int?,                                // NEW
-    @SerializedName("TaxPercentage") val taxPercentage: String?,             // NEW
-    @SerializedName("OtherWeight") val otherWeight: String?,                 // NEW
-    @SerializedName("PouchWeight") val pouchWeight: String?,                 // NEW
-    @SerializedName("CollectionId") val collectionId: Int?,                  // NEW
-    @SerializedName("CollectionNameSKU") val collectionNameSKU: String?,     // NEW
-    @SerializedName("TagWeight") val tagWeight: String?,                     // NEW
-    @SerializedName("FindingWeight") val findingWeight: String?,             // NEW
-    @SerializedName("LanyardWeight") val lanyardWeight: String?,             // NEW
-    @SerializedName("PacketId") val packetId: Int?,                          // NEW
-    @SerializedName("PacketName") val packetName: String?,                   // NEW
-    @SerializedName("FromDate") val fromDate: String?,                       // NEW
-    @SerializedName("ToDate") val toDate: String?,                           // NEW
-    @SerializedName("DiamondSleveName") val diamondSleveName: String?,       // NEW
-    @SerializedName("DiamondSizeName") val diamondSizeName: String?,         // NEW
-    @SerializedName("DiamondRate") val diamondRate: String?,                 // NEW
-    @SerializedName("DiamondAmount") val diamondAmount: String?,             // NEW
-    @SerializedName("DiamondPacketName") val diamondPacketName: String?,     // NEW
-    @SerializedName("DiamondBoxName") val diamondBoxName: String?,           // NEW
-    @SerializedName("HexCode") val hexCode: String?,                         // NEW
-    @SerializedName("DiamondDeduct") val diamondDeduct: String?,             // NEW
-    @SerializedName("Stones") val stones: List<Any>?,                        // NEW – Replace `Any` with `StoneModel` if available
-    @SerializedName("Diamonds") val diamonds: List<Any>?                     // NEW – Replace `Any` with `DiamondModel` if available
+        @SerializedName("PacketId") val packetId: Int?,
+        @SerializedName("PacketName") val packetName: String?
 
 
     )

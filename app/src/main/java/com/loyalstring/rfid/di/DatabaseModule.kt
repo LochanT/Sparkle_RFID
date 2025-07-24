@@ -1,10 +1,11 @@
 package com.loyalstring.rfid.di
 
 import android.content.Context
-import androidx.room.Room
 import com.loyalstring.rfid.data.local.dao.BulkItemDao
 import com.loyalstring.rfid.data.local.dao.DropdownDao
+import com.loyalstring.rfid.data.local.dao.EpcDao
 import com.loyalstring.rfid.data.local.dao.OrderItemDao
+import com.loyalstring.rfid.data.local.dao.TransferTypeDao
 import com.loyalstring.rfid.data.local.db.AppDatabase
 import dagger.Module
 import dagger.Provides
@@ -36,5 +37,15 @@ object DatabaseModule {
     @Provides
     fun provideOrderItemDao(db: AppDatabase): OrderItemDao {
         return db.orderItemDao()
+    }
+
+    @Provides
+    fun provideTransferDao(db: AppDatabase): TransferTypeDao {
+        return db.stockTransferDao()
+    }
+
+    @Provides
+    fun provideEpcDao(db: AppDatabase): EpcDao {
+        return db.epcDao()
     }
 }

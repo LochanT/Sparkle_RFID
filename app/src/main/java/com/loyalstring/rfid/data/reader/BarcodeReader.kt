@@ -1,6 +1,7 @@
 package com.loyalstring.rfid.data.reader
 
 import android.content.Context
+import android.util.Log
 import com.rscja.barcode.BarcodeDecoder
 import com.rscja.barcode.BarcodeFactory
 import com.rscja.barcode.BarcodeUtility
@@ -32,8 +33,12 @@ class BarcodeReader @Inject constructor(
     fun setOnBarcodeScanned(callback: (String) -> Unit) {
         barcodeDecoder.setDecodeCallback { entity ->
             if (entity.resultCode == BarcodeDecoder.DECODE_SUCCESS) {
+                val data = entity.barcodeData
+                Log.d("BarcodeReader", "Scan success: $data")
                 BarcodeUtility.getInstance().enablePlaySuccessSound(context, true)
-                callback(entity.barcodeData)
+                callback(data)
+            } else {
+                Log.e("BarcodeReader", "Scan failed with code: ${entity.resultCode}")
             }
         }
     }

@@ -129,6 +129,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
 
     // ✅ Set barcode scan callback ONCE
     LaunchedEffect(Unit) {
+        viewModel.barcodeReader.openIfNeeded()
         viewModel.barcodeReader.setOnBarcodeScanned { scanned ->
             viewModel.onBarcodeScanned(scanned)
             viewModel.setRfidForAllTags(scanned)
@@ -170,6 +171,8 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
 
             ScanBottomBar(
                 onSave = {
+                    viewModel.barcodeReader.close()
+
                     if (selectedCategory.isNotBlank() && selectedProduct.isNotBlank() && selectedDesign.isNotBlank()) {
                         tags.forEachIndexed { index, _ ->
                             val itemCode = itemCodes.value

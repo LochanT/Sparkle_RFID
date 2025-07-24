@@ -18,6 +18,7 @@ import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
 import com.loyalstring.rfid.data.model.addSingleItem.CounterModel
 import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
 import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
+import com.loyalstring.rfid.data.model.addSingleItem.PacketModel
 import com.loyalstring.rfid.data.model.addSingleItem.ProductModel
 import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
@@ -85,6 +86,8 @@ class SingleProductViewModel @Inject constructor(
     var counters by mutableStateOf<List<CounterModel>>(emptyList())
         private set
     var branches by mutableStateOf<List<BranchModel>>(emptyList())
+        private set
+    var packets by mutableStateOf<List<PacketModel>>(emptyList())
         private set
     var boxes by mutableStateOf<List<BoxModel>>(emptyList())
         private set
@@ -201,6 +204,22 @@ class SingleProductViewModel @Inject constructor(
             }
         }
     }
+    private fun getAllPackets(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            try {
+                val response = repository.getAllPackets(request)
+                if (response.isSuccessful) {
+                    packets = response.body().orEmpty()
+                } else {
+                    // Handle API error
+                    Log.e("InventoryViewModel", "API error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                // Handle network or unexpected error
+                Log.e("InventoryViewModel", "Exception: ${e.message}")
+            }
+        }
+    }
 
 
     /*catogory function*/
@@ -300,10 +319,10 @@ class SingleProductViewModel @Inject constructor(
     fun getAllExhibitions(request: ClientCodeRequest) {
         viewModelScope.launch {
             try {
-                val response = repository.getAllBranches(request)
+                val response = repository.getAllPackets(request)
                 if (response.isSuccessful) {
-                    branches = response.body().orEmpty()
-                        .filter { it.BranchType.equals("Exhibition", ignoreCase = true) }
+                    packets = response.body().orEmpty()
+
                 } else {
                     // Handle API error
                     Log.e("InventoryViewModel", "API error: ${response.code()}")
@@ -332,6 +351,16 @@ class SingleProductViewModel @Inject constructor(
             launch { getAllProduct(request) }
             launch { getAllDesign(request) }
             launch { getAllPurity(request) }
+        }
+    }
+    fun fetchAllStockTransferData(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            launch { getAllCategory(request) }
+            launch { getAllProduct(request) }
+            launch { getAllDesign(request) }
+            launch { getAllBranches(request) }
+            launch { getAllBoxes(request) }
+            launch { getAllPackets(request) }
         }
     }
 
