@@ -46,7 +46,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
@@ -95,13 +94,12 @@ data class OrderDetailsData(
 @Composable
 fun OrderDetailsDialogEditAndDisplay(
 
-    selectedCustomerId: Int?,
-    selectedCustomer: EmployeeList?,
     selectedItem: OrderItem?,
     branchList: List<BranchModel>,
     onDismiss: () -> Unit,
     onSave: (OrderDetailsData) -> Unit,
     viewModel: SingleProductViewModel = hiltViewModel(),
+    edit: Int,
 
     ) {
     Log.e("TAG", "RFID Code: ${selectedItem?.rfidCode+" image url"+selectedItem?.image.toString()}")

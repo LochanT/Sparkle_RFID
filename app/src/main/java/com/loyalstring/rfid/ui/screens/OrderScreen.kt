@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.os.Build
@@ -81,9 +80,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.zIndex
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
@@ -585,12 +582,101 @@ fun OrderScreenContent(
 
 
     // ✅ Set barcode scan callback ONCE
+    // ✅ This is where you reactively compute matchedItem
+    val matchedItem by remember(itemCode, itemCodeList) {
+        derivedStateOf {
+
+            itemCodeList?.find { it.RFIDCode == itemCode.text }
+        }
+    }
+
+// ✅ Automatically update selectedItem whenever matchedItem changes
+    LaunchedEffect(matchedItem) {
+        selectedItem = matchedItem
+        if (itemCode.text.isNotEmpty()) {
+
+            val baseUrl =
+                "https://rrgold.loyalstring.co.in/" // Base URL for images
+            val imageString = selectedItem?.Images.toString()
+            val lastImagePath =
+                imageString.split(",").lastOrNull()?.trim()
+            val fullImageUrl = "$baseUrl$lastImagePath"
+            val newProduct = OrderItem(
+                branchId = selectedItem?.BranchId.toString(),
+                branchName = selectedItem?.BranchName.toString(),
+                exhibition = "",
+                remark = "",
+                purity = selectedItem?.PurityName.toString(),
+                size = selectedItem?.Size.toString(),
+                length = "",
+                typeOfColor = selectedItem?.Colour.toString(),
+                screwType = "",
+                polishType = "",
+                finePer = selectedItem?.FinePercent.toString(),
+                wastage = selectedItem?.WastagePercent.toString(),
+                orderDate = "",
+                deliverDate = "",
+                productName = selectedItem?.ProductName.toString(),
+                itemCode = selectedItem?.ItemCode.toString(),
+                rfidCode = selectedItem?.RFIDCode.toString(),
+                itemAmt = "",
+                grWt = selectedItem?.GrossWt,
+                nWt = selectedItem?.NetWt,
+                stoneAmt = selectedItem?.TotalStoneAmount,
+                finePlusWt = "",
+                packingWt = selectedItem?.PackingWeight.toString(),
+                totalWt = selectedItem?.TotalWeight.toString(),
+                stoneWt = selectedItem?.TotalStoneWeight.toString(),
+                dimondWt = selectedItem?.DiamondWeight.toString(),
+                sku = selectedItem?.SKU.toString(),
+                qty = selectedItem?.ClipQuantity.toString(),
+                hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
+                mrp = selectedItem?.MRP.toString(),
+                image = fullImageUrl.toString(),
+                netAmt = "",
+                diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
+                categoryId = selectedItem?.CategoryId?.toString(),
+
+                categoryName = selectedItem?.CategoryName ?: "",
+                productId = selectedItem?.ProductId ?: 0,
+                productCode = selectedItem?.ProductCode ?: "",
+                skuId = selectedItem?.SKUId ?: 0,
+                designid = selectedItem?.DesignId ?: 0,
+                designName = selectedItem?.DesignName ?: "",
+                purityid = selectedItem?.PurityId ?: 0,
+                counterId = selectedItem?.CounterId ?: 0,
+                counterName = "",
+                companyId = 0,
+                epc = selectedItem?.TIDNumber ?: "",
+                tid = selectedItem?.TIDNumber ?: "",
+                todaysRate = selectedItem?.TodaysRate?.toString() ?: "0",
+                makingPercentage = selectedItem?.MakingPercentage?.toString() ?: "0",
+                makingFixedAmt = selectedItem?.MakingFixedAmt?.toString() ?: "0",
+                makingFixedWastage = selectedItem?.MakingFixedWastage?.toString() ?: "0",
+                makingPerGram = selectedItem?.MakingPerGram?.toString() ?: "0"
+
+
+            )
+            //   productList.add(newProduct) // Add to productList if it doesn't already exist
+            Log.d(
+                "Added to Product List",
+                "Product added: ${newProduct.productName}"
+            )
+
+            // Insert the new product into the database
+            orderViewModel.insertOrderItemToRoom(newProduct)
+        }
+
+    }
+
+// ✅ This is your barcode scanner logic
     LaunchedEffect(Unit) {
         bulkViewModel.barcodeReader.openIfNeeded()
         bulkViewModel.barcodeReader.setOnBarcodeScanned { scanned ->
             bulkViewModel.onBarcodeScanned(scanned)
             bulkViewModel.setRfidForAllTags(scanned)
             Log.d("RFID Code", scanned)
+            itemCode = TextFieldValue(scanned) // triggers recomposition
         }
     }
     LaunchedEffect(productList) {
@@ -1149,7 +1235,9 @@ fun OrderScreenContent(
 
                 saveToDb = {
                     val orderItem = mapItemCodeToOrderItem(it)
+
                     orderViewModel.insertOrderItemToRoom(orderItem)
+
                 },
                 selectedCustomer = selectedCustomer,
 
@@ -1557,8 +1645,7 @@ fun OrderScreenContent(
         )
         Log.d("@@", "@@ vasanti,branchlist" + branchList)
         OrderDetailsDialogEditAndDisplay(
-            customerId,
-            selectedCustomer,
+
             orderSelectedItem,
             branchList,
             onDismiss = { showEditOrderDialog = false },
@@ -1566,7 +1653,8 @@ fun OrderScreenContent(
             onSave = {
                 // handle saved data
                 showOrderDialog = false
-            }
+            },
+            edit = 1
 
         )
     }

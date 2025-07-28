@@ -18,16 +18,12 @@ import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.OrderRepository
-import com.loyalstring.rfid.ui.utils.NetworkUtils
-
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 sealed class UiState<out T> {
@@ -44,10 +40,10 @@ class OrderViewModel @Inject constructor(
     private val _addEmpResponse = MutableLiveData<Resource<EmployeeResponse>>()
     val addEmpReposnes: LiveData<Resource<EmployeeResponse>> = _addEmpResponse
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
-
-
-   /* private val _empListResponse = MutableLiveData<List<EmployeeList>>()
+    /* private val _empListResponse = MutableLiveData<List<EmployeeList>>()
     val empListResponse: LiveData<List<EmployeeList>> = _empListResponse
     val empListFlow = _empListResponse.asStateFlow()*/
 
@@ -64,14 +60,14 @@ class OrderViewModel @Inject constructor(
     private val _lastOrderNOResponse = MutableStateFlow(LastOrderNoResponse())
     val lastOrderNoresponse: StateFlow<LastOrderNoResponse> = _lastOrderNOResponse
 
-    private val _orderResponse = MutableStateFlow<CustomOrderResponse?>(null) // ✅
+    private val _orderResponse = MutableStateFlow<CustomOrderResponse?>(null) 
     val orderResponse: StateFlow<CustomOrderResponse?> = _orderResponse
 
     private val _allOrderItems = MutableStateFlow<List<OrderItem>>(emptyList())
     val allOrderItems: StateFlow<List<OrderItem>> = _allOrderItems
 
 
-    private val _insertOrderOffline = MutableStateFlow<CustomOrderRequest?>(null) // ✅
+    private val _insertOrderOffline = MutableStateFlow<CustomOrderRequest?>(null)
     val insertOrderOffline: StateFlow<CustomOrderRequest?> = _insertOrderOffline
 
 
@@ -95,18 +91,18 @@ class OrderViewModel @Inject constructor(
                 val response = repository.AAddAllEmployeeDetails(request)
                 if (response.isSuccessful) {
                     val body = response.body()
-                    Log.d("@@", "Response Body: $body")
+                    Log.d("orderViewModel", "Response Body: $body")
                     if (body != null) {
                         _addEmpResponse.value = Resource.Success(body)
                     } else {
                         _addEmpResponse.value = Resource.Error("Invalid response data")
                     }
                 } else {
-                    Log.d("@@", "Response Error: ${response.errorBody()?.string()}")
+                    Log.d("orderViewModel", "Response Error: ${response.errorBody()?.string()}")
                     _addEmpResponse.value = Resource.Error("Server error: ${response.message()}")
                 }
             } catch (e: Exception) {
-                Log.e("@@", "Exception: ${e.message}")
+                Log.e("orderViewModel", "Exception: ${e.message}")
                 _addEmpResponse.value = Resource.Error("Exception: ${e.message}")
             }
         }
@@ -183,14 +179,14 @@ class OrderViewModel @Inject constructor(
 
                 } else {
                     // API failed => try loading from local DB
-                   /* val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
-                    _empListFlow.value = UiState.Success(localData)*/
+                    val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
+                    _empListFlow.value = UiState.Success(localData)
                 }
 
             } catch (e: Exception) {
                 // Exception (e.g., no internet) => try loading from local DB
-               /* val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
-                _empListFlow.value = UiState.Success(localData)*/
+                val localData = repository.getAllEmpListFromRoom(ClientCodeRequest(clientCode))
+                _empListFlow.value = UiState.Success(localData)
             } finally {
                 isEmpListLoading.value = false
             }
@@ -245,90 +241,6 @@ class OrderViewModel @Inject constructor(
         )
     }
 
-
-
-    fun EmployeeList.toAddEmployeeRequest(): AddEmployeeRequest {
-        return AddEmployeeRequest(
-            Id = this.Id.toString(),
-            FirstName = this.FirstName,
-            MiddleName = this.MiddleName,
-            LastName = this.LastName,
-            Email = this.Email,
-            CustomerLoginId = this.CustomerLoginId,
-            Password = this.Password,
-            Gender = this.Gender,
-            CustomerSlabId = this.CustomerSlabId,
-            CreditPeriodId = this.CreditPeriodId,
-            RateOfInterestId = this.RateOfInterestId,
-            Mobile = this.Mobile,
-            OnlineStatus = this.OnlineStatus,
-            DateOfBirth = this.DateOfBirth,
-            AdvanceAmount = this.AdvanceAmount,
-            BalanceAmount = this.BalanceAmount,
-            CurrAddStreet = this.CurrAddStreet,
-            Area = this.Area,
-            PerAddTown = this.PerAddTown,
-            City = this.City,
-            CurrAddState = this.CurrAddState,
-            CurrAddPincode = this.CurrAddPincode,
-            PerAddStreet = this.PerAddStreet,
-            PerAddState = this.PerAddState,
-            PerAddPincode = this.PerAddPincode,
-            Country = this.Country,
-            PerAddCountry = null, // You don't have PerAddCountry in EmployeeList, so set null
-            AadharNo = this.AadharNo,
-            Discount = this.Discount,
-            CreditPeriod = this.CreditPeriod,
-            PanNo = this.PanNo,
-            FineGold = this.FineGold,
-            FineSilver = this.FineSilver,
-            GstNo = this.GstNo,
-            ClientCode = this.ClientCode,
-            VendorId = this.VendorId,
-            Remark = this.Remark,
-            AddToVendor = this.AddToVendor
-        )
-    }
-
-
-    /*    fun getAllEmpList(request: String) {
-            viewModelScope.launch {//
-                isEmpListLoading.value=true
-                 delay(2000)
-
-                try {
-                    val response = repository.getAllEmpList(ClientCodeRequest(request))
-                    if (response.isSuccessful && response.body() != null) {
-                      *//*  _empListResponse.value = ((response.body()!!))
-
-                    Log.d("SingleProductViewModel", "empList" + response.body())
-                    repository.clearAllEmployees()
-                    // Save to Room for offline use
-                    repository.saveEmpListToRoom(response.body()!!)*//*
-                    val data = response.body()!!
-
-                    Log.d("SingleProductViewModel", "empList: $data")
-
-                   // repository.clearAllEmployees()
-                    repository.saveEmpListToRoom(data)
-
-                    _empListFlow.value =  UiState.Success(response.body()!!)
-
-                } else {
-                    // Fallback to Room DB if API fails
-                   // val localData = repository.getAllEmpListFromRoom(request.toString())
-                    //_empListFlow.value =  UiState.Success(localData)
-                }
-            } catch (e: Exception) {
-                // Fallback if there's an exception (like no internet)
-               // val localData = repository.getAllEmpListFromRoom(request)
-               // _empListFlow.value = UiState.Success( localData)
-            } finally {
-                isEmpListLoading.value = false
-            }
-        }
-    }*/
-
     /*get all item code list*/
     fun getAllItemCodeList(request: ClientCodeRequest) {
         viewModelScope.launch {
@@ -367,8 +279,6 @@ class OrderViewModel @Inject constructor(
                 } else {
                     _orderResponse.value = response.body()// ✅ Use default object
                     Log.e("OrderViewModel", "Custom Order Response error: ${response.code()}")
-
-
                 }
             } catch (e: Exception) {
                 _orderResponse.value = _orderResponse.value
@@ -405,21 +315,207 @@ class OrderViewModel @Inject constructor(
     fun fetchAllOrderListFromApi(request: ClientCodeRequest) {
         viewModelScope.launch {
             try {
+                _isLoading.value = true
                 val response = repository.getAllOrderList(request)
                 if (response.isSuccessful && response.body() != null) {
                     _getAllOrderList.value = response.body()!!
                     //repository.clearLastOrderNo()
                    // repository.saveLastOrderNoToRoom(response.body()!!)
                     Log.d("OrderViewModel", "get All order list: ${response.body()}")
+                    _isLoading.value = false
                 } else {
                     Log.e("OrderViewModel", "Error: ${response.code()} ${response.message()}")
-                    /*val localData = repository.getLastOrderNoFromRoom(request)
-                    _lastOrderNOResponse.value = localData*/
+                    val localData = repository.getAllCustomerOrders(request.clientcode.toString())
+
+// Assuming you need to map CustomerOrderRequest to CustomerOrderResponse
+                    val mappedData = localData.map { customerOrderRequest ->
+                        CustomOrderResponse(
+                            CustomOrderId = customerOrderRequest.CustomOrderId,
+                            CustomerId = customerOrderRequest.CustomerId.toInt(),
+                            ClientCode = customerOrderRequest.ClientCode,
+                            OrderId = customerOrderRequest.OrderId,
+                            TotalAmount = customerOrderRequest.TotalAmount,
+                            PaymentMode = customerOrderRequest.PaymentMode,
+                            Offer = customerOrderRequest.Offer,
+                            Qty = customerOrderRequest.Qty,
+                            GST = customerOrderRequest.GST,
+                            OrderStatus = customerOrderRequest.OrderStatus,
+                            MRP = customerOrderRequest.MRP,
+                            VendorId = customerOrderRequest.VendorId,
+                            TDS = customerOrderRequest.TDS,
+                            PurchaseStatus = customerOrderRequest.PurchaseStatus,
+                            GSTApplied = customerOrderRequest.GSTApplied,
+                            Discount = customerOrderRequest.Discount,
+                            TotalNetAmount = customerOrderRequest.TotalNetAmount,
+                            TotalGSTAmount = customerOrderRequest.TotalGSTAmount,
+                            TotalPurchaseAmount = customerOrderRequest.TotalPurchaseAmount,
+                            ReceivedAmount = customerOrderRequest.ReceivedAmount,
+                            TotalBalanceMetal = customerOrderRequest.TotalBalanceMetal,
+                            BalanceAmount = customerOrderRequest.BalanceAmount,
+                            TotalFineMetal = customerOrderRequest.TotalFineMetal,
+                            CourierCharge = customerOrderRequest.CourierCharge,
+                            SaleType = customerOrderRequest.SaleType,
+                            OrderDate = customerOrderRequest.OrderDate,
+                            OrderCount = customerOrderRequest.OrderCount,
+                            AdditionTaxApplied = customerOrderRequest.AdditionTaxApplied,
+                            CategoryId = customerOrderRequest.CategoryId,
+                            OrderNo = customerOrderRequest.OrderNo,
+                            DeliveryAddress = customerOrderRequest.DeliveryAddress,
+                            BillType = customerOrderRequest.BillType,
+                            UrdPurchaseAmt = customerOrderRequest.UrdPurchaseAmt,
+                            BilledBy = customerOrderRequest.BilledBy,
+                            SoldBy = customerOrderRequest.SoldBy,
+                            CreditSilver = customerOrderRequest.CreditSilver,
+                            CreditGold = customerOrderRequest.CreditGold,
+                            CreditAmount = customerOrderRequest.CreditAmount,
+                            BalanceAmt = customerOrderRequest.BalanceAmt,
+                            BalanceSilver = customerOrderRequest.BalanceSilver,
+                            BalanceGold = customerOrderRequest.BalanceGold,
+                            TotalSaleGold = customerOrderRequest.TotalSaleGold,
+                            TotalSaleSilver = customerOrderRequest.TotalSaleSilver,
+                            TotalSaleUrdGold = customerOrderRequest.TotalSaleUrdGold,
+                            TotalSaleUrdSilver = customerOrderRequest.TotalSaleUrdSilver,
+                            FinancialYear = customerOrderRequest.FinancialYear,
+                            BaseCurrency = customerOrderRequest.BaseCurrency,
+                            TotalStoneWeight = customerOrderRequest.TotalStoneWeight,
+                            TotalStoneAmount = customerOrderRequest.TotalStoneAmount,
+                            TotalStonePieces = customerOrderRequest.TotalStonePieces,
+                            TotalDiamondWeight = customerOrderRequest.TotalDiamondWeight,
+                            TotalDiamondPieces = customerOrderRequest.TotalDiamondPieces,
+                            TotalDiamondAmount = customerOrderRequest.TotalDiamondAmount,
+                            FineSilver = customerOrderRequest.FineSilver,
+                            FineGold = customerOrderRequest.FineGold,
+                            DebitSilver = customerOrderRequest.DebitSilver,
+                            DebitGold = customerOrderRequest.DebitGold,
+                            PaidMetal = customerOrderRequest.PaidMetal,
+                            PaidAmount = customerOrderRequest.PaidAmount,
+                            TotalAdvanceAmt = customerOrderRequest.TotalAdvanceAmt,
+                            TaxableAmount = customerOrderRequest.TaxableAmount,
+                            TDSAmount = customerOrderRequest.TDSAmount,
+                            CreatedOn = customerOrderRequest.CreatedOn.toString(),
+                            LastUpdated = customerOrderRequest.LastUpdated.toString(),
+                            StatusType = customerOrderRequest.StatusType!!,
+                            FineMetal = customerOrderRequest.FineMetal,
+                            BalanceMetal = customerOrderRequest.BalanceMetal,
+                            AdvanceAmt = customerOrderRequest.AdvanceAmt,
+                            PaidAmt = customerOrderRequest.PaidAmt,
+                            TaxableAmt = customerOrderRequest.TaxableAmt,
+                            GstAmount = customerOrderRequest.GstAmount,
+                            GstCheck = customerOrderRequest.GstCheck,
+                            Category = customerOrderRequest.Category,
+                            TDSCheck = customerOrderRequest.TDSCheck,
+                            Remark = customerOrderRequest.Remark,
+                            OrderItemId = customerOrderRequest.OrderItemId!!.toInt(),
+                            StoneStatus = customerOrderRequest.StoneStatus,
+                            DiamondStatus = customerOrderRequest.DiamondStatus,
+                            BulkOrderId = customerOrderRequest.BulkOrderId,
+                            CustomOrderItem = customerOrderRequest.CustomOrderItem,
+                            Payments = customerOrderRequest.Payments,
+                            Customer = customerOrderRequest.Customer,
+                            syncStatus = customerOrderRequest.syncStatus
+                        )
+                    }
+
+                    _getAllOrderList.value = mappedData
+                    // _getAllOrderList.value = localData
+                    _isLoading.value = false
                 }
             } catch (e: Exception) {
                 Log.e("OrderViewModel", "Exception: ${e.message}")
-              /*  val localData = repository.getLastOrderNoFromRoom(request)
-                _lastOrderNOResponse.value = localData*/
+                val localData = repository.getAllCustomerOrders(request.clientcode.toString())
+
+// Assuming you need to map CustomerOrderRequest to CustomerOrderResponse
+                val mappedData = localData.map { customerOrderRequest ->
+                    CustomOrderResponse(
+                        CustomOrderId = customerOrderRequest.CustomOrderId,
+                        CustomerId = customerOrderRequest.CustomerId.toInt(),
+                        ClientCode = customerOrderRequest.ClientCode,
+                        OrderId = customerOrderRequest.OrderId,
+                        TotalAmount = customerOrderRequest.TotalAmount,
+                        PaymentMode = customerOrderRequest.PaymentMode,
+                        Offer = customerOrderRequest.Offer,
+                        Qty = customerOrderRequest.Qty,
+                        GST = customerOrderRequest.GST,
+                        OrderStatus = customerOrderRequest.OrderStatus,
+                        MRP = customerOrderRequest.MRP,
+                        VendorId = customerOrderRequest.VendorId,
+                        TDS = customerOrderRequest.TDS,
+                        PurchaseStatus = customerOrderRequest.PurchaseStatus,
+                        GSTApplied = customerOrderRequest.GSTApplied,
+                        Discount = customerOrderRequest.Discount,
+                        TotalNetAmount = customerOrderRequest.TotalNetAmount,
+                        TotalGSTAmount = customerOrderRequest.TotalGSTAmount,
+                        TotalPurchaseAmount = customerOrderRequest.TotalPurchaseAmount,
+                        ReceivedAmount = customerOrderRequest.ReceivedAmount,
+                        TotalBalanceMetal = customerOrderRequest.TotalBalanceMetal,
+                        BalanceAmount = customerOrderRequest.BalanceAmount,
+                        TotalFineMetal = customerOrderRequest.TotalFineMetal,
+                        CourierCharge = customerOrderRequest.CourierCharge,
+                        SaleType = customerOrderRequest.SaleType,
+                        OrderDate = customerOrderRequest.OrderDate,
+                        OrderCount = customerOrderRequest.OrderCount,
+                        AdditionTaxApplied = customerOrderRequest.AdditionTaxApplied,
+                        CategoryId = customerOrderRequest.CategoryId,
+                        OrderNo = customerOrderRequest.OrderNo,
+                        DeliveryAddress = customerOrderRequest.DeliveryAddress,
+                        BillType = customerOrderRequest.BillType,
+                        UrdPurchaseAmt = customerOrderRequest.UrdPurchaseAmt,
+                        BilledBy = customerOrderRequest.BilledBy,
+                        SoldBy = customerOrderRequest.SoldBy,
+                        CreditSilver = customerOrderRequest.CreditSilver,
+                        CreditGold = customerOrderRequest.CreditGold,
+                        CreditAmount = customerOrderRequest.CreditAmount,
+                        BalanceAmt = customerOrderRequest.BalanceAmt,
+                        BalanceSilver = customerOrderRequest.BalanceSilver,
+                        BalanceGold = customerOrderRequest.BalanceGold,
+                        TotalSaleGold = customerOrderRequest.TotalSaleGold,
+                        TotalSaleSilver = customerOrderRequest.TotalSaleSilver,
+                        TotalSaleUrdGold = customerOrderRequest.TotalSaleUrdGold,
+                        TotalSaleUrdSilver = customerOrderRequest.TotalSaleUrdSilver,
+                        FinancialYear = customerOrderRequest.FinancialYear,
+                        BaseCurrency = customerOrderRequest.BaseCurrency,
+                        TotalStoneWeight = customerOrderRequest.TotalStoneWeight,
+                        TotalStoneAmount = customerOrderRequest.TotalStoneAmount,
+                        TotalStonePieces = customerOrderRequest.TotalStonePieces,
+                        TotalDiamondWeight = customerOrderRequest.TotalDiamondWeight,
+                        TotalDiamondPieces = customerOrderRequest.TotalDiamondPieces,
+                        TotalDiamondAmount = customerOrderRequest.TotalDiamondAmount,
+                        FineSilver = customerOrderRequest.FineSilver,
+                        FineGold = customerOrderRequest.FineGold,
+                        DebitSilver = customerOrderRequest.DebitSilver,
+                        DebitGold = customerOrderRequest.DebitGold,
+                        PaidMetal = customerOrderRequest.PaidMetal,
+                        PaidAmount = customerOrderRequest.PaidAmount,
+                        TotalAdvanceAmt = customerOrderRequest.TotalAdvanceAmt,
+                        TaxableAmount = customerOrderRequest.TaxableAmount,
+                        TDSAmount = customerOrderRequest.TDSAmount,
+                        CreatedOn = customerOrderRequest.CreatedOn.toString(),
+                        LastUpdated = customerOrderRequest.LastUpdated.toString(),
+                        StatusType = customerOrderRequest.StatusType!!,
+                        FineMetal = customerOrderRequest.FineMetal,
+                        BalanceMetal = customerOrderRequest.BalanceMetal,
+                        AdvanceAmt = customerOrderRequest.AdvanceAmt,
+                        PaidAmt = customerOrderRequest.PaidAmt,
+                        TaxableAmt = customerOrderRequest.TaxableAmt,
+                        GstAmount = customerOrderRequest.GstAmount,
+                        GstCheck = customerOrderRequest.GstCheck,
+                        Category = customerOrderRequest.Category,
+                        TDSCheck = customerOrderRequest.TDSCheck,
+                        Remark = customerOrderRequest.Remark,
+                        OrderItemId = customerOrderRequest.OrderItemId!!.toInt(),
+                        StoneStatus = customerOrderRequest.StoneStatus,
+                        DiamondStatus = customerOrderRequest.DiamondStatus,
+                        BulkOrderId = customerOrderRequest.BulkOrderId,
+                        CustomOrderItem = customerOrderRequest.CustomOrderItem,
+                        Payments = customerOrderRequest.Payments,
+                        Customer = customerOrderRequest.Customer,
+                        syncStatus = customerOrderRequest.syncStatus
+                    )
+                }
+
+                _getAllOrderList.value = mappedData
+                // _getAllOrderList.value = localData
+                _isLoading.value = false
             }
         }
     }
@@ -428,8 +524,12 @@ class OrderViewModel @Inject constructor(
     fun insertOrderItemToRoom(item: OrderItem) {
         viewModelScope.launch {
             try {
-                repository.insertOrderItems(item)
-                Log.d("OrderViewModel", "Order item inserted into Room: $item")
+
+                if (!item.rfidCode.equals("null")) {
+                    repository.insertOrderItems(item)
+                    Log.d("OrderViewModel", "Order item inserted into Room: $item")
+                }
+
             } catch (e: Exception) {
                 Log.e("OrderViewModel", "Room Insert Error: ${e.message}")
             }
@@ -441,8 +541,13 @@ class OrderViewModel @Inject constructor(
     fun getAllOrderItemsFromRoom() {
         viewModelScope.launch {
             repository.getAllOrderItems().collect { items ->
-                _allOrderItems.value = items
-                Log.d("OrderViewModel", "Fetched ${items.size} order items from Room")
+                // Filter out items with null or empty rfidCode
+                val filteredItems = items.filter { !it.rfidCode.isNullOrBlank() }
+                _allOrderItems.value = filteredItems
+                Log.d(
+                    "OrderViewModel",
+                    "Fetched ${filteredItems.size} order items with valid RFID code"
+                )
             }
         }
     }
@@ -474,10 +579,10 @@ class OrderViewModel @Inject constructor(
             try {
                 repository.saveCustomerOrder(customerOrderRequest)
                 _insertOrderOffline.value = (customerOrderRequest!!)
-                Log.d("@@","@@"+customerOrderRequest)
+                Log.d("orderViewModel", "orderViewModel" + customerOrderRequest)
             } catch (e: Exception) {
                 _insertOrderOffline.value = (customerOrderRequest!!)
-                Log.d("@@","@@"+e.toString())
+                Log.d("orderViewModel", "orderViewModel" + e.toString())
             }
         }
     }
@@ -506,29 +611,14 @@ class OrderViewModel @Inject constructor(
         }
     }
 
-   /* fun syncDataWhenOnline() {
-        // Check if the device is online (Use a utility method or Network API to check connectivity)
-        if (NetworkUtils.isNetworkAvailable(context)) {
-            // Fetch unsynced data from Room and sync to server
-            viewModelScope.launch {
-                val unsyncedOrders = repository.getAllCustomerOrders("clientCode") // Replace with actual client code
-               *//* unsyncedOrders.filter { !it.syncStatus } // Filter unsynced orders
-
-                unsyncedOrders.forEach { order ->
-                    val response = repository.addOrder(order)
-                    if (response.isSuccessful) {
-                        // Mark as synced after successful sync
-                        repository.deleteUnsyncedOrders() // Delete unsynced orders from Room after syncing
-                    }
-                }*//*
-            }
-        } else {
-            Log.d("Sync", "No internet available. Will retry when online.")
-        }
-    }*/
    fun syncDataWhenOnline() {
        viewModelScope.launch {
-           val unsyncedOrders = repository.getAllCustomerOrders("clientCode")
+           val unsyncedOrders = repository.getAllCustomerOrders("LS000241")
+           try {
+               Log.e("unsyncedOrders", "Successfully done" + unsyncedOrders.get(0).Category)
+           } catch (e: Exception) {
+               Log.e("Sync", "Failed to sync: ${e.message}")
+           }
            for (order in unsyncedOrders) {
                try {
                    val response = repository.addOrder(order)
@@ -542,24 +632,6 @@ class OrderViewModel @Inject constructor(
            }
        }
    }
-
-
-
-    // Sync orders to the server (if needed)
-    /*fun syncOrders(customOrderResponse: CustomOrderResponse) {
-        viewModelScope.launch {
-            try {
-                val response = repository.addOrder(customOrderResponse)
-                if (response.isSuccessful) {
-                  //  _orderResponse.value = UiState.Success("Orders synced successfully.")
-                } else {
-                  //  _orderResponse.value = UiState.Error("Failed to sync orders.")
-                }
-            } catch (e: Exception) {
-             //   _orderResponse.value = UiState.Error("Error syncing orders: ${e.message}")
-            }
-        }
-    }*/
 }
 
 

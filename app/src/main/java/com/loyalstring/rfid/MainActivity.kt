@@ -40,7 +40,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -57,11 +56,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.navigation.AppNavigation
 import com.loyalstring.rfid.navigation.Screens
@@ -76,6 +73,7 @@ import com.loyalstring.rfid.viewmodel.OrderViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.getValue
 
 
 @AndroidEntryPoint
@@ -91,13 +89,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d("@@","Start")
         networkMonitor = NetworkMonitor(this) {
             orderViewModel.syncDataWhenOnline()
         }
         networkMonitor.startMonitoring()
         setContent {
             SparkleRFIDTheme {
-                SetupNavigation(baseContext, userPreferences)
+                SetupNavigation(baseContext, userPreferences,orderViewModel)
             }
         }
 
@@ -129,7 +128,18 @@ class MainActivity : ComponentActivity() {
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun SetupNavigation(context: Context, userPreferences: UserPreferences) {
+private fun SetupNavigation(
+    context: Context,
+    userPreferences: UserPreferences,
+    orderViewModel1: OrderViewModel
+) {
+    lateinit var networkMonitor: NetworkMonitor
+    //val orderViewModel: OrderViewModel by viewModels()
+    Log.d("@@","Start11")
+    networkMonitor = NetworkMonitor(context) {
+        orderViewModel1.syncDataWhenOnline()
+    }
+    networkMonitor.startMonitoring()
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var selectedItemIndex by rememberSaveable {

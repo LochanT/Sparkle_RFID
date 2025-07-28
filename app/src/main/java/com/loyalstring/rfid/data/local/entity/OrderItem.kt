@@ -23,7 +23,7 @@ data class OrderItem(
     val deliverDate: String,
     val productName: String,
     val itemCode: String,
-    val rfidCode: String,
+    val rfidCode: String= "" ,
     val grWt: String?,
     val nWt: String?,
     val stoneAmt: String?,
