@@ -108,6 +108,16 @@ class OrderViewModel @Inject constructor(
         }
     }
 
+
+    fun setLocalOrderList(data: List<CustomOrderResponse>) {
+        _getAllOrderList.value = data
+    }
+
+    fun removeOrderById(orderId: Int) {
+        _getAllOrderList.value = _getAllOrderList.value.filterNot { it.CustomOrderId == orderId }
+    }
+
+
     /*emp list function*/
 
   /*  fun getAllEmpList(clientCode: String) {
@@ -324,6 +334,8 @@ class OrderViewModel @Inject constructor(
                 val response = repository.getAllOrderList(request)
                 if (response.isSuccessful && response.body() != null) {
                     _getAllOrderList.value = response.body()!!
+                    setLocalOrderList(_getAllOrderList.value) // ✅ Set the local list here
+
                     //repository.clearLastOrderNo()
                     for (order in response.body()!!) {
                         val request = order.toRequest()
@@ -403,14 +415,14 @@ class OrderViewModel @Inject constructor(
                             CreatedOn = customerOrderRequest.CreatedOn.toString(),
                             LastUpdated = customerOrderRequest.LastUpdated.toString(),
                             StatusType = customerOrderRequest.StatusType!!,
-                            FineMetal = customerOrderRequest.FineMetal ?: "0.0",
-                            BalanceMetal = customerOrderRequest.BalanceMetal ?: "0.0",
-                            AdvanceAmt = customerOrderRequest.AdvanceAmt ?: "0.0",
-                            PaidAmt = customerOrderRequest.PaidAmt ?: "0.0",
-                            TaxableAmt = customerOrderRequest.TaxableAmt ?: "0.0",
-                            GstAmount = customerOrderRequest.GstAmount ?: "0.0",
-                            GstCheck = customerOrderRequest.GstCheck ?: "false",
-                            Category = customerOrderRequest.Category ?: "",
+                            FineMetal = customerOrderRequest.FineMetal,
+                            BalanceMetal = customerOrderRequest.BalanceMetal,
+                            AdvanceAmt = customerOrderRequest.AdvanceAmt,
+                            PaidAmt = customerOrderRequest.PaidAmt,
+                            TaxableAmt = customerOrderRequest.TaxableAmt,
+                            GstAmount = customerOrderRequest.GstAmount,
+                            GstCheck = customerOrderRequest.GstCheck,
+                            Category = customerOrderRequest.Category,
                             TDSCheck = customerOrderRequest.TDSCheck,
                             Remark = customerOrderRequest.Remark,
                             OrderItemId = customerOrderRequest.OrderItemId!!.toInt(),
@@ -500,12 +512,12 @@ class OrderViewModel @Inject constructor(
                         CreatedOn = customerOrderRequest.CreatedOn.toString(),
                         LastUpdated = customerOrderRequest.LastUpdated.toString(),
                         StatusType = customerOrderRequest.StatusType!!,
-                        FineMetal = customerOrderRequest.FineMetal ?: "0.0",
-                        BalanceMetal = customerOrderRequest.BalanceMetal ?: "0.0",
-                        AdvanceAmt = customerOrderRequest.AdvanceAmt ?: "0.0",
-                        PaidAmt = customerOrderRequest.PaidAmt ?: "0.0",
-                        TaxableAmt = customerOrderRequest.TaxableAmt ?: "0.0",
-                        GstAmount = customerOrderRequest.GstAmount ?: "0.0",
+                        FineMetal = customerOrderRequest.FineMetal,
+                        BalanceMetal = customerOrderRequest.BalanceMetal,
+                        AdvanceAmt = customerOrderRequest.AdvanceAmt,
+                        PaidAmt = customerOrderRequest.PaidAmt,
+                        TaxableAmt = customerOrderRequest.TaxableAmt,
+                        GstAmount = customerOrderRequest.GstAmount,
                         GstCheck = customerOrderRequest.GstCheck,
                         Category = customerOrderRequest.Category,
                         TDSCheck = customerOrderRequest.TDSCheck,
@@ -594,15 +606,15 @@ class OrderViewModel @Inject constructor(
             TDSAmount = this.TDSAmount,
             CreatedOn = this.CreatedOn,
             StatusType = this.StatusType,
-            FineMetal = this.FineMetal ?: "0.0",
-            BalanceMetal = this.BalanceMetal ?: "0.0",
-            AdvanceAmt = this.AdvanceAmt ?: "0.0",
-            PaidAmt = this.PaidAmt ?: "0.0",
-            TaxableAmt = this.TaxableAmt ?: "0.0",
-            GstAmount = this.GstAmount ?: "0.0",
-            GstCheck = this.GstCheck ?: "false",
-            Category = this.Category ?: "",
-            TDSCheck = this.TDSCheck?: "",
+            FineMetal = this.FineMetal,
+            BalanceMetal = this.BalanceMetal,
+            AdvanceAmt = this.AdvanceAmt,
+            PaidAmt = this.PaidAmt,
+            TaxableAmt = this.TaxableAmt,
+            GstAmount = this.GstAmount,
+            GstCheck = this.GstCheck,
+            Category = this.Category,
+            TDSCheck = this.TDSCheck,
             Remark = this.Remark?: "",
             OrderItemId = this.OrderItemId,
             StoneStatus = this.StoneStatus?: "",
@@ -685,7 +697,7 @@ fun deleteOrders(
         viewModelScope.launch {
             try {
                 repository.saveCustomerOrder(customerOrderRequest)
-                _insertOrderOffline.value = (customerOrderRequest!!)
+                _insertOrderOffline.value = (customerOrderRequest)
                 repository.saveCustomerOrder(customerOrderRequest)
                 Log.d("orderViewModel", "orderViewModel" + customerOrderRequest)
             } catch (e: Exception) {

@@ -1,7 +1,6 @@
 package com.loyalstring.rfid.ui.screens
 
 import android.content.Context
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,11 +17,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -61,7 +59,6 @@ import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.viewmodel.OrderViewModel
-import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -80,7 +77,7 @@ fun OrderLisrScreen(
 
     val allItems by orderViewModel.getAllOrderList.collectAsState()
     val isLoading by orderViewModel.isLoading.collectAsState(false)
-    var visibleItems by remember { mutableStateOf(10) }
+    var visibleItems by remember { mutableStateOf(7000) }
     var searchQuery by remember { mutableStateOf("") }
 
 
@@ -97,7 +94,7 @@ fun OrderLisrScreen(
 
             it.OrderNo.contains(searchQuery, ignoreCase = true) == true ||
                     it.Category.contains(searchQuery, ignoreCase = true) == true ||
-                    it.Customer.FirstName?.contains(searchQuery, ignoreCase = true) == true
+                    it.Customer.FirstName.contains(searchQuery, ignoreCase = true) == true
         }
     } else allItems
 
@@ -105,7 +102,7 @@ fun OrderLisrScreen(
 
     val headerTitles = listOf(
         "Order No", "Name", "Contact", "Product",
-        "N.Amt", "Total Amt", "Order Date", "Status"
+        "N.Amt", "Total Amt", "Order Date", "Actions"
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -214,28 +211,20 @@ fun OrderTableWithPagination(
     employee: Employee?
 ) {
     val horizontalScroll = rememberScrollState()
-    val verticalScroll = rememberScrollState()
-    var showOrderDialog by remember { mutableStateOf(false) }
-    var showEditOrderDialog by remember { mutableStateOf(false) }
     val orderViewModel: OrderViewModel = hiltViewModel()
 
+    Column(modifier = Modifier.fillMaxSize()) {
 
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(8.dp)
-    ) {
-        // 🔒 Header Row with Actions
+        // Header Row (fixed top)
         Row(
             modifier = Modifier
                 .horizontalScroll(horizontalScroll)
                 .background(Color.DarkGray)
                 .padding(vertical = 8.dp)
         ) {
-            headerTitles.forEach { title ->
+            headerTitles.forEach {
                 Text(
-                    text = title,
+                    text = it,
                     modifier = Modifier
                         .width(120.dp)
                         .padding(horizontal = 8.dp),
@@ -243,8 +232,6 @@ fun OrderTableWithPagination(
                     color = Color.White
                 )
             }
-
-            // ✅ Add "Actions" column header
             Text(
                 text = "Actions",
                 modifier = Modifier
@@ -257,161 +244,119 @@ fun OrderTableWithPagination(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // 🧾 Scrollable Data
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-               // .verticalScroll(verticalScroll)
-        ) {
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                val singleProductViewModel: SingleProductViewModel = hiltViewModel()
-                val branchList = singleProductViewModel.branches
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-
-                ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize()
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            // Main data scroll vertically, but rows scroll horizontally with the same state
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(data) { row ->
+                    Row(
+                        modifier = Modifier
+                            .horizontalScroll(horizontalScroll)
+                            .padding(vertical = 6.dp)
                     ) {
-                        items(data.size) { index ->
-                            val row = data[index]
-                            Row(
-                                modifier = Modifier
-                                    .horizontalScroll(rememberScrollState())
-                                    .padding(vertical = 6.dp)
-                            ) {
-                                data.forEachIndexed { index, row ->
-                                    Row(modifier = Modifier.padding(vertical = 6.dp)) {
-                                        Text(
-                                            text = row.OrderNo ?: "",
-                                            Modifier
-                                                .width(120.dp)
-                                                .padding(horizontal = 8.dp),
-                                            fontSize = 14.sp
-                                        )
-                                        Text(
-                                            text = row.Customer?.FirstName ?: "",
-                                            Modifier
-                                                .width(120.dp)
-                                                .padding(horizontal = 8.dp),
-                                            fontSize = 14.sp
-                                        )
-                                        Text(
-                                            text = row.Customer?.Mobile ?: "",
-                                            Modifier
-                                                .width(120.dp)
-                                                .padding(horizontal = 8.dp),
-                                            fontSize = 14.sp
-                                        )
-                                        Text(
-                                            text = row.Category ?: "",
-                                            Modifier
-                                                .width(120.dp)
-                                                .padding(horizontal = 8.dp),
-                                            fontSize = 14.sp
-                                        )
-                                        Text(
-                                            text = row.TotalNetAmount ?: "",
-                                            Modifier
-                                                .width(120.dp)
-                                                .padding(horizontal = 8.dp),
-                                            fontSize = 14.sp
-                                        )
-                                        Text(
-                                            text = row.TotalAmount ?: "",
-                                            Modifier
-                                                .width(120.dp)
-                                                .padding(horizontal = 8.dp),
-                                            fontSize = 14.sp
-                                        )
-                                        Text(
-                                            text = formatDate(row.OrderDate ?: ""),
-                                            Modifier
-                                                .width(120.dp)
-                                                .padding(horizontal = 8.dp),
-                                            fontSize = 14.sp
-                                        )
+                        Text(
+                            row.OrderNo,
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            row.Customer.FirstName,
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            row.Customer.Mobile,
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            row.Category,
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            row.TotalNetAmount,
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            row.TotalAmount,
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            formatDate(row.OrderDate),
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 14.sp
+                        )
 
-                                        // Actions
-                                        Row(
-                                            modifier = Modifier
-                                                .width(100.dp)
-                                                .padding(horizontal = 8.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            IconButton(onClick = {
-                                                navController.navigate("order")
-                                            }, modifier = Modifier.size(25.dp)) {
-                                                IconButton(onClick = {
-                                                    employee?.clientCode?.let {
-                                                        orderViewModel.deleteOrders(
-                                                            ClientCodeRequest(it),
-                                                            row.CustomOrderId ?: -1
-                                                        ) { isSuccess ->
-                                                            if (isSuccess) {
-                                                                Toast.makeText(
-                                                                    context,
-                                                                    "Order deleted successfully",
-                                                                    Toast.LENGTH_SHORT
-                                                                ).show()
-                                                                employee.clientCode.let { clientCode ->
-                                                                    orderViewModel.getAllOrders(
-                                                                        clientCode
-                                                                    )
-                                                                }
-                                                            } else {
-                                                                Toast.makeText(
-                                                                    context,
-                                                                    "Failed to delete order",
-                                                                    Toast.LENGTH_SHORT
-                                                                ).show()
-                                                            }
-                                                        }
-                                                    }
-                                                }) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Delete,
-                                                        contentDescription = "Delete",
-                                                        tint = Color.Blue
-                                                    )
-                                                }
-                                            }
+                        Row(
+                            modifier = Modifier
+                                .width(100.dp)
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = {
+                                navController.navigate("order")
+                            }) {
+                                Icon(
+                                    Icons.Default.Print,
+                                    contentDescription = "Print",
+                                    tint = Color.DarkGray
+                                )
+                            }
 
-                                            Spacer(modifier = Modifier.width(8.dp))
-
-                                            IconButton(onClick = {
-                                                generateInvoicePdfAndOpen(context, row, employee)
-                                            }, modifier = Modifier.size(25.dp)) {
-                                                Icon(
-                                                    Icons.Default.Print,
-                                                    contentDescription = "Print",
-                                                    tint = Color.DarkGray
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    if (index == data.lastIndex && index % 20 == 19) {
-                                        LaunchedEffect(Unit) {
-                                            onLoadMore()
+                            IconButton(onClick = {
+                                employee?.clientCode?.let {
+                                    orderViewModel.deleteOrders(
+                                        ClientCodeRequest(it),
+                                        row.CustomOrderId
+                                    ) { isSuccess ->
+                                        Toast.makeText(
+                                            context,
+                                            if (isSuccess) " Order Deleted Successfully" else "Failed to delete",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        if (isSuccess) {
+                                            orderViewModel.removeOrderById(row.CustomOrderId)
+                                            orderViewModel.getAllOrders(it)
                                         }
                                     }
                                 }
+                            }) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Order Delete Failed",
+                                    tint = Color.Blue
+                                )
                             }
                         }
                     }
                 }
-
             }
         }
     }
 }
+
+
 fun formatDate(dateString: String): String {
     return try {
         val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) // Assuming the date is in "yyyy-MM-dd" format
