@@ -76,7 +76,7 @@ fun OrderLisrScreen(
 
     val allItems by orderViewModel.getAllOrderList.collectAsState()
     val isLoading by orderViewModel.isLoading.collectAsState(false)
-    var visibleItems by remember { mutableStateOf(20) }
+    var visibleItems by remember { mutableStateOf(10) }
     var searchQuery by remember { mutableStateOf("") }
 
 
@@ -124,7 +124,7 @@ fun OrderLisrScreen(
 
         SearchBar(searchQuery) {
             searchQuery = it
-            visibleItems = 20
+            visibleItems = 10
         }
 
         // ✅ Always show table, even if loading
@@ -134,7 +134,7 @@ fun OrderLisrScreen(
             data = visibleData,
             onLoadMore = {
                 if (visibleItems < filteredData.size) {
-                    visibleItems += 20
+                    visibleItems += 10
                 }
             },
             isLoading = isLoading,

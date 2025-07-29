@@ -125,6 +125,7 @@ fun OrderScreen(
     navController: NavHostController,
     userPreferences: UserPreferences
 ) {
+
     val context = LocalContext.current
     val employee =
         remember { UserPreferences.getInstance(context).getEmployee(Employee::class.java) }
@@ -679,6 +680,14 @@ fun OrderScreenContent(
             itemCode = TextFieldValue(scanned) // triggers recomposition
         }
     }
+    var nextOrderNo = remember { mutableStateOf(0) }
+    LaunchedEffect(lastOrder) {
+        lastOrder?.LastOrderNo?.toIntOrNull()?.let { last ->
+            nextOrderNo.value = last + 1
+            Log.d("Order", "Last order number: $last")
+            Log.d("Order", "Next order number: ${nextOrderNo.value}")
+        }
+    }
     LaunchedEffect(productList) {
         totalStoneAmt = productList.sumOf { it.stoneAmt?.toDoubleOrNull() ?: 0.0 }.toString()
         totalNetAmt = productList.sumOf { it.netAmt?.toDoubleOrNull() ?: 0.0 }.toString()
@@ -713,12 +722,36 @@ fun OrderScreenContent(
                         return@run
                     }
 
-                    val clientCodeRequest = ClientCodeRequest(employee?.clientCode.toString())
-                    orderViewModel.fetchLastOrderNo(clientCodeRequest)
-                    val nextOrderNo = lastOrder.LastOrderNo.toIntOrNull()?.plus(1) ?: 1
 
-
+                    //val nextOrderNo = lastOrder.LastOrderNo.toIntOrNull()?.plus(1) ?: 1
                     coroutineScope.launch {
+                        val clientCode = employee?.clientCode.orEmpty()
+
+                        // Fetch last order number from API
+                        val lastOrderResponse = orderViewModel.fetchLastOrderNo(ClientCodeRequest(clientCode))
+
+                        // Parse response safely
+                        var attempts = 0
+                        var lastOrderNo: Int? = null
+                        while (attempts < 10 && lastOrderNo == null) {
+                            delay(300)
+                            lastOrderNo = orderViewModel.lastOrderNoresponse.value?.LastOrderNo?.toIntOrNull()
+                            attempts++
+                        }
+
+                        val nextOrderNo = (lastOrderNo ?: 0) + 1
+
+                        Log.d("Order", "Fetched Last Order: $lastOrderNo")
+                        Log.d("Order", "Next Order Number: $nextOrderNo")
+
+                        if (nextOrderNo == 0) {
+                            Toast.makeText(context, "Failed to generate order number.", Toast.LENGTH_SHORT).show()
+                            return@launch
+                        }
+
+                        if (nextOrderNo != 0) {
+
+
                         val gstPercent = 3.0
                         //val gstApplied = "true"
                         val taxableAmt = totalAMt.toDoubleOrNull() ?: 0.0
@@ -956,6 +989,7 @@ fun OrderScreenContent(
                         } else {
                             orderViewModel.saveOrder(request)
                         }
+                    }
                     }
                 },
                 onList = {
@@ -1728,7 +1762,7 @@ fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
         CreatedOn = this.CreatedOn ?: "",
         LastUpdated = this.LastUpdated ?: "",
         StatusType = this.StatusType ?: true,
-        FineMetal = this.FineMetal,
+        FineMetal = this.FineMetal.toString(),
         BalanceMetal = this.BalanceMetal,
         AdvanceAmt = this.AdvanceAmt,
         PaidAmt = this.PaidAmt,

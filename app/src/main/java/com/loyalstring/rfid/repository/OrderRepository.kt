@@ -100,7 +100,10 @@ class OrderRepository @Inject constructor(
     }
     /*local database save  last order no data*/
     suspend fun saveLastOrderNoToRoom(orderNo: LastOrderNoResponse) {
-        orderItemDao.insertLastOrderNo(orderNo)
+        val lastOrderNo = orderNo.LastOrderNo?.toIntOrNull() ?: 0
+        val entity = LastOrderNoResponse(id=0,LastOrderNo = (lastOrderNo + 1).toString())
+        orderItemDao.insertLastOrderNo(entity)
+        //orderItemDao.insertLastOrderNo(orderNo.LastOrderNo+1)
     }
 
     suspend fun clearLastOrderNo() {

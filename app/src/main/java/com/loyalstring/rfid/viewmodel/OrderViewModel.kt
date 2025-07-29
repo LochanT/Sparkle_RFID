@@ -320,7 +320,10 @@ class OrderViewModel @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     _getAllOrderList.value = response.body()!!
                     //repository.clearLastOrderNo()
-                   // repository.saveLastOrderNoToRoom(response.body()!!)
+                    for (order in response.body()!!) {
+                        val request = order.toRequest()
+                       // repository.saveCustomerOrder(request)
+                    }
                     Log.d("OrderViewModel", "get All order list: ${response.body()}")
                     _isLoading.value = false
                 } else {
@@ -416,7 +419,7 @@ class OrderViewModel @Inject constructor(
                         )
                     }
 
-                    _getAllOrderList.value = mappedData
+                 //   _getAllOrderList.value = mappedData
                     // _getAllOrderList.value = localData
                     _isLoading.value = false
                 }
@@ -513,12 +516,102 @@ class OrderViewModel @Inject constructor(
                     )
                 }
 
-                _getAllOrderList.value = mappedData
+              //  _getAllOrderList.value = mappedData
                 // _getAllOrderList.value = localData
                 _isLoading.value = false
             }
         }
     }
+
+    fun CustomOrderResponse.toRequest(): CustomOrderRequest {
+        return CustomOrderRequest(
+            CustomOrderId = this.CustomOrderId,
+            CustomerId = this.CustomerId.toString(),
+            ClientCode = this.ClientCode,
+            OrderId = this.OrderId,
+            TotalAmount = this.TotalAmount,
+            PaymentMode = this.PaymentMode,
+            Offer = this.Offer,
+            Qty = this.Qty,
+            GST = this.GST,
+            OrderStatus = this.OrderStatus,
+            MRP = this.MRP,
+            VendorId = this.VendorId,
+            TDS = this.TDS,
+            PurchaseStatus = this.PurchaseStatus,
+            GSTApplied = this.GSTApplied,
+            Discount = this.Discount,
+            TotalNetAmount = this.TotalNetAmount,
+            TotalGSTAmount = this.TotalGSTAmount,
+            TotalPurchaseAmount = this.TotalPurchaseAmount,
+            ReceivedAmount = this.ReceivedAmount,
+            TotalBalanceMetal = this.TotalBalanceMetal,
+            BalanceAmount = this.BalanceAmount,
+            TotalFineMetal = this.TotalFineMetal,
+            CourierCharge = this.CourierCharge,
+            SaleType = this.SaleType,
+            OrderDate = this.OrderDate,
+            OrderCount = this.OrderCount,
+            AdditionTaxApplied = this.AdditionTaxApplied,
+            CategoryId = this.CategoryId,
+            OrderNo = this.OrderNo,
+            DeliveryAddress = this.DeliveryAddress,
+            BillType = this.BillType,
+            UrdPurchaseAmt = this.UrdPurchaseAmt,
+            BilledBy = this.BilledBy,
+            SoldBy = this.SoldBy,
+            CreditSilver = this.CreditSilver,
+            CreditGold = this.CreditGold,
+            CreditAmount = this.CreditAmount,
+            BalanceAmt = this.BalanceAmt,
+            BalanceSilver = this.BalanceSilver,
+            BalanceGold = this.BalanceGold,
+            TotalSaleGold = this.TotalSaleGold,
+            TotalSaleSilver = this.TotalSaleSilver,
+            TotalSaleUrdGold = this.TotalSaleUrdGold,
+            TotalSaleUrdSilver = this.TotalSaleUrdSilver,
+            FinancialYear = this.FinancialYear,
+            BaseCurrency = this.BaseCurrency,
+            TotalStoneWeight = this.TotalStoneWeight,
+            TotalStoneAmount = this.TotalStoneAmount,
+            TotalStonePieces = this.TotalStonePieces,
+            TotalDiamondWeight = this.TotalDiamondWeight,
+            TotalDiamondPieces = this.TotalDiamondPieces,
+            TotalDiamondAmount = this.TotalDiamondAmount,
+            FineSilver = this.FineSilver,
+            FineGold = this.FineGold,
+            DebitSilver = this.DebitSilver,
+            DebitGold = this.DebitGold,
+            PaidMetal = this.PaidMetal,
+            PaidAmount = this.PaidAmount,
+            TotalAdvanceAmt = this.TotalAdvanceAmt,
+            TaxableAmount = this.TaxableAmount,
+            TDSAmount = this.TDSAmount,
+            CreatedOn = this.CreatedOn,
+            StatusType = this.StatusType,
+            FineMetal = this.FineMetal,
+            BalanceMetal = this.BalanceMetal,
+            AdvanceAmt = this.AdvanceAmt,
+            PaidAmt = this.PaidAmt,
+            TaxableAmt = this.TaxableAmt,
+            GstAmount = this.GstAmount,
+            GstCheck = this.GstCheck,
+            Category = this.Category,
+            TDSCheck = this.TDSCheck,
+            Remark = this.Remark,
+            OrderItemId = this.OrderItemId,
+            StoneStatus = this.StoneStatus,
+            DiamondStatus = this.DiamondStatus,
+            BulkOrderId = this.BulkOrderId,
+            CustomOrderItem = this.CustomOrderItem,
+            Payments = this.Payments,
+            uRDPurchases = emptyList(), // You can map if needed
+            Customer = this.Customer,
+            syncStatus = this.syncStatus,
+            LastUpdated = this.LastUpdated
+        )
+    }
+
 
     /*insert order item locally*/
     fun insertOrderItemToRoom(item: OrderItem) {

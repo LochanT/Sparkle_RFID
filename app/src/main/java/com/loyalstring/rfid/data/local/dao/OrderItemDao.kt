@@ -5,12 +5,9 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
-import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
-import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import kotlinx.coroutines.flow.Flow
@@ -237,7 +234,7 @@ interface OrderItemDao {
 
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend  fun insertLastOrderNo(orderNo:LastOrderNoResponse)
+    suspend  fun insertLastOrderNo(orderNo: LastOrderNoResponse)
 
     @Query("DELETE FROM lastorderno")
     suspend fun clearLastOrderNo()
