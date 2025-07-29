@@ -142,6 +142,12 @@ interface RetrofitInterface {
     @POST("api/Order/GetAllOrders")
     suspend fun getAllOrderList(@Body clientCodeRequest: ClientCodeRequest): Response<List<CustomOrderResponse>>
 
+    @POST("api/Order/DeleteCustomOrder")
+    suspend fun deleteCustomerOrder(
+        @Body clientCodeRequest: ClientCodeRequest,
+        CustomOrderId: Int
+    ): Response<List<CustomOrderResponse>>
+
 
     @POST("/api/ProductMaster/AddStockTransfer")
     suspend fun postStockTransfer(

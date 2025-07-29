@@ -175,7 +175,7 @@ class OrderViewModel @Inject constructor(
                     // repository.clearAllEmployees()
                      repository.saveEmpListToRoom(data!!)
 
-                    _empListFlow.value = UiState.Success(data!!)
+                    _empListFlow.value = UiState.Success(data)
 
                 } else {
                     // API failed => try loading from local DB
@@ -308,6 +308,11 @@ class OrderViewModel @Inject constructor(
                 _lastOrderNOResponse.value = localData
             }
         }
+    }
+
+    fun deleteOrder(request: ClientCodeRequest, id: Int) {
+
+
     }
 
     /*get All order list in list screen*/
@@ -646,11 +651,12 @@ class OrderViewModel @Inject constructor(
     }
 
 /*delete all order*/
-    fun deleteAllOrders() {
+fun deleteOrders(request: ClientCodeRequest, id: Int): Boolean {
         viewModelScope.launch {
-            repository.deleteAllOrder()
+            repository.deleteOrder(request, id)
         }
-    }
+    return TODO("Provide the return value")
+}
 
     /*insert order item or update locally*/
     fun insertOrderItemToRoomORUpdate(item: OrderItem) {
@@ -671,10 +677,10 @@ class OrderViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.saveCustomerOrder(customerOrderRequest)
-                _insertOrderOffline.value = (customerOrderRequest!!)
+                _insertOrderOffline.value = (customerOrderRequest)
                 Log.d("orderViewModel", "orderViewModel" + customerOrderRequest)
             } catch (e: Exception) {
-                _insertOrderOffline.value = (customerOrderRequest!!)
+                _insertOrderOffline.value = (customerOrderRequest)
                 Log.d("orderViewModel", "orderViewModel" + e.toString())
             }
         }

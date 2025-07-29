@@ -21,9 +21,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -91,9 +90,9 @@ fun OrderLisrScreen(
     val filteredData = if (searchQuery.isNotEmpty()) {
         allItems.filter {
 
-            it.OrderNo?.contains(searchQuery, ignoreCase = true) == true ||
-                    it.Category?.contains(searchQuery, ignoreCase = true) == true ||
-                    it.Customer?.FirstName?.contains(searchQuery, ignoreCase = true) == true
+            it.OrderNo.contains(searchQuery, ignoreCase = true) == true ||
+                    it.Category.contains(searchQuery, ignoreCase = true) == true ||
+                    it.Customer.FirstName?.contains(searchQuery, ignoreCase = true) == true
         }
     } else allItems
 
@@ -110,7 +109,7 @@ fun OrderLisrScreen(
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = Color.White
                     )
@@ -213,6 +212,9 @@ fun OrderTableWithPagination(
     val verticalScroll = rememberScrollState()
     var showOrderDialog by remember { mutableStateOf(false) }
     var showEditOrderDialog by remember { mutableStateOf(false) }
+    val orderViewModel: OrderViewModel = hiltViewModel()
+
+
 
     Column(
         modifier = Modifier
@@ -267,49 +269,49 @@ fun OrderTableWithPagination(
                     data.forEachIndexed { index, row ->
                         Row(modifier = Modifier.padding(vertical = 6.dp)) {
                             Text(
-                                row.OrderNo ?: "",
+                                row.OrderNo,
                                 Modifier
                                     .width(120.dp)
                                     .padding(horizontal = 8.dp),
                                 fontSize = 14.sp
                             )
                             Text(
-                                row.Customer?.FirstName ?: "",
+                                row.Customer.FirstName,
                                 Modifier
                                     .width(120.dp)
                                     .padding(horizontal = 8.dp),
                                 fontSize = 14.sp
                             )
                             Text(
-                                row.Customer?.Mobile ?: "",
+                                row.Customer.Mobile,
                                 Modifier
                                     .width(120.dp)
                                     .padding(horizontal = 8.dp),
                                 fontSize = 14.sp
                             )
                             Text(
-                                row.Category ?: "",
+                                row.Category,
                                 Modifier
                                     .width(120.dp)
                                     .padding(horizontal = 8.dp),
                                 fontSize = 14.sp
                             )
                             Text(
-                                row.TotalNetAmount ?: "",
+                                row.TotalNetAmount,
                                 Modifier
                                     .width(120.dp)
                                     .padding(horizontal = 8.dp),
                                 fontSize = 14.sp
                             )
                             Text(
-                                row.TotalAmount ?: "",
+                                row.TotalAmount,
                                 Modifier
                                     .width(120.dp)
                                     .padding(horizontal = 8.dp),
                                 fontSize = 14.sp
                             )
                             Text(
-                                formatDate(row.OrderDate ?: ""),
+                                formatDate(row.OrderDate),
                                // row.OrderDate ?: "",
                                 Modifier
                                     .width(120.dp)
@@ -343,11 +345,25 @@ fun OrderTableWithPagination(
 
                                               )*/
                                 }, modifier = Modifier.size(25.dp)) {
-                                    Icon(
-                                        Icons.Default.Edit,
-                                        contentDescription = "Edit",
-                                        tint = Color.Blue
-                                    )
+                                    IconButton(onClick = {
+
+                                        employee?.clientCode?.let {
+                                            orderViewModel.deleteOrders(
+                                                ClientCodeRequest(it),
+                                                row.CustomOrderId
+                                            )
+                                        }
+
+                                        // navController.navigate("order_screen?order=${Gson().toJson(row)}")
+// This will return to the previous screen
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete",
+                                            tint = Color.Blue
+                                        )
+                                    }
+
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
 

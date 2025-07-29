@@ -44,7 +44,6 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.RadioButton
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PersonAdd
@@ -142,7 +141,6 @@ fun OrderScreen(
     // Fetch data on first composition
     LaunchedEffect(Unit) {
         employee?.clientCode?.let { clientCode ->
-            orderViewModel.deleteAllOrders()
             orderViewModel.getAllEmpList(clientCode)
             orderViewModel.getAllItemCodeList(ClientCodeRequest(clientCode))
             singleProductViewModel.getAllBranches(ClientCodeRequest(clientCode))
@@ -165,7 +163,7 @@ fun OrderScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            Icons.Filled.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.White
                         )
@@ -290,7 +288,7 @@ fun OrderScreenContent(
     val filteredCustomers = remember(customerName, customerSuggestions) {
         when (customerSuggestions) {
             is UiState.Success<*> -> {
-                val items = (customerSuggestions as UiState.Success<Any?>)!!.data as List<EmployeeList>
+                val items = (customerSuggestions as UiState.Success<Any?>).data as List<EmployeeList>
                 items.filter {
                     val fullName = "${it.FirstName} ${it.LastName}".trim().lowercase()
                     fullName.contains(customerName.trim().lowercase())
@@ -484,8 +482,8 @@ fun OrderScreenContent(
                                 selectedItem?.TotalStoneAmount?.toDoubleOrNull() ?: 0.0
                             val diamondAmount =
                                 selectedItem?.DiamondPurchaseAmount?.toDoubleOrNull() ?: 0.0
-                            val safeMetalAmt = metalAmt ?: 0.0
-                            val safeMakingAmt = makingAmt ?: 0.0
+                            val safeMetalAmt = metalAmt
+                            val safeMakingAmt = makingAmt
 
                             val itemAmt: Double =
                                 totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt
@@ -587,7 +585,7 @@ fun OrderScreenContent(
     val matchedItem by remember(itemCode, itemCodeList) {
         derivedStateOf {
 
-            itemCodeList?.find { it.RFIDCode == itemCode.text }
+            itemCodeList.find { it.RFIDCode == itemCode.text }
         }
     }
 
@@ -690,13 +688,13 @@ fun OrderScreenContent(
     }
     LaunchedEffect(productList) {
         totalStoneAmt = productList.sumOf { it.stoneAmt?.toDoubleOrNull() ?: 0.0 }.toString()
-        totalNetAmt = productList.sumOf { it.netAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+        totalNetAmt = productList.sumOf { it.netAmt.toDoubleOrNull() ?: 0.0 }.toString()
         // totalGstAmt= productList.sumOf { it.to?.toDoubleOrNull() ?: 0.0 }.toString()
         totalPupaseAmt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
         // totalStoneAmt = productList.sumOf { it.stoneAmt?.toDoubleOrNull() ?: 0.0 }.toString()
-        totalStoneWt = productList.sumOf { it.stoneWt?.toDoubleOrNull() ?: 0.0 }.toString()
-        totalDiamondAMt = productList.sumOf { it.diamondAmt?.toDoubleOrNull() ?: 0.0 }.toString()
-        totalDiamondWt = productList.sumOf { it.dimondWt?.toDoubleOrNull() ?: 0.0 }.toString()
+        totalStoneWt = productList.sumOf { it.stoneWt.toDoubleOrNull() ?: 0.0 }.toString()
+        totalDiamondAMt = productList.sumOf { it.diamondAmt.toDoubleOrNull() ?: 0.0 }.toString()
+        totalDiamondWt = productList.sumOf { it.dimondWt.toDoubleOrNull() ?: 0.0 }.toString()
         totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
     }
 
@@ -773,7 +771,7 @@ fun OrderScreenContent(
 
                         val request = CustomOrderRequest(
                             CustomOrderId = 0,
-                            CustomerId = selectedCustomer?.Id.toString(),
+                            CustomerId = selectedCustomer.Id.toString(),
                             ClientCode = employee?.clientCode.orEmpty(),
                             OrderId = 14,
                             TotalAmount = calculatedTotalAmount.toString(),
@@ -862,7 +860,7 @@ fun OrderScreenContent(
                                     CategoryId = product.categoryId?.toString(),
                                     VendorId = 0,
                                     CategoryName = product.categoryName,
-                                    CustomerName = selectedCustomer?.FirstName,
+                                    CustomerName = selectedCustomer.FirstName,
                                     VendorName = "",
                                     ProductId = product.productId,
                                     ProductName = product.productName,
@@ -893,7 +891,7 @@ fun OrderScreenContent(
                                     SampleWt = "",
                                     Image = product.image,
                                     ItemCode = product.itemCode,
-                                    CustomerId = selectedCustomer?.Id ?: 0,
+                                    CustomerId = selectedCustomer.Id ?: 0,
                                     MRP = product.mrp,
                                     HSNCode = "",
                                     UnlProductId = 0,
@@ -941,26 +939,26 @@ fun OrderScreenContent(
                             Payments = listOf(Payment("")),
                             uRDPurchases = listOf(URDPurchase("")),
                             Customer = Customer(
-                                FirstName = selectedCustomer?.FirstName.orEmpty(),
-                                LastName = selectedCustomer?.LastName.orEmpty(),
+                                FirstName = selectedCustomer.FirstName.orEmpty(),
+                                LastName = selectedCustomer.LastName.orEmpty(),
                                 PerAddStreet = "",
                                 CurrAddStreet = "",
-                                Mobile = selectedCustomer?.Mobile.orEmpty(),
-                                Email = selectedCustomer?.Email.orEmpty(),
+                                Mobile = selectedCustomer.Mobile.orEmpty(),
+                                Email = selectedCustomer.Email.orEmpty(),
                                 Password = "",
-                                CustomerLoginId = selectedCustomer?.Email.orEmpty(),
+                                CustomerLoginId = selectedCustomer.Email.orEmpty(),
                                 DateOfBirth = "",
                                 MiddleName = "",
                                 PerAddPincode = "",
                                 Gender = "",
                                 OnlineStatus = "",
-                                CurrAddTown = selectedCustomer?.CurrAddTown.orEmpty(),
+                                CurrAddTown = selectedCustomer.CurrAddTown.orEmpty(),
                                 CurrAddPincode = "",
-                                CurrAddState = selectedCustomer?.CurrAddState.orEmpty(),
+                                CurrAddState = selectedCustomer.CurrAddState.orEmpty(),
                                 PerAddTown = "",
                                 PerAddState = "",
-                                GstNo = selectedCustomer?.GstNo.orEmpty(),
-                                PanNo = selectedCustomer?.PanNo.orEmpty(),
+                                GstNo = selectedCustomer.GstNo.orEmpty(),
+                                PanNo = selectedCustomer.PanNo.orEmpty(),
                                 AadharNo = "",
                                 BalanceAmount = "0",
                                 AdvanceAmount = "0",
@@ -968,7 +966,7 @@ fun OrderScreenContent(
                                 CreditPeriod = "",
                                 FineGold = "0",
                                 FineSilver = "0",
-                                ClientCode = selectedCustomer?.ClientCode.orEmpty(),
+                                ClientCode = selectedCustomer.ClientCode.orEmpty(),
                                 VendorId = 0,
                                 AddToVendor = false,
                                 CustomerSlabId = 0,
@@ -976,9 +974,9 @@ fun OrderScreenContent(
                                 RateOfInterestId = 0,
                                 Remark = "",
                                 Area = "",
-                                City = selectedCustomer?.City.orEmpty(),
-                                Country = selectedCustomer?.Country.orEmpty(),
-                                Id = selectedCustomer?.Id ?: 0,
+                                City = selectedCustomer.City.orEmpty(),
+                                Country = selectedCustomer.Country.orEmpty(),
+                                Id = selectedCustomer.Id ?: 0,
                                 CreatedOn = "2025-07-08",
                                 LastUpdated = "2025-07-08",
                                 StatusType = true
@@ -1057,8 +1055,8 @@ fun OrderScreenContent(
                                     val diamondAmount =
                                         selectedItem?.DiamondPurchaseAmount?.toDoubleOrNull()
                                             ?: 0.0
-                                    val safeMetalAmt = metalAmt ?: 0.0
-                                    val safeMakingAmt = makingAmt ?: 0.0
+                                    val safeMetalAmt = metalAmt
+                                    val safeMakingAmt = makingAmt
 
                                     val itemAmt: Double =
                                         totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt
@@ -1917,7 +1915,7 @@ fun mapItemCodeToOrderItem(item: ItemCodeResponse): OrderItem {
         image = item.Images ?: "",
         netAmt = "", // To be calculated?
         diamondAmt = item.TotalDiamondAmount ?: "",
-        categoryId = (item.CategoryId ?: "").toString(),
+        categoryId = item.CategoryId.toString(),
         categoryName = item.CategoryName ?: "",
         productId = item.ProductId ?: 0,
         productCode = item.ProductCode ?: "",
@@ -2041,7 +2039,7 @@ fun OrderItemTableScreen(
                                                     ProductTitle = item.productName,
                                                     ClipWeight = "",
                                                     ClipQuantity = "",
-                                                    ItemCode = item.itemCode ?: "",
+                                                    ItemCode = item.itemCode,
                                                     HSNCode = "",
                                                     Description = "",
                                                     ProductCode = item.productCode,
@@ -2050,8 +2048,8 @@ fun OrderItemTableScreen(
                                                     ProductId = item.productId,
                                                     DesignId = item.designid,
                                                     PurityId = item.purityid,
-                                                    Colour = item.typeOfColor ?: "",
-                                                    Size = item.size ?: "",
+                                                    Colour = item.typeOfColor,
+                                                    Size = item.size,
                                                     WeightCategory = "",
                                                     GrossWt = item.grWt ?: "",
                                                     NetWt = item.nWt ?: "",
@@ -2078,9 +2076,9 @@ fun OrderItemTableScreen(
                                                     FirmName = "",
                                                     BoxId = 0,
                                                     TIDNumber = item.tid,
-                                                    RFIDCode = item.rfidCode ?: "",
+                                                    RFIDCode = item.rfidCode,
                                                     FinePercent = item.finePlusWt ?: "",
-                                                    WastagePercent = item.wastage ?: "",
+                                                    WastagePercent = item.wastage,
                                                     Images = "",
                                                     BlackBeads = "",
                                                     Height = "",
@@ -2093,7 +2091,7 @@ fun OrderItemTableScreen(
                                                     DeptId = 0,
                                                     PurchaseCost = "",
                                                     Margin = "",
-                                                    BranchName = item.branchName ?: "",
+                                                    BranchName = item.branchName,
                                                     BoxName = "",
                                                     EstimatedDays = "",
                                                     OfferPrice = "",
@@ -2102,7 +2100,7 @@ fun OrderItemTableScreen(
                                                     Ranking = "",
                                                     CompanyId = item.companyId,
                                                     CounterId = item.counterId,
-                                                    BranchId = item.branchId?.toIntOrNull() ?: 0,
+                                                    BranchId = item.branchId.toIntOrNull() ?: 0,
                                                     EmployeeId = 0,
                                                     Status = "",
                                                     ClientCode = employee?.clientCode,
@@ -2117,9 +2115,9 @@ fun OrderItemTableScreen(
                                                     OtherWeight = "",
                                                     PouchWeight = "",
                                                     CategoryName = item.categoryName,
-                                                    PurityName = item.purity ?: "",
+                                                    PurityName = item.purity,
                                                     TodaysRate = item.todaysRate,
-                                                    ProductName = item.productName ?: "",
+                                                    ProductName = item.productName,
                                                     DesignName = item.designName,
                                                     DiamondSize = "",
                                                     DiamondWeight = "",
@@ -2152,7 +2150,7 @@ fun OrderItemTableScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        item.productName ?: "-",
+                                        item.productName,
                                         fontSize = 13.sp,
                                         color = Color.Black
                                     )
@@ -3383,7 +3381,7 @@ fun generateInvoicePdfAndOpen(
     CoroutineScope(Dispatchers.Main).launch {
         val imageBitmaps = mutableListOf<Bitmap?>()
         for (item in order.CustomOrderItem) {
-            val bitmap = loadBitmapFromUrl("https://rrgold.loyalstring.co.in/" + (item.Image ?: ""))
+            val bitmap = loadBitmapFromUrl("https://rrgold.loyalstring.co.in/" + item.Image)
             imageBitmaps.add(bitmap)
         }
 
@@ -3439,7 +3437,7 @@ fun generateInvoicePdfAndOpen(
             paint.style = Paint.Style.FILL
             var leftTextY = y + 15f
             canvas.drawText(
-                "Customer Name : ${order.Customer?.FirstName.orEmpty()} ${order.Customer?.LastName.orEmpty()}",
+                "Customer Name : ${order.Customer.FirstName.orEmpty()} ${order.Customer.LastName.orEmpty()}",
                 leftX,
                 leftTextY,
                 paint
@@ -3449,7 +3447,7 @@ fun generateInvoicePdfAndOpen(
             leftTextY += 18
             canvas.drawText("Itemcode       : ${item.ItemCode}", leftX, leftTextY, paint)
             leftTextY += 18
-            canvas.drawText("Notes          : ${"" ?: "null"}", leftX, leftTextY, paint)
+            canvas.drawText("Notes          : ${""}", leftX, leftTextY, paint)
 
             // Right Column
             var rightTextY = y + 15f

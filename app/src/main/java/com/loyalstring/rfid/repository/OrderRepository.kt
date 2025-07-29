@@ -59,6 +59,11 @@ class OrderRepository @Inject constructor(
         orderItemDao.clearAllItems()
     }
 
+    suspend fun deleteOrder(request: ClientCodeRequest, id: Int) {
+        apiService.deleteCustomerOrder(request, id)
+
+    }
+
     suspend fun insertORUpdate(items: OrderItem) {
         orderItemDao.insertOrUpdate(items)
     }
