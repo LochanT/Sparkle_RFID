@@ -327,7 +327,7 @@ class OrderViewModel @Inject constructor(
                     //repository.clearLastOrderNo()
                     for (order in response.body()!!) {
                         val request = order.toRequest()
-                       // repository.saveCustomerOrder(request)
+                        repository.saveCustomerOrder(request)
                     }
                     Log.d("OrderViewModel", "get All order list: ${response.body()}")
                     _isLoading.value = false
@@ -403,14 +403,14 @@ class OrderViewModel @Inject constructor(
                             CreatedOn = customerOrderRequest.CreatedOn.toString(),
                             LastUpdated = customerOrderRequest.LastUpdated.toString(),
                             StatusType = customerOrderRequest.StatusType!!,
-                            FineMetal = customerOrderRequest.FineMetal,
-                            BalanceMetal = customerOrderRequest.BalanceMetal,
-                            AdvanceAmt = customerOrderRequest.AdvanceAmt,
-                            PaidAmt = customerOrderRequest.PaidAmt,
-                            TaxableAmt = customerOrderRequest.TaxableAmt,
-                            GstAmount = customerOrderRequest.GstAmount,
-                            GstCheck = customerOrderRequest.GstCheck,
-                            Category = customerOrderRequest.Category,
+                            FineMetal = customerOrderRequest.FineMetal ?: "0.0",
+                            BalanceMetal = customerOrderRequest.BalanceMetal ?: "0.0",
+                            AdvanceAmt = customerOrderRequest.AdvanceAmt ?: "0.0",
+                            PaidAmt = customerOrderRequest.PaidAmt ?: "0.0",
+                            TaxableAmt = customerOrderRequest.TaxableAmt ?: "0.0",
+                            GstAmount = customerOrderRequest.GstAmount ?: "0.0",
+                            GstCheck = customerOrderRequest.GstCheck ?: "false",
+                            Category = customerOrderRequest.Category ?: "",
                             TDSCheck = customerOrderRequest.TDSCheck,
                             Remark = customerOrderRequest.Remark,
                             OrderItemId = customerOrderRequest.OrderItemId!!.toInt(),
@@ -424,7 +424,7 @@ class OrderViewModel @Inject constructor(
                         )
                     }
 
-                 //   _getAllOrderList.value = mappedData
+                   _getAllOrderList.value = mappedData
                     // _getAllOrderList.value = localData
                     _isLoading.value = false
                 }
@@ -500,12 +500,12 @@ class OrderViewModel @Inject constructor(
                         CreatedOn = customerOrderRequest.CreatedOn.toString(),
                         LastUpdated = customerOrderRequest.LastUpdated.toString(),
                         StatusType = customerOrderRequest.StatusType!!,
-                        FineMetal = customerOrderRequest.FineMetal,
-                        BalanceMetal = customerOrderRequest.BalanceMetal,
-                        AdvanceAmt = customerOrderRequest.AdvanceAmt,
-                        PaidAmt = customerOrderRequest.PaidAmt,
-                        TaxableAmt = customerOrderRequest.TaxableAmt,
-                        GstAmount = customerOrderRequest.GstAmount,
+                        FineMetal = customerOrderRequest.FineMetal ?: "0.0",
+                        BalanceMetal = customerOrderRequest.BalanceMetal ?: "0.0",
+                        AdvanceAmt = customerOrderRequest.AdvanceAmt ?: "0.0",
+                        PaidAmt = customerOrderRequest.PaidAmt ?: "0.0",
+                        TaxableAmt = customerOrderRequest.TaxableAmt ?: "0.0",
+                        GstAmount = customerOrderRequest.GstAmount ?: "0.0",
                         GstCheck = customerOrderRequest.GstCheck,
                         Category = customerOrderRequest.Category,
                         TDSCheck = customerOrderRequest.TDSCheck,
@@ -521,7 +521,7 @@ class OrderViewModel @Inject constructor(
                     )
                 }
 
-              //  _getAllOrderList.value = mappedData
+               _getAllOrderList.value = mappedData
                 // _getAllOrderList.value = localData
                 _isLoading.value = false
             }
@@ -594,20 +594,20 @@ class OrderViewModel @Inject constructor(
             TDSAmount = this.TDSAmount,
             CreatedOn = this.CreatedOn,
             StatusType = this.StatusType,
-            FineMetal = this.FineMetal,
-            BalanceMetal = this.BalanceMetal,
-            AdvanceAmt = this.AdvanceAmt,
-            PaidAmt = this.PaidAmt,
-            TaxableAmt = this.TaxableAmt,
-            GstAmount = this.GstAmount,
-            GstCheck = this.GstCheck,
-            Category = this.Category,
-            TDSCheck = this.TDSCheck,
-            Remark = this.Remark,
+            FineMetal = this.FineMetal ?: "0.0",
+            BalanceMetal = this.BalanceMetal ?: "0.0",
+            AdvanceAmt = this.AdvanceAmt ?: "0.0",
+            PaidAmt = this.PaidAmt ?: "0.0",
+            TaxableAmt = this.TaxableAmt ?: "0.0",
+            GstAmount = this.GstAmount ?: "0.0",
+            GstCheck = this.GstCheck ?: "false",
+            Category = this.Category ?: "",
+            TDSCheck = this.TDSCheck?: "",
+            Remark = this.Remark?: "",
             OrderItemId = this.OrderItemId,
-            StoneStatus = this.StoneStatus,
-            DiamondStatus = this.DiamondStatus,
-            BulkOrderId = this.BulkOrderId,
+            StoneStatus = this.StoneStatus?: "",
+            DiamondStatus = this.DiamondStatus?: "",
+            BulkOrderId = this.BulkOrderId?: "",
             CustomOrderItem = this.CustomOrderItem,
             Payments = this.Payments,
             uRDPurchases = emptyList(), // You can map if needed
@@ -651,11 +651,19 @@ class OrderViewModel @Inject constructor(
     }
 
 /*delete all order*/
-fun deleteOrders(request: ClientCodeRequest, id: Int): Boolean {
-        viewModelScope.launch {
-            repository.deleteOrder(request, id)
+fun deleteOrders(
+    request: ClientCodeRequest,
+    id: Int,
+    onResult: (Boolean) -> Unit
+) {
+    viewModelScope.launch {
+        try {
+            val response = repository.deleteOrder(request, id)
+            onResult(response.isSuccessful)
+        } catch (e: Exception) {
+            onResult(false)
         }
-    return TODO("Provide the return value")
+    }
 }
 
     /*insert order item or update locally*/
@@ -677,7 +685,8 @@ fun deleteOrders(request: ClientCodeRequest, id: Int): Boolean {
         viewModelScope.launch {
             try {
                 repository.saveCustomerOrder(customerOrderRequest)
-                _insertOrderOffline.value = (customerOrderRequest)
+                _insertOrderOffline.value = (customerOrderRequest!!)
+                repository.saveCustomerOrder(customerOrderRequest)
                 Log.d("orderViewModel", "orderViewModel" + customerOrderRequest)
             } catch (e: Exception) {
                 _insertOrderOffline.value = (customerOrderRequest)

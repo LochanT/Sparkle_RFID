@@ -44,6 +44,7 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.RadioButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PersonAdd
@@ -3506,7 +3507,46 @@ fun generateInvoicePdfAndOpen(
         }
     }
 }
+fun upscaleBitmap(original: Bitmap, scaleFactor: Float = 2f): Bitmap {
+    val width = (original.width * scaleFactor).toInt()
+    val height = (original.height * scaleFactor).toInt()
+    return Bitmap.createScaledBitmap(original, width, height, true)
+}
 
+/*fun sharpenBitmap(src: Bitmap): Bitmap {
+    val width = src.width
+    val height = src.height
+    val result = src.config?.let { Bitmap.createBitmap(width, height, it) }
+    val kernel = arrayOf(
+        floatArrayOf(0f, -1f, 0f),
+        floatArrayOf(-1f, 5f, -1f),
+        floatArrayOf(0f, -1f, 0f)
+    )
+    val kernelSize = 3
+    val edge = kernelSize / 2
+    for (y in edge until height - edge) {
+        for (x in edge until width - edge) {
+            var r = 0f
+            var g = 0f
+            var b = 0f
+            for (ky in 0 until kernelSize) {
+                for (kx in 0 until kernelSize) {
+                    val pixel = src.getPixel(x + kx - edge, y + ky - edge)
+                    val factor = kernel[ky][kx]
+                 *//*   r += Color.red(pixel) * factor
+                    g += Color.green(pixel) * factor
+                    b += Color.blue(pixel) * factor*//*
+                }
+            }
+            // Clamp values to 0–255
+            val newR = r.coerceIn(0f, 255f).toInt()
+            val newG = g.coerceIn(0f, 255f).toInt()
+            val newB = b.coerceIn(0f, 255f).toInt()
+            result.setPixel(x, y, Color.rgb(newR, newG, newB))
+        }
+    }
+    return result
+}*/
 
 
 suspend fun loadBitmapFromUrl(urlString: String): Bitmap? = withContext(Dispatchers.IO) {

@@ -1,5 +1,6 @@
 package com.loyalstring.rfid.repository
 
+import android.util.Log
 import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
@@ -11,6 +12,8 @@ import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import com.loyalstring.rfid.data.remote.api.RetrofitInterface
+import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
+import com.loyalstring.rfid.data.remote.data.DeleteOrderResponse
 import kotlinx.coroutines.flow.Flow
 import retrofit2.Response
 import javax.inject.Inject
@@ -59,8 +62,10 @@ class OrderRepository @Inject constructor(
         orderItemDao.clearAllItems()
     }
 
-    suspend fun deleteOrder(request: ClientCodeRequest, id: Int) {
-        apiService.deleteCustomerOrder(request, id)
+    suspend fun deleteOrder(request: ClientCodeRequest, id: Int) : Response<DeleteOrderResponse>{
+        val deleteRequest = DeleteOrderRequest(clientCode = request.clientcode ?: "", CustomOrderId = id)
+        return  apiService.deleteCustomerOrder(deleteRequest)
+
 
     }
 
@@ -118,6 +123,7 @@ class OrderRepository @Inject constructor(
 
     // Save the custom order response to Room
     suspend fun saveCustomerOrder(request: CustomOrderRequest) {
+        Log.d("@@","customerOrder"+request)
         orderItemDao.insertCustomerOrder(request)
     }
 

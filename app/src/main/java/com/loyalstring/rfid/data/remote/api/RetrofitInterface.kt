@@ -24,6 +24,8 @@ import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
+import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
+import com.loyalstring.rfid.data.remote.data.DeleteOrderResponse
 import com.loyalstring.rfid.data.remote.data.StockTransferRequest
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.MultipartBody
@@ -144,9 +146,9 @@ interface RetrofitInterface {
 
     @POST("api/Order/DeleteCustomOrder")
     suspend fun deleteCustomerOrder(
-        @Body clientCodeRequest: ClientCodeRequest,
-        CustomOrderId: Int
-    ): Response<List<CustomOrderResponse>>
+
+        @Body request: DeleteOrderRequest
+    ): Response<DeleteOrderResponse>
 
 
     @POST("/api/ProductMaster/AddStockTransfer")

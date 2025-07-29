@@ -1,6 +1,8 @@
 package com.loyalstring.rfid.ui.screens
 
 import android.content.Context
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -9,18 +11,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Print
@@ -256,7 +261,7 @@ fun OrderTableWithPagination(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(verticalScroll)
+               // .verticalScroll(verticalScroll)
         ) {
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -265,129 +270,144 @@ fun OrderTableWithPagination(
             } else {
                 val singleProductViewModel: SingleProductViewModel = hiltViewModel()
                 val branchList = singleProductViewModel.branches
-                Column(modifier = Modifier.horizontalScroll(horizontalScroll)) {
-                    data.forEachIndexed { index, row ->
-                        Row(modifier = Modifier.padding(vertical = 6.dp)) {
-                            Text(
-                                row.OrderNo,
-                                Modifier
-                                    .width(120.dp)
-                                    .padding(horizontal = 8.dp),
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                row.Customer.FirstName,
-                                Modifier
-                                    .width(120.dp)
-                                    .padding(horizontal = 8.dp),
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                row.Customer.Mobile,
-                                Modifier
-                                    .width(120.dp)
-                                    .padding(horizontal = 8.dp),
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                row.Category,
-                                Modifier
-                                    .width(120.dp)
-                                    .padding(horizontal = 8.dp),
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                row.TotalNetAmount,
-                                Modifier
-                                    .width(120.dp)
-                                    .padding(horizontal = 8.dp),
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                row.TotalAmount,
-                                Modifier
-                                    .width(120.dp)
-                                    .padding(horizontal = 8.dp),
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                formatDate(row.OrderDate),
-                               // row.OrderDate ?: "",
-                                Modifier
-                                    .width(120.dp)
-                                    .padding(horizontal = 8.dp),
-                                fontSize = 14.sp
-                            )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
 
-                            // ✅ Action Buttons Column
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(data.size) { index ->
+                            val row = data[index]
                             Row(
                                 modifier = Modifier
-                                    .width(100.dp)
-                                    .padding(horizontal = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(vertical = 6.dp)
                             ) {
-                                IconButton(onClick = {
-                                    navController.navigate("order")
-                                    // TODO: Handle Edit Action
-
-                                    /*          OrderDetailsDialogEditAndDisplay(
-
-                                                  row.CustomOrderItem.get(0),
-                                                  branchList,
-                                                  onDismiss = { showEditOrderDialog = false },
-                                                  //  onConfirm = onConfirmOrderDetails,
-                                                  onSave = {
-                                                      // handle saved data
-                                                      showOrderDialog = false
-                                                  },
-                                                  edit = 2
-
-                                              )*/
-                                }, modifier = Modifier.size(25.dp)) {
-                                    IconButton(onClick = {
-
-                                        employee?.clientCode?.let {
-                                            orderViewModel.deleteOrders(
-                                                ClientCodeRequest(it),
-                                                row.CustomOrderId
-                                            )
-                                        }
-
-                                        // navController.navigate("order_screen?order=${Gson().toJson(row)}")
-// This will return to the previous screen
-                                    }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete",
-                                            tint = Color.Blue
+                                data.forEachIndexed { index, row ->
+                                    Row(modifier = Modifier.padding(vertical = 6.dp)) {
+                                        Text(
+                                            text = row.OrderNo ?: "",
+                                            Modifier
+                                                .width(120.dp)
+                                                .padding(horizontal = 8.dp),
+                                            fontSize = 14.sp
                                         )
+                                        Text(
+                                            text = row.Customer?.FirstName ?: "",
+                                            Modifier
+                                                .width(120.dp)
+                                                .padding(horizontal = 8.dp),
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            text = row.Customer?.Mobile ?: "",
+                                            Modifier
+                                                .width(120.dp)
+                                                .padding(horizontal = 8.dp),
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            text = row.Category ?: "",
+                                            Modifier
+                                                .width(120.dp)
+                                                .padding(horizontal = 8.dp),
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            text = row.TotalNetAmount ?: "",
+                                            Modifier
+                                                .width(120.dp)
+                                                .padding(horizontal = 8.dp),
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            text = row.TotalAmount ?: "",
+                                            Modifier
+                                                .width(120.dp)
+                                                .padding(horizontal = 8.dp),
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            text = formatDate(row.OrderDate ?: ""),
+                                            Modifier
+                                                .width(120.dp)
+                                                .padding(horizontal = 8.dp),
+                                            fontSize = 14.sp
+                                        )
+
+                                        // Actions
+                                        Row(
+                                            modifier = Modifier
+                                                .width(100.dp)
+                                                .padding(horizontal = 8.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            IconButton(onClick = {
+                                                navController.navigate("order")
+                                            }, modifier = Modifier.size(25.dp)) {
+                                                IconButton(onClick = {
+                                                    employee?.clientCode?.let {
+                                                        orderViewModel.deleteOrders(
+                                                            ClientCodeRequest(it),
+                                                            row.CustomOrderId ?: -1
+                                                        ) { isSuccess ->
+                                                            if (isSuccess) {
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    "Order deleted successfully",
+                                                                    Toast.LENGTH_SHORT
+                                                                ).show()
+                                                                employee.clientCode.let { clientCode ->
+                                                                    orderViewModel.getAllOrders(
+                                                                        clientCode
+                                                                    )
+                                                                }
+                                                            } else {
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    "Failed to delete order",
+                                                                    Toast.LENGTH_SHORT
+                                                                ).show()
+                                                            }
+                                                        }
+                                                    }
+                                                }) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Delete,
+                                                        contentDescription = "Delete",
+                                                        tint = Color.Blue
+                                                    )
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.width(8.dp))
+
+                                            IconButton(onClick = {
+                                                generateInvoicePdfAndOpen(context, row, employee)
+                                            }, modifier = Modifier.size(25.dp)) {
+                                                Icon(
+                                                    Icons.Default.Print,
+                                                    contentDescription = "Print",
+                                                    tint = Color.DarkGray
+                                                )
+                                            }
+                                        }
                                     }
 
+                                    if (index == data.lastIndex && index % 20 == 19) {
+                                        LaunchedEffect(Unit) {
+                                            onLoadMore()
+                                        }
+                                    }
                                 }
-                                Spacer(modifier = Modifier.width(8.dp))
-
-                                IconButton(onClick = {
-                                    // TODO: Handle Print Action
-                                    generateInvoicePdfAndOpen(context, row, employee)
-                                }, modifier = Modifier.size(25.dp)) {
-                                    Icon(
-                                        Icons.Default.Print,
-                                        contentDescription = "Print",
-                                        tint = Color.DarkGray
-                                    )
-                                }
-                            }
-                        }
-
-                        // 🔄 Pagination Trigger
-                        if (index == data.lastIndex && index % 20 == 19) {
-                            LaunchedEffect(Unit) {
-                                onLoadMore()
                             }
                         }
                     }
                 }
+
             }
         }
     }
