@@ -80,9 +80,6 @@ fun OrderLisrScreen(
     var visibleItems by remember { mutableStateOf(7000) }
     var searchQuery by remember { mutableStateOf("") }
 
-
-
-
     LaunchedEffect(Unit) {
         employee?.clientCode?.let {
             orderViewModel.fetchAllOrderListFromApi(ClientCodeRequest(it))
@@ -91,18 +88,23 @@ fun OrderLisrScreen(
 
     val filteredData = if (searchQuery.isNotEmpty()) {
         allItems.filter {
-
-            it.OrderNo.contains(searchQuery, ignoreCase = true) == true ||
-                    it.Category.contains(searchQuery, ignoreCase = true) == true ||
-                    it.Customer.FirstName.contains(searchQuery, ignoreCase = true) == true
+            it.OrderNo.contains(searchQuery, true) ||
+                    it.Category.contains(searchQuery, true) ||
+                    it.Customer.FirstName.contains(searchQuery, true) == true
         }
     } else allItems
 
     val visibleData = filteredData.take(visibleItems)
 
     val headerTitles = listOf(
-        "Order No", "Name", "Contact", "Product",
-        "N.Amt", "Total Amt", "Order Date", "Actions"
+        "Order No",
+        "Name",
+        "Contact",
+        "Product",
+        "N.Amt",
+        "Total Amt",
+        "Order Date",
+        "Actions"
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -111,7 +113,7 @@ fun OrderLisrScreen(
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = Color.White
                     )
@@ -128,7 +130,6 @@ fun OrderLisrScreen(
             visibleItems = 10
         }
 
-        // ✅ Always show table, even if loading
         OrderTableWithPagination(
             navController = navController,
             headerTitles = headerTitles,
@@ -145,12 +146,8 @@ fun OrderLisrScreen(
     }
 }
 
-
 @Composable
-fun SearchBar(
-    value: String,
-    onValueChange: (String) -> Unit
-) {
+fun SearchBar(value: String, onValueChange: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -162,7 +159,7 @@ fun SearchBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.Default.Search,
+            Icons.Default.Search,
             contentDescription = "Search",
             modifier = Modifier.padding(start = 12.dp),
             tint = Color.Gray
@@ -180,7 +177,6 @@ fun SearchBar(
                     .padding(end = if (value.isNotEmpty()) 36.dp else 12.dp),
                 keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search)
             )
-
             if (value.isNotEmpty()) {
                 IconButton(
                     onClick = { onValueChange("") },
@@ -189,11 +185,7 @@ fun SearchBar(
                         .padding(end = 4.dp)
                         .size(24.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Clear",
-                        tint = Color.Gray
-                    )
+                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = Color.Gray)
                 }
             }
         }
@@ -210,15 +202,14 @@ fun OrderTableWithPagination(
     context: Context,
     employee: Employee?
 ) {
-    val horizontalScroll = rememberScrollState()
+    val headerScroll = rememberScrollState()
+    val rowScroll = rememberScrollState()
     val orderViewModel: OrderViewModel = hiltViewModel()
 
     Column(modifier = Modifier.fillMaxSize()) {
-
-        // Header Row (fixed top)
         Row(
             modifier = Modifier
-                .horizontalScroll(horizontalScroll)
+                .horizontalScroll(headerScroll)
                 .background(Color.DarkGray)
                 .padding(vertical = 8.dp)
         ) {
@@ -232,14 +223,6 @@ fun OrderTableWithPagination(
                     color = Color.White
                 )
             }
-            Text(
-                text = "Actions",
-                modifier = Modifier
-                    .width(100.dp)
-                    .padding(horizontal = 8.dp),
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
         }
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -249,12 +232,11 @@ fun OrderTableWithPagination(
                 CircularProgressIndicator()
             }
         } else {
-            // Main data scroll vertically, but rows scroll horizontally with the same state
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(data) { row ->
                     Row(
                         modifier = Modifier
-                            .horizontalScroll(horizontalScroll)
+                            .horizontalScroll(rowScroll)
                             .padding(vertical = 6.dp)
                     ) {
                         Text(
@@ -262,61 +244,58 @@ fun OrderTableWithPagination(
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
-                            fontSize = 14.sp
+                            fontSize = 12.sp
                         )
                         Text(
                             row.Customer.FirstName,
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
-                            fontSize = 14.sp
+                            fontSize = 12.sp
                         )
                         Text(
                             row.Customer.Mobile,
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
-                            fontSize = 14.sp
+                            fontSize = 12.sp
                         )
                         Text(
                             row.Category,
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
-                            fontSize = 14.sp
+                            fontSize = 12.sp
                         )
                         Text(
                             row.TotalNetAmount,
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
-                            fontSize = 14.sp
+                            fontSize = 12.sp
                         )
                         Text(
                             row.TotalAmount,
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
-                            fontSize = 14.sp
+                            fontSize = 12.sp
                         )
                         Text(
                             formatDate(row.OrderDate),
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
-                            fontSize = 14.sp
+                            fontSize = 12.sp
                         )
-
                         Row(
                             modifier = Modifier
-                                .width(100.dp)
+                                .width(120.dp)
                                 .padding(horizontal = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(onClick = {
-                                navController.navigate("order")
-                            }) {
+                            IconButton(onClick = { navController.navigate("order") }) {
                                 Icon(
                                     Icons.Default.Print,
                                     contentDescription = "Print",
@@ -332,19 +311,18 @@ fun OrderTableWithPagination(
                                     ) { isSuccess ->
                                         Toast.makeText(
                                             context,
-                                            if (isSuccess) " Order Deleted Successfully" else "Failed to delete",
+                                            if (isSuccess) "Order Deleted Successfully" else "Failed to delete",
                                             Toast.LENGTH_SHORT
                                         ).show()
                                         if (isSuccess) {
                                             orderViewModel.removeOrderById(row.CustomOrderId)
-                                            orderViewModel.getAllOrders(it)
                                         }
                                     }
                                 }
                             }) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    contentDescription = "Order Delete Failed",
+                                    contentDescription = "Delete",
                                     tint = Color.Blue
                                 )
                             }
@@ -356,18 +334,13 @@ fun OrderTableWithPagination(
     }
 }
 
-
 fun formatDate(dateString: String): String {
     return try {
-        val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) // Assuming the date is in "yyyy-MM-dd" format
+        val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val date = format.parse(dateString)
         val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        outputFormat.format(date ?: Date()) // Default to current date if parsing fails
+        outputFormat.format(date ?: Date())
     } catch (e: Exception) {
-        dateString // Return the original string if there is an error
+        dateString
     }
 }
-
-
-
-

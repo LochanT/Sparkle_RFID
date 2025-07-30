@@ -376,6 +376,9 @@ fun OrderScreenContent(
             Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
             generateInvoicePdfAndOpen(context, orderResponse, employee)
             showInvoice = true
+            orderViewModel.clearOrderItems()
+            /* itemCode.text=""
+             customerName.text=""*/
         }
 
 
@@ -387,6 +390,10 @@ fun OrderScreenContent(
             Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
             generateInvoicePdfAndOpen(context, it, employee)
             showInvoice = true
+            orderViewModel.clearOrderItems()
+            /* itemCode.text=""
+             customerName.text=""*/
+
         }
     }
 
@@ -681,7 +688,7 @@ fun OrderScreenContent(
     }
     var nextOrderNo = remember { mutableStateOf(0) }
     LaunchedEffect(lastOrder) {
-        lastOrder?.LastOrderNo?.toIntOrNull()?.let { last ->
+        lastOrder.LastOrderNo?.toIntOrNull()?.let { last ->
             nextOrderNo.value = last + 1
             Log.d("Order", "Last order number: $last")
             Log.d("Order", "Next order number: ${nextOrderNo.value}")
@@ -734,7 +741,7 @@ fun OrderScreenContent(
                         var lastOrderNo: Int? = null
                         while (attempts < 10 && lastOrderNo == null) {
                             delay(300)
-                            lastOrderNo = orderViewModel.lastOrderNoresponse.value?.LastOrderNo?.toIntOrNull()
+                            lastOrderNo = orderViewModel.lastOrderNoresponse.value.LastOrderNo?.toIntOrNull()
                             attempts++
                         }
 
@@ -1151,7 +1158,7 @@ fun OrderScreenContent(
                  //   resetScan(bulkViewModel,firstPress)
                     if (!firstPress) {
                         firstPress = true
-                        bulkViewModel.startScanning(30)
+                        bulkViewModel.startScanning(10)
 
                     } else {
                         bulkViewModel.stopScanning() // Stop scanning after the first press
@@ -1693,6 +1700,7 @@ fun OrderScreenContent(
     }
 
 }
+
 
 fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
     return CustomOrderResponse(
@@ -3482,7 +3490,7 @@ fun generateInvoicePdfAndOpen(
         try {
             val file = File(
                 context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-                "Bill_Report_${System.currentTimeMillis()}.pdf"
+                "Order_Report_${order.Customer.FirstName.orEmpty()}.pdf"
             )
             document.writeTo(FileOutputStream(file))
             document.close()

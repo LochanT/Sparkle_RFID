@@ -74,11 +74,29 @@ class OrderViewModel @Inject constructor(
     private val _getAllOrderList = MutableStateFlow<List<CustomOrderResponse>>(emptyList())
     val getAllOrderList: StateFlow<List<CustomOrderResponse>> = _getAllOrderList
 
+//    private val _orderPlaced = mutableStateOf(false)
+//    val orderPlaced: State<Boolean> = _orderPlaced
+
     fun setOrderResponse(response: CustomOrderResponse) {
         _orderResponse.value = response
     }
 
+    fun clearOrderItems() {
+        _allOrderItems.value = emptyList()
+    }
 
+
+//
+//    fun placeOrder(request: ClientCodeRequest, order: CustomOrderRequest) {
+//        viewModelScope.launch {
+//            val response = repository.submitOrder(request, order)
+//            _orderPlaced.value = response.isSuccessful
+//        }
+//    }
+//
+//    fun resetOrderPlaced() {
+//        _orderPlaced.value = false
+//    }
 
     /*add employee*/
     fun addEmployee(request: AddEmployeeRequest) {
@@ -339,7 +357,7 @@ class OrderViewModel @Inject constructor(
                     //repository.clearLastOrderNo()
                     for (order in response.body()!!) {
                         val request = order.toRequest()
-                        repository.saveCustomerOrder(request)
+                        //4   repository.saveCustomerOrder(request)
                     }
                     Log.d("OrderViewModel", "get All order list: ${response.body()}")
                     _isLoading.value = false
@@ -436,7 +454,7 @@ class OrderViewModel @Inject constructor(
                         )
                     }
 
-                   _getAllOrderList.value = mappedData
+                    // _getAllOrderList.value = mappedData
                     // _getAllOrderList.value = localData
                     _isLoading.value = false
                 }
@@ -533,7 +551,7 @@ class OrderViewModel @Inject constructor(
                     )
                 }
 
-               _getAllOrderList.value = mappedData
+                //  _getAllOrderList.value = mappedData
                 // _getAllOrderList.value = localData
                 _isLoading.value = false
             }
