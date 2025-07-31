@@ -450,7 +450,8 @@ class OrderViewModel @Inject constructor(
                             CustomOrderItem = customerOrderRequest.CustomOrderItem,
                             Payments = customerOrderRequest.Payments,
                             Customer = customerOrderRequest.Customer,
-                            syncStatus = customerOrderRequest.syncStatus
+                            syncStatus = customerOrderRequest.syncStatus,
+                            ProductName = ""
                         )
                     }
 
@@ -547,7 +548,8 @@ class OrderViewModel @Inject constructor(
                         CustomOrderItem = customerOrderRequest.CustomOrderItem,
                         Payments = customerOrderRequest.Payments,
                         Customer = customerOrderRequest.Customer,
-                        syncStatus = customerOrderRequest.syncStatus
+                        syncStatus = customerOrderRequest.syncStatus,
+                        ProductName = ""
                     )
                 }
 

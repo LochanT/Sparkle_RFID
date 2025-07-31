@@ -1800,7 +1800,8 @@ fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
         CustomOrderItem = this.CustomOrderItem,
         Payments = this.Payments,
         Customer = this.Customer,
-        syncStatus = this.syncStatus
+        syncStatus = this.syncStatus,
+        ProductName = "",
     )
 }
 

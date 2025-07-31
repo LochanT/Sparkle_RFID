@@ -92,5 +92,6 @@ data class CustomOrderResponse(
     val CustomOrderItem: List<CustomOrderItem>,
     val Payments: List<Payment>,
     val Customer: Customer,
-    val syncStatus: Boolean = false
+    val syncStatus: Boolean = false,
+    val ProductName: String
 ): Serializable

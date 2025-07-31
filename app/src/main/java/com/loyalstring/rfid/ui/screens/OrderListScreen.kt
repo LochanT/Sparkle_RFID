@@ -250,6 +250,11 @@ fun OrderTableWithPagination(
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(data) { row ->
+                    val totalGrossWt = row.CustomOrderItem.sumOf {
+                        val grossWt = it.GrossWt?.toFloatOrNull() ?: 0f
+                        val qty = it.Quantity?.toIntOrNull() ?: 0
+                        (grossWt * qty).toDouble()  // Ensure the multiplication result is treated as Double
+                    }.toString()
                     Row(
                         modifier = Modifier
                             .horizontalScroll(sharedScrollState)
@@ -277,14 +282,14 @@ fun OrderTableWithPagination(
                             fontSize = 12.sp
                         )
                         Text(
-                            row.Category ?: "",
+                            row.CustomOrderItem.joinToString(", ") { it.ProductName ?: "" },
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
                             fontSize = 12.sp
                         )
                         Text(
-                            "" ?: "",
+                            row.CustomOrderItem.joinToString(", ") { it.BranchName ?: "" },
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
@@ -292,14 +297,16 @@ fun OrderTableWithPagination(
                         )
 
                         Text(
-                            row.Qty ?: "",
+                            row.CustomOrderItem.sumOf { it.Quantity?.toIntOrNull() ?: 0 }.toString(),
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
                             fontSize = 12.sp
                         )
                         Text(
-                            row.TotalStoneWeight ?: "",
+
+
+                            totalGrossWt?:"",
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
