@@ -113,7 +113,7 @@ fun OrderLisrScreen(
         "Product",
         "Branch",
         "Qty",
-        "GrossWt",
+        "Tot Wt",
         "N.Amt",
         "Total Amt",
         "Order Date",

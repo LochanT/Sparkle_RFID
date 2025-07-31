@@ -164,6 +164,10 @@ fun OrderDetailsDialogEditAndDisplay(
         qty = selectedItem?.qty.toString()
         hallMarkAmt = selectedItem?.hallmarkAmt.toString()
         mrp = selectedItem?.mrp.toString()
+
+        Log.d("SelectedItem",  selectedItem?.qty.toString())
+// or for plain console apps
+        println(selectedItem)
     }
 
     val purityList by singleProductViewModel.purityResponse1.collectAsState()

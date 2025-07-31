@@ -83,6 +83,7 @@ data class CustomOrderRequest(
     val GstAmount: String,
     val GstCheck: String,
     val Category: String,
+
     val TDSCheck: String,
     val Remark: String? = null,
     val OrderItemId: Int? = null,

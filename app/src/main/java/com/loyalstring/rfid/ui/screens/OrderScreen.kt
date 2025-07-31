@@ -88,6 +88,7 @@ import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.google.gson.Gson
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.OrderItem
+import com.loyalstring.rfid.data.local.entity.Product
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.model.order.CustomOrderItem
@@ -712,7 +713,7 @@ fun OrderScreenContent(
         totalDiamondWt = productList.sumOf { it.dimondWt.toDoubleOrNull() ?: 0.0 }.toString()
         totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
         totalGrWt = productList.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }.toString()
-        quantity=productList.size.toString()
+        quantity=productList.sumOf { it.qty?.toDoubleOrNull() ?: 0.0 }.toString()
     }
 
     Scaffold(
@@ -955,6 +956,7 @@ fun OrderScreenContent(
 
                             Payments = listOf(Payment("")),
                             uRDPurchases = listOf(URDPurchase("")),
+
                             Customer = Customer(
                                 FirstName = selectedCustomer.FirstName.orEmpty(),
                                 LastName = selectedCustomer.LastName.orEmpty(),
@@ -996,7 +998,8 @@ fun OrderScreenContent(
                                 Id = selectedCustomer.Id ?: 0,
                                 CreatedOn = "2025-07-08",
                                 LastUpdated = "2025-07-08",
-                                StatusType = true
+                                StatusType = true,
+
                             )
                         )
                         if (isOnline) {
@@ -1787,6 +1790,7 @@ fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
         GstAmount = this.GstAmount,
         GstCheck = this.GstCheck,
         Category = this.Category,
+
         TDSCheck = this.TDSCheck,
         Remark = this.Remark,
         OrderItemId = this.OrderItemId ?: 0,
@@ -2003,6 +2007,7 @@ fun OrderItemTableScreen(
                     listOf(
                         "Product Name" to 160.dp,
                         "Item Code" to 80.dp,
+                        "Qty" to 80.dp,
                         "Gr. Wt" to 80.dp,
                         "N. Wt" to 80.dp,
                         "F+W Wt" to 80.dp,
@@ -2184,7 +2189,8 @@ fun OrderItemTableScreen(
                                 item.finePlusWt,
                                 item.stoneAmt,
                                 item.itemAmt,
-                                item.rfidCode
+                                item.rfidCode,
+                                item.qty
                             ).forEach { value ->
                                 Box(
                                     modifier = Modifier.width(80.dp),
@@ -3491,7 +3497,7 @@ fun generateInvoicePdfAndOpen(
 
             // Right Column
             var rightTextY = y + 15f
-            canvas.drawText("G wt  : ${item.GrossWt}", rightX, rightTextY, paint)
+            canvas.drawText("T wt  : ${item.GrossWt}", rightX, rightTextY, paint)
             rightTextY += 18
             canvas.drawText("S wt  : ${item.StoneWt}", rightX, rightTextY, paint)
             rightTextY += 18
