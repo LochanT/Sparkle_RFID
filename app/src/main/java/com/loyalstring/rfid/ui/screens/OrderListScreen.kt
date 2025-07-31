@@ -56,6 +56,7 @@ import androidx.navigation.NavHostController
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
+import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.viewmodel.OrderViewModel
@@ -86,6 +87,15 @@ fun OrderLisrScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        employee?.clientCode?.let { clientCode ->
+
+            orderViewModel.getAllItemCodeList(ClientCodeRequest(clientCode))
+
+        }
+    }
+    val itemCodeList by orderViewModel.itemCodeResponse.collectAsState()
+
     val filteredData = if (searchQuery.isNotEmpty()) {
         allItems.filter {
             it.OrderNo.contains(searchQuery, true) ||
@@ -101,6 +111,9 @@ fun OrderLisrScreen(
         "Name",
         "Contact",
         "Product",
+        "Branch",
+        "Qty",
+        "GrossWt",
         "N.Amt",
         "Total Amt",
         "Order Date",
@@ -141,7 +154,8 @@ fun OrderLisrScreen(
             },
             isLoading = isLoading,
             context = context,
-            employee = employee
+            employee = employee,
+            itemCodeList = itemCodeList
         )
     }
 }
@@ -200,16 +214,18 @@ fun OrderTableWithPagination(
     onLoadMore: () -> Unit,
     isLoading: Boolean,
     context: Context,
-    employee: Employee?
+    employee: Employee?,
+    itemCodeList: List<ItemCodeResponse>
 ) {
-    val headerScroll = rememberScrollState()
-    val rowScroll = rememberScrollState()
+    val sharedScrollState = rememberScrollState()
     val orderViewModel: OrderViewModel = hiltViewModel()
 
     Column(modifier = Modifier.fillMaxSize()) {
+
+        // Shared header scroll
         Row(
             modifier = Modifier
-                .horizontalScroll(headerScroll)
+                .horizontalScroll(sharedScrollState)
                 .background(Color.DarkGray)
                 .padding(vertical = 8.dp)
         ) {
@@ -236,46 +252,69 @@ fun OrderTableWithPagination(
                 items(data) { row ->
                     Row(
                         modifier = Modifier
-                            .horizontalScroll(rowScroll)
+                            .horizontalScroll(sharedScrollState)
                             .padding(vertical = 6.dp)
                     ) {
                         Text(
-                            row.OrderNo,
+                            row.OrderNo ?: "",
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
                             fontSize = 12.sp
                         )
                         Text(
-                            row.Customer.FirstName,
+                            row.Customer?.FirstName ?: "",
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
                             fontSize = 12.sp
                         )
                         Text(
-                            row.Customer.Mobile,
+                            row.Customer?.Mobile ?: "",
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
                             fontSize = 12.sp
                         )
                         Text(
-                            row.Category,
+                            row.Category ?: "",
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
                             fontSize = 12.sp
                         )
                         Text(
-                            row.TotalNetAmount,
+                            "" ?: "",
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 12.sp
+                        )
+
+                        Text(
+                            row.Qty ?: "",
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
                             fontSize = 12.sp
                         )
                         Text(
-                            row.TotalAmount,
+                            row.TotalStoneWeight ?: "",
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 12.sp
+                        )
+
+                        Text(
+                            row.TotalNetAmount ?: "",
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            row.TotalAmount ?: "",
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
@@ -288,6 +327,7 @@ fun OrderTableWithPagination(
                                 .padding(horizontal = 8.dp),
                             fontSize = 12.sp
                         )
+
                         Row(
                             modifier = Modifier
                                 .width(120.dp)
@@ -295,7 +335,15 @@ fun OrderTableWithPagination(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(onClick = { navController.navigate("order") }) {
+
+                            IconButton(onClick = {
+                                generateInvoicePdfAndOpen(
+                                    context,
+                                    row,
+                                    employee,
+                                    itemCodeList
+                                )
+                            }) {
                                 Icon(
                                     Icons.Default.Print,
                                     contentDescription = "Print",
@@ -323,7 +371,7 @@ fun OrderTableWithPagination(
                                 Icon(
                                     Icons.Default.Delete,
                                     contentDescription = "Delete",
-                                    tint = Color.Blue
+                                    tint = Color.DarkGray
                                 )
                             }
                         }
@@ -333,6 +381,7 @@ fun OrderTableWithPagination(
         }
     }
 }
+
 
 fun formatDate(dateString: String): String {
     return try {

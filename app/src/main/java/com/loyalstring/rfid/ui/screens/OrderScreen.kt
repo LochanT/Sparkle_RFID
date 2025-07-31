@@ -133,6 +133,7 @@ fun OrderScreen(
     val bulkViewModel: BulkViewModel = hiltViewModel()
     val orderViewModel: OrderViewModel = hiltViewModel()
     val singleProductViewModel: SingleProductViewModel = hiltViewModel()
+    var selectedPower by remember { mutableStateOf(10) }
 
     var selectedCustomer by remember { mutableStateOf<EmployeeList?>(null) }
 
@@ -171,9 +172,12 @@ fun OrderScreen(
                     }
                 },
                 actions = {},
-                showCounter = false,
-                selectedCount = 0,
-                onCountSelected = {}
+                showCounter = true,
+                selectedCount = selectedPower,
+                onCountSelected = {
+                    selectedPower = it
+
+                }
             )
         }
     ) { innerPadding ->
@@ -184,7 +188,8 @@ fun OrderScreen(
                 userPreferences = userPreferences,
                 bulkViewModel = bulkViewModel,
                 selectedCustomer = selectedCustomer,
-                onCustomerSelected = { selectedCustomer = it }
+                onCustomerSelected = { selectedCustomer = it },
+                selectedPower
             )
         }
     }
@@ -197,7 +202,8 @@ fun OrderScreenContent(
     userPreferences: UserPreferences,
     bulkViewModel: BulkViewModel,
     selectedCustomer: EmployeeList?,
-    onCustomerSelected: (EmployeeList) -> Unit
+    onCustomerSelected: (EmployeeList) -> Unit,
+    selectedPower: Int
 ) {
     val context = LocalContext.current
     val isOnline = remember {
@@ -231,6 +237,7 @@ fun OrderScreenContent(
     var totalDiamondAMt by remember { mutableStateOf("") }
     var totalDiamondWt by remember { mutableStateOf("") }
     var totalNetWt by remember { mutableStateOf("") }
+    var totalGrWt by remember { mutableStateOf("") }
 
 // Customer input fields
     var customerName by remember { mutableStateOf("") }
@@ -374,7 +381,7 @@ fun OrderScreenContent(
 
             orderViewModel.setOrderResponse(orderResponse)
             Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
-            generateInvoicePdfAndOpen(context, orderResponse, employee)
+            generateInvoicePdfAndOpen(context, orderResponse, employee,itemCodeList)
             showInvoice = true
             orderViewModel.clearOrderItems()
             /* itemCode.text=""
@@ -388,7 +395,7 @@ fun OrderScreenContent(
         orderSuccess?.let {
             orderViewModel.setOrderResponse(it)
             Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
-            generateInvoicePdfAndOpen(context, it, employee)
+            generateInvoicePdfAndOpen(context, it, employee,itemCodeList)
             showInvoice = true
             orderViewModel.clearOrderItems()
             /* itemCode.text=""
@@ -704,6 +711,8 @@ fun OrderScreenContent(
         totalDiamondAMt = productList.sumOf { it.diamondAmt.toDoubleOrNull() ?: 0.0 }.toString()
         totalDiamondWt = productList.sumOf { it.dimondWt.toDoubleOrNull() ?: 0.0 }.toString()
         totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+        totalGrWt = productList.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }.toString()
+        quantity=productList.size.toString()
     }
 
     Scaffold(
@@ -1158,7 +1167,7 @@ fun OrderScreenContent(
                  //   resetScan(bulkViewModel,firstPress)
                     if (!firstPress) {
                         firstPress = true
-                        bulkViewModel.startScanning(10)
+                        bulkViewModel.startScanning(selectedPower)
 
                     } else {
                         bulkViewModel.stopScanning() // Stop scanning after the first press
@@ -1168,6 +1177,7 @@ fun OrderScreenContent(
 
                     bulkViewModel.resetData()
                     bulkViewModel.stopBarcodeScanner()
+                    orderViewModel.clearOrderItems()
 
 
                 }
@@ -3385,13 +3395,34 @@ fun Modifier.gradientBorderBox(
 fun generateInvoicePdfAndOpen(
     context: Context,
     order: CustomOrderResponse,
-    employee: Employee?
+    employee: Employee?,
+    itemCodeList: List<ItemCodeResponse>
 ) {
+
     CoroutineScope(Dispatchers.Main).launch {
         val imageBitmaps = mutableListOf<Bitmap?>()
         for (item in order.CustomOrderItem) {
-            val bitmap = loadBitmapFromUrl("https://rrgold.loyalstring.co.in/" + item.Image)
-            imageBitmaps.add(bitmap)
+            Log.d("@@@","lastImagePath"+item.Image+" "+itemCodeList)
+            if (item.Image != "" && item.Image != "https://rrgold.loyalstring.co.in/null") {
+                val bitmap = loadBitmapFromUrl(item.Image)
+                imageBitmaps.add(bitmap)
+            }else
+            {
+
+                for (x in itemCodeList) {
+                    if (item.ItemCode.equals(x.ItemCode))
+                    {
+
+                        val imageString = x?.Images.toString()
+                        val lastImagePath =
+                            imageString.split(",").lastOrNull()?.trim()
+                        Log.d("@@","lastImagePath"+lastImagePath)
+                        val bitmap = loadBitmapFromUrl("https://rrgold.loyalstring.co.in/"+lastImagePath.toString())
+                        imageBitmaps.add(bitmap)
+                        break
+                    }
+                }
+            }
         }
 
         val document = PdfDocument()

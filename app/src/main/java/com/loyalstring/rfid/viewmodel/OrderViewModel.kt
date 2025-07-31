@@ -60,7 +60,7 @@ class OrderViewModel @Inject constructor(
     private val _lastOrderNOResponse = MutableStateFlow(LastOrderNoResponse())
     val lastOrderNoresponse: StateFlow<LastOrderNoResponse> = _lastOrderNOResponse
 
-    private val _orderResponse = MutableStateFlow<CustomOrderResponse?>(null) 
+    private val _orderResponse = MutableStateFlow<CustomOrderResponse?>(null)
     val orderResponse: StateFlow<CustomOrderResponse?> = _orderResponse
 
     private val _allOrderItems = MutableStateFlow<List<OrderItem>>(emptyList())
@@ -138,22 +138,22 @@ class OrderViewModel @Inject constructor(
 
     /*emp list function*/
 
-  /*  fun getAllEmpList(clientCode: String) {
-        viewModelScope.launch {
-           // delay(1000)
-            isEmpListLoading.value = true
+    /*  fun getAllEmpList(clientCode: String) {
+          viewModelScope.launch {
+             // delay(1000)
+              isEmpListLoading.value = true
 
-            try {
-                val response = repository.getAllEmpList(ClientCodeRequest(clientCode)) // API call
+              try {
+                  val response = repository.getAllEmpList(ClientCodeRequest(clientCode)) // API call
 
-                if (response.isSuccessful && response.body() != null && response.body()!!.isNotEmpty()) {
-                    val data = response.body()
+                  if (response.isSuccessful && response.body() != null && response.body()!!.isNotEmpty()) {
+                      val data = response.body()
 
-                    // Save to Room
-                    // repository.clearAllEmployees()
-                  // repository.saveEmpListToRoom(data!!)
+                      // Save to Room
+                      // repository.clearAllEmployees()
+                    // repository.saveEmpListToRoom(data!!)
 
-                  *//*  if (!data.isNullOrEmpty()) {
+                    *//*  if (!data.isNullOrEmpty()) {
                         withContext(Dispatchers.IO) {
                             val chunkSize = 10 // try with 500–1000
                             data.chunked(chunkSize).forEach { chunk ->
@@ -190,7 +190,7 @@ class OrderViewModel @Inject constructor(
 
     fun getAllEmpList(clientCode: String) {
         viewModelScope.launch {
-          //  delay(1000)
+            //  delay(1000)
             isEmpListLoading.value = true
 
             try {
@@ -201,7 +201,7 @@ class OrderViewModel @Inject constructor(
 
                     // Save to Room
                     // repository.clearAllEmployees()
-                     repository.saveEmpListToRoom(data!!)
+                    repository.saveEmpListToRoom(data!!)
 
                     _empListFlow.value = UiState.Success(data)
 
@@ -680,21 +680,21 @@ class OrderViewModel @Inject constructor(
         }
     }
 
-/*delete all order*/
-fun deleteOrders(
-    request: ClientCodeRequest,
-    id: Int,
-    onResult: (Boolean) -> Unit
-) {
-    viewModelScope.launch {
-        try {
-            val response = repository.deleteOrder(request, id)
-            onResult(response.isSuccessful)
-        } catch (e: Exception) {
-            onResult(false)
+    /*delete all order*/
+    fun deleteOrders(
+        request: ClientCodeRequest,
+        id: Int,
+        onResult: (Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val response = repository.deleteOrder(request, id)
+                onResult(response.isSuccessful)
+            } catch (e: Exception) {
+                onResult(false)
+            }
         }
     }
-}
 
     /*insert order item or update locally*/
     fun insertOrderItemToRoomORUpdate(item: OrderItem) {
@@ -730,9 +730,9 @@ fun deleteOrders(
         viewModelScope.launch {
             try {
                 val orders = repository.getAllCustomerOrders(clientCode)
-               // _orderResponse.value = (orders)
+                // _orderResponse.value = (orders)
             } catch (e: Exception) {
-               // _orderResponse.value =("Failed to fetch orders: ${e.message}")
+                // _orderResponse.value =("Failed to fetch orders: ${e.message}")
             }
         }
     }
@@ -744,32 +744,32 @@ fun deleteOrders(
                 repository.deleteUnsyncedOrders()
                 //_orderResponse.value = ("Unsynced orders deleted successfully.")
             } catch (e: Exception) {
-               // _orderResponse.value = UiState.Error("Failed to delete unsynced orders: ${e.message}")
+                // _orderResponse.value = UiState.Error("Failed to delete unsynced orders: ${e.message}")
             }
         }
     }
 
-   fun syncDataWhenOnline() {
-       viewModelScope.launch {
-           val unsyncedOrders = repository.getAllCustomerOrders("LS000241")
-           try {
-               Log.e("unsyncedOrders", "Successfully done" + unsyncedOrders.get(0).Category)
-           } catch (e: Exception) {
-               Log.e("Sync", "Failed to sync: ${e.message}")
-           }
-           for (order in unsyncedOrders) {
-               try {
-                   val response = repository.addOrder(order)
-                   if (response.isSuccessful) {
-                       repository.addOrder(order)
-                       Log.e("Sync", "Successfully done")
-                   }
-               } catch (e: Exception) {
-                   Log.e("Sync", "Failed to sync: ${e.message}")
-               }
-           }
-       }
-   }
+    fun syncDataWhenOnline() {
+        viewModelScope.launch {
+            val unsyncedOrders = repository.getAllCustomerOrders("LS000241")
+            try {
+                Log.e("unsyncedOrders", "Successfully done" + unsyncedOrders.get(0).Category)
+            } catch (e: Exception) {
+                Log.e("Sync", "Failed to sync: ${e.message}")
+            }
+            for (order in unsyncedOrders) {
+                try {
+                    val response = repository.addOrder(order)
+                    if (response.isSuccessful) {
+                        repository.addOrder(order)
+                        Log.e("Sync", "Successfully done")
+                    }
+                } catch (e: Exception) {
+                    Log.e("Sync", "Failed to sync: ${e.message}")
+                }
+            }
+        }
+    }
 }
 
 
