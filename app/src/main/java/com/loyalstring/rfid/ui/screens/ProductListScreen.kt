@@ -1,13 +1,16 @@
 package com.loyalstring.rfid.ui.screens
 
+import android.R
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -42,7 +45,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -73,6 +75,14 @@ import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.ProductListViewModel
 import java.io.File
+
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+
 
 @Composable
 fun ProductListScreen(
@@ -136,7 +146,7 @@ fun ProductListScreen(
         ) {
             Spacer(Modifier.height(12.dp))
 
-            OutlinedTextField(
+          /*  OutlinedTextField(
                 value = searchQuery.value,
                 onValueChange = { searchQuery.value = it },
                 placeholder = { Text("Enter RFID / Item code / Product", fontFamily = poppins) },
@@ -145,7 +155,27 @@ fun ProductListScreen(
                     .padding(horizontal = 16.dp),
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true
+            )*/
+            TextField(
+                value = searchQuery.value,
+                onValueChange = { searchQuery.value = it },
+                placeholder = { Text("Enter RFID / Item code / Product", fontFamily = poppins) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true,
+                shape = RoundedCornerShape(5.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFF0F0F0),
+                    unfocusedContainerColor = Color(0xFFF0F0F0),
+                    disabledContainerColor = Color(0xFFF0F0F0),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent
+                )
             )
+
 
             Spacer(Modifier.height(12.dp))
 
@@ -157,20 +187,30 @@ fun ProductListScreen(
             ) {
                 ActionButton(
                     text = if (isGridView) "List View" else "Grid View",
-                    borderColor = Color.DarkGray,
-                    onClick = { isGridView = !isGridView }
+                    onClick = { isGridView = !isGridView },
+                    gradient = Brush.horizontalGradient(
+                        colors = listOf(Color(0xFFD32940), Color(0xFF5231A7)) // blue to cyan gradient
+                    ),
+                    backgroundColor = Color.Transparent,
                 )
                 ActionButton(
                     text = "Filter",
-                    borderColor = Color.DarkGray,
-                    onClick = { }
+                    onClick = { },
+                    gradient = Brush.horizontalGradient(
+                        colors = listOf(Color(0xFFD32940), Color(0xFF5231A7)) // red to purple
+                    ),
+                    backgroundColor = Color.Transparent,
                 )
                 ActionButton(
                     text = "Export Pdf",
-                    borderColor = Color.DarkGray,
                     onClick = { },
+                    gradient = Brush.horizontalGradient(
+                        colors = listOf(Color(0xFFD32940), Color(0xFF5231A7)) // red to purple
+                    ),
+                    backgroundColor = Color.Transparent,
                     modifier = Modifier.defaultMinSize(minWidth = 120.dp) // Or .defaultMinSize(minWidth = 120.dp)
                 )
+
             }
 
 
@@ -432,17 +472,18 @@ fun ProductListScreen(
                                 }
                             }, modifier = Modifier.width(30.dp)) {
                                 Icon(
-                                    Icons.Default.Edit,
+                                    painter = painterResource(id = com.loyalstring.rfid.R.drawable.ic_edit_svg),
                                     contentDescription = "Edit",
                                     tint = Color.DarkGray
                                 )
                             }
                             IconButton(
+
                                 onClick = { /* Delete */ },
                                 modifier = Modifier.width(50.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.Delete,
+                                    painter = painterResource(id = com.loyalstring.rfid.R.drawable.ic_delete_svg),
                                     contentDescription = "Delete",
                                     tint = Color.DarkGray
                                 )
@@ -458,33 +499,54 @@ fun ProductListScreen(
     }
 }
 
+
+
 @Composable
 fun ActionButton(
     text: String,
-    borderColor: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    gradient: Brush,
+    cornerRadius: Dp = 8.dp,
+    backgroundColor: Color = Color.Transparent,
+    textColor: Color = Color.Black
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier,
-        border = BorderStroke(1.dp, borderColor),
-        shape = RoundedCornerShape(8.dp),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = borderColor),
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
+    Box(
+        modifier = modifier
+            .border(
+                width = 1.5.dp,
+                brush = gradient, // 🔥 gradient stroke
+                shape = RoundedCornerShape(cornerRadius)
+            )
+            .background(
+                color = backgroundColor, // inner background (white/transparent)
+                shape = RoundedCornerShape(cornerRadius)
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.Default.Tune,
+                contentDescription = null,
+                tint = textColor,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text,
+                text = text,
+                color = textColor,
                 fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 softWrap = false
             )
         }
     }
 }
+
+
 
 @Composable
 fun ItemDetailsDialog(

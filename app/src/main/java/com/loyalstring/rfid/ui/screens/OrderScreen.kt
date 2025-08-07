@@ -88,7 +88,6 @@ import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.google.gson.Gson
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.OrderItem
-import com.loyalstring.rfid.data.local.entity.Product
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.model.order.CustomOrderItem
@@ -190,7 +189,8 @@ fun OrderScreen(
                 bulkViewModel = bulkViewModel,
                 selectedCustomer = selectedCustomer,
                 onCustomerSelected = { selectedCustomer = it },
-                selectedPower
+                selectedPower,
+
             )
         }
     }
@@ -210,6 +210,7 @@ fun OrderScreenContent(
     val isOnline = remember {
         NetworkUtils.isNetworkAvailable(context)
     }
+
 
 // Retrieve logged-in employee from preferences
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
@@ -240,6 +241,8 @@ fun OrderScreenContent(
     var totalNetWt by remember { mutableStateOf("") }
     var totalGrWt by remember { mutableStateOf("") }
 
+    var totalFinemetal by remember { mutableStateOf("") }
+
 // Customer input fields
     var customerName by remember { mutableStateOf("") }
     var customerId by remember { mutableStateOf<Int?>(null) }
@@ -256,6 +259,10 @@ fun OrderScreenContent(
     val productList by orderViewModel.allOrderItems.collectAsState()
     val stateorder by orderViewModel.lastOrderNoresponse.collectAsState()
     val orderRequest by orderViewModel.insertOrderOffline.collectAsState()
+    LaunchedEffect(Unit) {
+        customerName = ""
+        itemCode = TextFieldValue("")
+    }
 
 
 
@@ -536,7 +543,7 @@ fun OrderScreenContent(
                                 qty = selectedItem?.ClipQuantity.toString(),
                                 hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
                                 mrp = selectedItem?.MRP.toString(),
-                                image = fullImageUrl.toString(),
+                                image =lastImagePath.toString(),
                                 netAmt = "",
                                 diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
                                 categoryId = selectedItem?.CategoryId?.toString(),
@@ -647,7 +654,7 @@ fun OrderScreenContent(
                 qty = selectedItem?.ClipQuantity.toString(),
                 hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
                 mrp = selectedItem?.MRP.toString(),
-                image = fullImageUrl.toString(),
+                image = lastImagePath.toString(),
                 netAmt = "",
                 diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
                 categoryId = selectedItem?.CategoryId?.toString(),
@@ -711,9 +718,22 @@ fun OrderScreenContent(
         totalStoneWt = productList.sumOf { it.stoneWt.toDoubleOrNull() ?: 0.0 }.toString()
         totalDiamondAMt = productList.sumOf { it.diamondAmt.toDoubleOrNull() ?: 0.0 }.toString()
         totalDiamondWt = productList.sumOf { it.dimondWt.toDoubleOrNull() ?: 0.0 }.toString()
-        totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+        totalDiamondWt = productList.sumOf { it.dimondWt.toDoubleOrNull() ?: 0.0 }.toString()
+       // totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+
+        totalAMt = productList.sumOf {
+            val netWt = it.nWt?.toDoubleOrNull() ?: 0.0
+            val rate = it.todaysRate?.toDoubleOrNull() ?: 0.0
+            netWt * rate
+        }.toString()
         totalGrWt = productList.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }.toString()
-        quantity=productList.sumOf { it.qty?.toDoubleOrNull() ?: 0.0 }.toString()
+        totalFinemetal = productList.sumOf {
+            val finePer = it.finePer?.toDoubleOrNull() ?: 0.0
+            val netWt = it.nWt?.toDoubleOrNull() ?: 0.0
+            (finePer / 100.0) * netWt
+        }.toString()
+
+        // quantity=productList.sumOf { it.qty?.toDoubleOrNull() ?: 0.0 }.toString()
     }
 
     Scaffold(
@@ -759,6 +779,7 @@ fun OrderScreenContent(
 
                         Log.d("Order", "Fetched Last Order: $lastOrderNo")
                         Log.d("Order", "Next Order Number: $nextOrderNo")
+                        Log.d("Order", "totalStoneAmt: $totalStoneAmt")
 
                         if (nextOrderNo == 0) {
                             Toast.makeText(context, "Failed to generate order number.", Toast.LENGTH_SHORT).show()
@@ -770,22 +791,32 @@ fun OrderScreenContent(
 
                         val gstPercent = 3.0
                         //val gstApplied = "true"
-                        val taxableAmt = totalAMt.toDoubleOrNull() ?: 0.0
+                        var taxableAmt = totalAMt.toDoubleOrNull() ?: 0.0
                         val isGstApplied: Boolean
 
 
                         val gstAmt: Double
                         val calculatedTotalAmount: Double
+                        var GST=false
+                            var AdditionTaxApplied=false
 
                         if (gstApplied == "true") {
                             gstAmt = taxableAmt * gstPercent / 100
+                            taxableAmt= totalAMt.toDoubleOrNull() ?: 0.0
                             calculatedTotalAmount = taxableAmt + gstAmt
                             isGstApplied = true
+                            GST=true
+                            AdditionTaxApplied=true
                         } else {
                             gstAmt = 0.0
                             calculatedTotalAmount = taxableAmt
+                            taxableAmt = calculatedTotalAmount
                             isGstApplied = false
+                            GST=false
+                            AdditionTaxApplied=false
+
                         }
+                            Log.d("@@",""+calculatedTotalAmount)
 
                         val request = CustomOrderRequest(
                             CustomOrderId = 0,
@@ -796,26 +827,26 @@ fun OrderScreenContent(
                             PaymentMode = "",
                             Offer = null,
                             Qty = quantity,
-                            GST = "",
-                            OrderStatus = "",
+                            GST = GST.toString(),
+                            OrderStatus = "Order Received",
                             MRP = "",
                             VendorId = 12,
                             TDS = null,
                             PurchaseStatus = null,
                             GSTApplied = isGstApplied.toString(),
                             Discount = "",
-                            TotalNetAmount = totalNetAmt,
+                            TotalNetAmount = taxableAmt.toString(),
                             TotalGSTAmount = gstAmt.toString(),
-                            TotalPurchaseAmount = "",
+                            TotalPurchaseAmount = calculatedTotalAmount.toString(),
                             ReceivedAmount = "",
                             TotalBalanceMetal = "",
                             BalanceAmount = "",
-                            TotalFineMetal = "",
+                            TotalFineMetal =totalFinemetal ,
                             CourierCharge = null,
                             SaleType = null,
                             OrderDate = "2025-07-08",
                             OrderCount = "1",
-                            AdditionTaxApplied = "0",
+                            AdditionTaxApplied = AdditionTaxApplied.toString(),
                             CategoryId = 2,
                             OrderNo = nextOrderNo.toString(),
                             DeliveryAddress = "123 Street, Mumbai",
@@ -848,12 +879,12 @@ fun OrderScreenContent(
                             PaidMetal = "0.0",
                             PaidAmount = "",
                             TotalAdvanceAmt = null,
-                            TaxableAmount = "",
+                            TaxableAmount = calculatedTotalAmount.toString(),
                             TDSAmount = null,
                             CreatedOn = "2025-07-08",
                             //   LastUpdated = "2025-07-08",
                             StatusType = true,
-                            FineMetal = "5.0",
+                            FineMetal = totalFinemetal,
                             BalanceMetal = "0.0",
                             AdvanceAmt = "0",
                             PaidAmt = "25000",
@@ -869,6 +900,7 @@ fun OrderScreenContent(
                             BulkOrderId = null,
 
                             CustomOrderItem = productList.map { product ->
+
                                 CustomOrderItem(
                                     CustomOrderId = 0,
                                     // OrderDate = product.orderDate,
@@ -889,7 +921,7 @@ fun OrderScreenContent(
                                     GrossWt = product.grWt.toString(),
                                     StoneWt = product.stoneWt,
                                     DiamondWt = product.dimondWt,
-                                    NetWt = "",
+                                    NetWt = product.nWt.toString(),
                                     Size = product.size,
                                     Length = product.length,
                                     TypesOdColors = product.typeOfColor,
@@ -907,7 +939,7 @@ fun OrderScreenContent(
                                     Polish = product.polishType,
                                     Rhodium = "",
                                     SampleWt = "",
-                                    Image = product.image,
+                                    Image = product.image.split(",").lastOrNull()?.trim().toString(),
                                     ItemCode = product.itemCode,
                                     CustomerId = selectedCustomer.Id ?: 0,
                                     MRP = product.mrp,
@@ -956,7 +988,6 @@ fun OrderScreenContent(
 
                             Payments = listOf(Payment("")),
                             uRDPurchases = listOf(URDPurchase("")),
-
                             Customer = Customer(
                                 FirstName = selectedCustomer.FirstName.orEmpty(),
                                 LastName = selectedCustomer.LastName.orEmpty(),
@@ -998,8 +1029,7 @@ fun OrderScreenContent(
                                 Id = selectedCustomer.Id ?: 0,
                                 CreatedOn = "2025-07-08",
                                 LastUpdated = "2025-07-08",
-                                StatusType = true,
-
+                                StatusType = true
                             )
                         )
                         if (isOnline) {
@@ -1119,7 +1149,7 @@ fun OrderScreenContent(
                                         qty = selectedItem?.ClipQuantity.toString(),
                                         hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
                                         mrp = selectedItem?.MRP.toString(),
-                                        image = fullImageUrl.toString(),
+                                        image = lastImagePath.toString(),
                                         netAmt = "",
                                         diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
                                         categoryId = selectedItem?.CategoryId?.toString(),
@@ -1790,7 +1820,6 @@ fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
         GstAmount = this.GstAmount,
         GstCheck = this.GstCheck,
         Category = this.Category,
-
         TDSCheck = this.TDSCheck,
         Remark = this.Remark,
         OrderItemId = this.OrderItemId ?: 0,
@@ -1985,6 +2014,8 @@ fun OrderItemTableScreen(
     val totalStoneAmt = productList.sumOf { it.stoneAmt?.toDoubleOrNull() ?: 0.0 }
     val totalItemAmt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
     val totalQty = productList.size
+    val totalItemQty = productList.sumOf { it.qty?.toDoubleOrNull() ?: 0.0 }
+    val totalFinmePlusWt=productList.sumOf { it.finePlusWt?.toDoubleOrNull() ?: 0.0 }
 
     Column(
         modifier = Modifier
@@ -2185,14 +2216,15 @@ fun OrderItemTableScreen(
                             // Rest of the columns
                             listOf(
                                 item.itemCode,
-                                item.grWt,
+                                item.qty,
+                                item.totalWt,
                                 item.nWt,
                                 item.finePlusWt,
                                 item.stoneAmt,
                                 item.itemAmt,
                                 item.rfidCode,
-                                item.qty
-                            ).forEach { value ->
+
+                                ).forEach { value ->
                                 Box(
                                     modifier = Modifier.width(80.dp),
                                     contentAlignment = Alignment.Center
@@ -2217,9 +2249,10 @@ fun OrderItemTableScreen(
 
                         "Total" to 160.dp,
                         "$totalQty" to 80.dp,
+                        "$totalItemQty" to 80.dp,
                         String.format("%.3f", totalGrWt) to 80.dp,
                         String.format("%.3f", totalNetWt) to 80.dp,
-                        "" to 80.dp,
+                        "$totalFinmePlusWt" to 80.dp,
                         "$totalStoneAmt" to 80.dp,
                         "$totalItemAmt" to 80.dp,
                         "" to 80.dp
@@ -2235,7 +2268,7 @@ fun OrderItemTableScreen(
                         }
                     }
                 }
-                totalNetWt
+
 
             }
         }

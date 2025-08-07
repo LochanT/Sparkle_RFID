@@ -114,9 +114,13 @@ fun OrderLisrScreen(
         "Branch",
         "Qty",
         "Tot Wt",
-        "N.Amt",
+        "G wt",
+        "N.Wt",
+        "Fine Metal",
+        "Taxable Amt",
         "Total Amt",
         "Order Date",
+        "Status",
         "Actions"
     )
 
@@ -205,7 +209,7 @@ fun SearchBar(value: String, onValueChange: (String) -> Unit) {
         }
     }
 }
-
+/*
 @Composable
 fun OrderTableWithPagination(
     navController: NavHostController,
@@ -254,6 +258,12 @@ fun OrderTableWithPagination(
                         val grossWt = it.GrossWt?.toFloatOrNull() ?: 0f
                         val qty = it.Quantity?.toIntOrNull() ?: 0
                         (grossWt * qty).toDouble()  // Ensure the multiplication result is treated as Double
+                    }.toString()
+
+                    val totalNetWt = row.CustomOrderItem.sumOf {
+                        val netWt = it.NetWt?.toFloatOrNull() ?: 0f  // Handle null values by defaulting to 0
+                        val qty = it.Quantity?.toIntOrNull() ?: 0
+                        (netWt * qty).toDouble()  // Multiply and ensure the result is treated as Double
                     }.toString()
                     Row(
                         modifier = Modifier
@@ -304,8 +314,6 @@ fun OrderTableWithPagination(
                             fontSize = 12.sp
                         )
                         Text(
-
-
                             totalGrossWt?:"",
                             Modifier
                                 .width(120.dp)
@@ -314,7 +322,14 @@ fun OrderTableWithPagination(
                         )
 
                         Text(
-                            row.TotalNetAmount ?: "",
+                            totalNetWt?: "",
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            row.TotalFineMetal?: "",
                             Modifier
                                 .width(120.dp)
                                 .padding(horizontal = 8.dp),
@@ -334,6 +349,15 @@ fun OrderTableWithPagination(
                                 .padding(horizontal = 8.dp),
                             fontSize = 12.sp
                         )
+
+                        Text(
+                            formatDate(row.OrderStatus),
+                            Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            fontSize = 12.sp
+                        )
+
 
                         Row(
                             modifier = Modifier
@@ -387,7 +411,173 @@ fun OrderTableWithPagination(
             }
         }
     }
+}*/
+
+// Replace the entire OrderTableWithPagination method with this updated version
+@Composable
+fun OrderTableWithPagination(
+    navController: NavHostController,
+    headerTitles: List<String>,
+    data: List<CustomOrderResponse>,
+    onLoadMore: () -> Unit,
+    isLoading: Boolean,
+    context: Context,
+    employee: Employee?,
+    itemCodeList: List<ItemCodeResponse>
+) {
+    val sharedScrollState = rememberScrollState()
+    val orderViewModel: OrderViewModel = hiltViewModel()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Updated header layout: scrollable data + fixed "Actions"
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.DarkGray)
+                .padding(vertical = 8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .horizontalScroll(sharedScrollState)
+            ) {
+                headerTitles.dropLast(1).forEach {
+                    Text(
+                        text = it,
+                        modifier = Modifier
+                            .width(120.dp)
+                            .padding(horizontal = 8.dp),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            Text(
+                text = "Actions",
+                modifier = Modifier
+                    .width(120.dp)
+                    .padding(horizontal = 8.dp),
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(data) { row ->
+                    val totalWt = row.CustomOrderItem.sumOf {
+                        val totalwt = it.TotalWt?.toFloatOrNull() ?: 0f
+                        val qty = it.Quantity?.toIntOrNull() ?: 0
+                        (totalwt * qty).toDouble()
+                    }.toString()
+
+                    val totalgrWt = row.CustomOrderItem.sumOf {
+                        val totalgrWt = it.GrossWt?.toFloatOrNull() ?: 0f
+                        val qty = it.Quantity?.toIntOrNull() ?: 0
+                        (totalgrWt * qty).toDouble()
+                    }.toString()
+
+                    val totalNetWt = row.CustomOrderItem.sumOf {
+                        val netWt = it.NetWt?.toFloatOrNull() ?: 0f
+                        val qty = it.Quantity?.toIntOrNull() ?: 0
+                        (netWt * qty).toDouble()
+                    }.toString()
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Scrollable Data Row
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .horizontalScroll(sharedScrollState)
+                        ) {
+                            listOf(
+                                row.OrderNo,
+                                row.Customer?.FirstName,
+                                row.Customer?.Mobile,
+                                row.CustomOrderItem.joinToString(", ") { it.ProductName ?: "" },
+                                row.CustomOrderItem.joinToString(", ") { it.BranchName ?: "" },
+                                row.CustomOrderItem.sumOf { it.Quantity?.toIntOrNull() ?: 0 }
+                                    .toString(),
+                                totalWt,
+                                totalgrWt,
+                                totalNetWt,
+                                row.TotalFineMetal,
+                                row.TotalNetAmount,
+                                row.TotalAmount,
+                                formatDate(row.OrderDate),
+                                formatDate(row.OrderStatus)
+                            ).forEach {
+                                Text(
+                                    text = it ?: "",
+                                    modifier = Modifier
+                                        .width(120.dp)
+                                        .padding(horizontal = 8.dp),
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+
+                        // Fixed Actions
+                        Row(
+                            modifier = Modifier
+                                .width(120.dp)
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = {
+                                generateInvoicePdfAndOpen(context, row, employee, itemCodeList)
+                            }) {
+                                Icon(
+                                    Icons.Default.Print,
+                                    contentDescription = "Print",
+                                    tint = Color.DarkGray
+                                )
+                            }
+
+                            IconButton(onClick = {
+                                employee?.clientCode?.let {
+                                    orderViewModel.deleteOrders(
+                                        ClientCodeRequest(it),
+                                        row.CustomOrderId
+                                    ) { isSuccess ->
+                                        Toast.makeText(
+                                            context,
+                                            if (isSuccess) "Order Deleted Successfully" else "Failed to delete",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        if (isSuccess) {
+                                            orderViewModel.removeOrderById(row.CustomOrderId)
+                                        }
+                                    }
+                                }
+                            }) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = Color.DarkGray
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
+
 
 
 fun formatDate(dateString: String): String {

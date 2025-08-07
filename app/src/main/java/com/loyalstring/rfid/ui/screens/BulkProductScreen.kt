@@ -1,8 +1,10 @@
 
 package com.loyalstring.rfid.ui.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +26,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,8 +46,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.loyalstring.rfid.R
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.AddItemDialog
@@ -59,6 +66,7 @@ import com.loyalstring.rfid.ui.utils.BackgroundGradient
 import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,22 +98,8 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
     val allScannedTags by viewModel.allScannedTags
     val existingTags by viewModel.existingItems
     val duplicateTags by viewModel.duplicateItems
+    var showSuccessDialog by remember { mutableStateOf(false) }
 
-
-
-    LaunchedEffect(Unit) {
-        viewModel.toastMessage.collect { message ->
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.syncStatusText.collect { message ->
-            message.let {
-                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
 
     LaunchedEffect(scanTrigger) {
         scanTrigger?.let { type ->
@@ -142,6 +136,10 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
 //            itemCodes.getOrNull(index) ?: ""
 //        }
 //    }
+
+    if (showSuccessDialog) {
+        SyncSuccessDialog(onDismiss = { showSuccessDialog = false })
+    }
 
     Scaffold(
         topBar = {
@@ -473,6 +471,8 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
         }
     }
 }
+
+
 
 @Composable
 fun FilterDropdown(

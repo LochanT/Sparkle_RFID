@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -123,13 +125,18 @@ fun TableMappingScreen(
                                 }
                             )
 
+                            val availableFields = bulkItemFields.filter { it == selected || !mappings.values.contains(it) }
+
                             DropdownMenu(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .widthIn(min = 250.dp, max = 300.dp)
+                                    .heightIn(max = 500.dp)
                             ) {
-                                bulkItemFields.forEach { dbField ->
+                                availableFields.forEach { dbField ->
                                     DropdownMenuItem(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         text = { Text(dbField, fontSize = 12.sp, maxLines = 1) },
                                         onClick = {
                                             selected = dbField

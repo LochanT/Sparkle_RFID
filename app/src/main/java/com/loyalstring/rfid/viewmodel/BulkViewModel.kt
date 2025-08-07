@@ -95,6 +95,9 @@ class BulkViewModel @Inject constructor(
     private val _syncStatusText = MutableStateFlow("")
     val syncStatusText: StateFlow<String> = _syncStatusText
 
+    private val _syncCompleted = MutableStateFlow(false)
+    var syncCompleted: StateFlow<Boolean> = _syncCompleted
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -682,16 +685,20 @@ class BulkViewModel @Inject constructor(
                     _syncStatusText.value = "Syncing... ${index + 1} of $total"
                     delay(100)
                 }
+
                 Log.d("ToastEmit", "Emitting toast")
                 _toastMessage.emit("Synced $total items successfully!")
                 _syncStatusText.value = "Sync completed successfully!"
+
+
 
             } catch (e: Exception) {
                 _syncStatusText.value = "Sync failed: ${e.localizedMessage}"
                 Log.d("ToastEmit", "Emitting toast")
                 _toastMessage.emit("Sync failed: ${e.localizedMessage}")
                 Log.e("Sync", "Error: ${e.localizedMessage}")
-            } finally {
+
+            }finally {
                 _isLoading.value = false
             }
         }

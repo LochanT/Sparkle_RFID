@@ -2,6 +2,7 @@ package com.loyalstring.rfid.ui.screens
 
 
 
+import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.util.Log
 import androidx.compose.foundation.background
@@ -57,6 +58,7 @@ import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.text.toDoubleOrNull
 
 
 // Sample OrderDetails data class
@@ -91,6 +93,7 @@ data class OrderDetailsData(
     val wastage: String
 )
 
+@SuppressLint("DefaultLocale")
 @Composable
 fun OrderDetailsDialogEditAndDisplay(
 
@@ -137,6 +140,11 @@ fun OrderDetailsDialogEditAndDisplay(
     var hallMarkAmt by remember { mutableStateOf("") }
     var mrp by remember { mutableStateOf("") }
     var stoneAmt by remember { mutableStateOf("") }
+
+    var finePlusWt by remember { mutableStateOf("") }
+
+    var itemAmt by remember { mutableStateOf("") }
+
     LaunchedEffect(selectedItem) {
         branch = selectedItem?.branchName.toString()
         productName = selectedItem?.productName.toString()
@@ -161,13 +169,23 @@ fun OrderDetailsDialogEditAndDisplay(
         wastagePer = selectedItem?.wastage.toString()
         orderDate = selectedItem?.orderDate.toString()
         deliverDate = selectedItem?.deliverDate.toString()
-        qty = selectedItem?.qty.toString()
+      //  qty = selectedItem?.qty.toString()
         hallMarkAmt = selectedItem?.hallmarkAmt.toString()
         mrp = selectedItem?.mrp.toString()
+        ratePerGRam = selectedItem?.todaysRate.toString()
+        grossWT=selectedItem?.grWt.toString()
+        itemAmt=selectedItem?.itemAmt.toString()
+        finePlusWt=selectedItem?.finePlusWt.toString()
 
         Log.d("SelectedItem",  selectedItem?.qty.toString())
 // or for plain console apps
         println(selectedItem)
+
+        qty = if (selectedItem?.qty.isNullOrBlank() || selectedItem.qty == "0") {
+            "1"
+        } else {
+            selectedItem.qty
+        }
     }
 
     val purityList by singleProductViewModel.purityResponse1.collectAsState()
@@ -184,6 +202,8 @@ fun OrderDetailsDialogEditAndDisplay(
     )
     val screwList = listOf("Type 1", "Type 2", "Type 3")
     val polishList = listOf("High Polish", "Matte Finish", "Satin Finish", "Hammered")
+    val baseUrl =
+        "https://rrgold.loyalstring.co.in/"
 
     var expandedBranch by remember { mutableStateOf(false) }
     var expandedExhibition by remember { mutableStateOf(false) }
@@ -253,6 +273,7 @@ fun OrderDetailsDialogEditAndDisplay(
                 }
 
                 Spacer(modifier = Modifier.height(5.dp))
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -269,7 +290,8 @@ fun OrderDetailsDialogEditAndDisplay(
                         horizontalArrangement = Arrangement.Center // Center horizontally
                     ) {
                         AsyncImage(
-                            model =selectedItem?.image,
+
+                            model =baseUrl+selectedItem?.image,
                             contentDescription = "Image from URL",
                             placeholder = painterResource(R.drawable.add_photo), // Optional
                             error = painterResource(R.drawable.add_photo),       // Optional
@@ -407,7 +429,7 @@ fun OrderDetailsDialogEditAndDisplay(
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Row(
+                   /* Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
@@ -451,7 +473,66 @@ fun OrderDetailsDialogEditAndDisplay(
                                     .padding(2.dp) // minimal inner padding for cursor spacing
                             )
                         }
+                    }*/
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Total Weight",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (totalWt.isEmpty()) {
+                                Text(
+                                    text = "Enter total wt",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = totalWt,
+                                onValueChange = {
+                                    totalWt = it
+
+                                    val totalWt = it.toDoubleOrNull() ?: 0.0
+                                    val packingValue = packingWt.toDoubleOrNull() ?: 0.0
+                                    grossWT = String.format("%.3f", totalWt - packingValue)
+
+                                    // Optional: Also update NetWt if needed
+                                    val total = totalWt?: 0.0
+                                    val stoneWtValue = stoneWt.toDoubleOrNull() ?: 0.0
+                                    val dimondWtValue = dimondWt.toDoubleOrNull() ?: 0.0
+                                    val stoneAmtValue = stoneAmt.toDoubleOrNull() ?: 0.0
+
+                                    NetWt = String.format("%.3f", total - (stoneWtValue + dimondWtValue + stoneAmtValue))   },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
                     }
+
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier
@@ -489,7 +570,69 @@ fun OrderDetailsDialogEditAndDisplay(
 
                             BasicTextField(
                                 value = packingWt,
-                                onValueChange = { packingWt = it },
+                                onValueChange = {
+                                    packingWt = it
+
+                                    val totalValue = totalWt.toDoubleOrNull() ?: 0.0
+                                    val packingValue = it.toDoubleOrNull() ?: 0.0
+                                    grossWT = String.format("%.3f", totalValue - packingValue)
+
+                                    // Optional: Also update NetWt if needed
+                                    //recalculateNetWt()
+                                    val total = grossWT.toDoubleOrNull() ?: 0.0
+                                    val stoneWtValue = stoneWt.toDoubleOrNull() ?: 0.0
+                                    val dimondWtValue = dimondWt.toDoubleOrNull() ?: 0.0
+                                    val stoneAmtValue = stoneAmt.toDoubleOrNull() ?: 0.0
+
+                                    NetWt = String.format("%.3f", total - (stoneWtValue + dimondWtValue + stoneAmtValue))
+                                                },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Gross Wt",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (grossWT.isEmpty()) {
+                                Text(
+                                    text = "Enter gross wt",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = grossWT,
+                                onValueChange = { grossWT = it },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
@@ -535,7 +678,17 @@ fun OrderDetailsDialogEditAndDisplay(
 
                             BasicTextField(
                                 value = stoneWt,
-                                onValueChange = { stoneWt = it },
+                                onValueChange = {
+                                    stoneWt = it
+
+                                    // ✅ Recalculate NetWt on stoneWt change
+                                    val total = grossWT.toDoubleOrNull() ?: 0.0
+                                    val stoneWtValue = it.toDoubleOrNull() ?: 0.0
+                                    val dimondWtValue = dimondWt.toDoubleOrNull() ?: 0.0
+                                    val stoneAmtValue = stoneAmt.toDoubleOrNull() ?: 0.0
+
+                                    NetWt = String.format("%.3f", total - (stoneWtValue + dimondWtValue + stoneAmtValue))
+                                },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
@@ -582,7 +735,17 @@ fun OrderDetailsDialogEditAndDisplay(
 
                             BasicTextField(
                                 value = dimondWt,
-                                onValueChange = { dimondWt = it },
+                                onValueChange = {
+                                    dimondWt = it
+
+                                    // ✅ Recalculate NetWt on stoneWt change
+                                    val total = grossWT.toDoubleOrNull() ?: 0.0
+                                    val stoneWtValue = it.toDoubleOrNull() ?: 0.0
+                                    val dimondWtValue = dimondWt.toDoubleOrNull() ?: 0.0
+                                    val stoneAmtValue = stoneAmt.toDoubleOrNull() ?: 0.0
+
+                                    NetWt = String.format("%.3f", total - (stoneWtValue + dimondWtValue + stoneAmtValue))
+                                },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
@@ -639,6 +802,59 @@ fun OrderDetailsDialogEditAndDisplay(
                     }
                     Spacer(modifier = Modifier.height(4.dp))
 
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Rate/Gram",
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .padding(start = 2.dp),
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
+                                .height(32.dp)
+
+                                .background(Color.White, RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (ratePerGRam.isEmpty()) {
+                                Text(
+                                    text = "Enter Rate/gram",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            BasicTextField(
+                                value = ratePerGRam,
+                                readOnly = false,
+                                onValueChange = { ratePerGRam = it
+
+                                    val net = NetWt.toDoubleOrNull() ?: 0.0
+                                    val rate = ratePerGRam.toDoubleOrNull() ?: 0.0
+                                    val total = net * rate
+                                    itemAmt= if (total == 0.0) "" else total.toString()},
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1385,8 +1601,29 @@ fun OrderDetailsDialogEditAndDisplay(
                         val safeMetalAmt = metalAmt ?: 0.0
                         val safeMakingAmt = makingAmt ?: 0.0
 
-                        val itemAmt: Double =
-                            totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt
+                       /* var itemAmt: Double =
+                            totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt*/
+
+                        val inputItemAmt: Double? = null
+
+
+                        /*val itemAmt: Double = if ((selectedItem?.itemAmt ?: 0.0) == 0.0) {
+                            val netWtVal = NetWt.toDoubleOrNull() ?: 0.0
+                            val rateVal = ratePerGRam.toDoubleOrNull() ?: 0.0
+                            netWtVal * rateVal
+                        } else {
+                            inputItemAmt ?: 0.0
+                        }
+*/
+
+                        val fineVal = finePercentage.toDoubleOrNull() ?: 0.0
+                        val wastageVal = wastage.toDoubleOrNull()?: 0.0
+                        val netWtVal =NetWt.toDoubleOrNull() ?: 0.0
+
+                        val finePlusWt = ((fineVal / 100.0) * netWtVal) + ((wastageVal / 100.0) * netWtVal)
+
+
+
                         GradientButtonIcon(
                             text = "OK",
                             onClick = {
@@ -1413,7 +1650,7 @@ fun OrderDetailsDialogEditAndDisplay(
                                     grWt = grossWT,
                                     nWt = NetWt,
                                     stoneAmt =stoneAmt ,
-                                    finePlusWt = selectedItem?.finePlusWt,
+                                    finePlusWt = finePlusWt.toString(),
                                     packingWt = packingWt,
                                     totalWt = totalWt,
                                     stoneWt = stoneWt,
@@ -1438,7 +1675,7 @@ fun OrderDetailsDialogEditAndDisplay(
                                     companyId = 0,
                                     epc = selectedItem?.epc!!,
                                     tid = selectedItem?.tid!!,
-                                    todaysRate = selectedItem?.todaysRate.toString(),
+                                    todaysRate = ratePerGRam,
                                     makingPercentage = extraMakingPercent.toString(),
                                     makingFixedAmt = fixMaking.toString(),
                                     makingFixedWastage = fixWastage.toString(),
@@ -1464,6 +1701,8 @@ fun OrderDetailsDialogEditAndDisplay(
         }
     }
 }
+
+
 
 @Composable
 fun <T> DropdownMenuFieldDisplay(
