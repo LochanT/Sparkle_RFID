@@ -137,7 +137,12 @@ class StockTransferViewModel @Inject constructor(
                     )
                 }
 
-                "box" -> allItems.filter { it.boxName.equals(selectedValue, ignoreCase = true) }
+                "box" -> allItems.filter {
+                    it.boxName.equals(
+                        selectedValue,
+                        ignoreCase = true
+                    )
+                }
                 "packet" -> allItems.filter {
                     it.packetName.equals(
                         selectedValue,
@@ -168,7 +173,8 @@ class StockTransferViewModel @Inject constructor(
         transferTypeId: Int,
         transferByEmployee: String,
         fromId: Int,
-        toId: Int
+        toId: Int,
+        onResult: (Boolean) -> Unit // 🔹 <-- Add this callback
     ) {
         viewModelScope.launch {
             try {
@@ -187,14 +193,19 @@ class StockTransferViewModel @Inject constructor(
 
                 val response = apiService.postStockTransfer(request)
 
-                _transferStatus.value = if (response.isSuccessful) {
-                    Result.success("Transfer successful")
+                if (response.isSuccessful) {
+                    _transferStatus.value = Result.success("Transfer successful")
+                    onResult(true)  // ✅ Notify success
                 } else {
-                    Result.failure(Exception("Transfer failed: ${response.code()}"))
+                    _transferStatus.value =
+                        Result.failure(Exception("Transfer failed: ${response.code()}"))
+                    onResult(false) // ❌ Notify failure
                 }
             } catch (e: Exception) {
                 _transferStatus.value = Result.failure(e)
+                onResult(false) // ❌ Notify failure
             }
         }
     }
+
 }

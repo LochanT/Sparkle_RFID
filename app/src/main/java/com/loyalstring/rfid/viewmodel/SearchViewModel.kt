@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.local.entity.SearchItem
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
-import com.loyalstring.rfid.ui.utils.ToastUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -35,6 +34,8 @@ class SearchViewModel @Inject constructor(
     }
 
     private var scanJob: Job? = null
+    private var lastSoundId: Int? = null
+
 
     fun startSearch(unmatchedItems: List<BulkItem>) {
         _searchItems.clear()
@@ -53,7 +54,6 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-
     fun startTagScanning() {
         readerManager.startInventoryTag(30)
 
@@ -64,26 +64,26 @@ class SearchViewModel @Inject constructor(
                 if (tag?.epc != null) {
                     val epc = tag.epc
                     val rssi = tag.rssi
-
                     val proximity = convertRssiToProximity(rssi)
                     var id = -1
 
-                    if (proximity in 1..49) {
-                        id = 4
-                    } else if (proximity in 51..59) {
-                        id = 2
-                    } else if (proximity in 61..69) {
-                        id = 5
-                    } else if (proximity >= 70) {
-                        id = 1
+                    // Assign ID based on proximity
+                    id = when {
+                        proximity in 1..49 -> 4
+                        proximity in 51..59 -> 2
+                        proximity in 61..69 -> 5
+                        proximity >= 70 -> 1
+                        else -> -1
                     }
 
                     if (id != -1) {
+                        lastSoundId = id
                         withContext(Dispatchers.Main) {
                             readerManager.playSound(id)
                         }
                     }
 
+                    // Update UI list
                     val index = _searchItems.indexOfFirst { it.epc == epc }
                     if (index != -1) {
                         withContext(Dispatchers.Main) {
@@ -103,6 +103,8 @@ class SearchViewModel @Inject constructor(
     fun stopSearch() {
         scanJob?.cancel()
         readerManager.stopInventory()
+        lastSoundId?.let { readerManager.stopSound(it) } // ✅ stop the same sound
+        lastSoundId = null
     }
 
     private fun convertRssiToProximity(rssi: String): Int {

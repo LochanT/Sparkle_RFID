@@ -364,6 +364,23 @@ class SingleProductViewModel @Inject constructor(
         }
     }
 
+
+    fun clearCounters() {
+        counters = emptyList()
+    }
+
+    fun clearBranches() {
+        branches = emptyList()
+    }
+
+    fun clearBoxes() {
+        boxes = emptyList()
+    }
+
+    fun clearExhibitions() {
+        exhibitions = emptyList()
+    }
+
     var isSuccess: Boolean = false
     fun insertLabelledStock(request: InsertProductRequest, context: Context): Boolean {
         viewModelScope.launch {

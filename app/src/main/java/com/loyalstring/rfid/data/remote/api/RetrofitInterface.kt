@@ -24,6 +24,7 @@ import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
+import com.loyalstring.rfid.data.model.stockTransfer.StockTransferResponse
 import com.loyalstring.rfid.data.remote.data.StockTransferRequest
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.MultipartBody
@@ -146,5 +147,5 @@ interface RetrofitInterface {
     @POST("/api/ProductMaster/AddStockTransfer")
     suspend fun postStockTransfer(
         @Body request: StockTransferRequest
-    ): Response<String>
+    ): Response<StockTransferResponse>
 }

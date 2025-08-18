@@ -1,3 +1,4 @@
+// ScanDisplayScreen.kt
 package com.loyalstring.rfid.ui.screens
 
 import android.annotation.SuppressLint
@@ -36,9 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -62,11 +61,7 @@ import androidx.navigation.NavHostController
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
-import com.loyalstring.rfid.data.model.addSingleItem.CategoryModel
-import com.loyalstring.rfid.data.model.addSingleItem.DesignModel
-import com.loyalstring.rfid.data.model.addSingleItem.ProductModel
 import com.loyalstring.rfid.data.model.login.Employee
-import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.GradientButton
@@ -75,14 +70,26 @@ import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.ProductListViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
+import java.math.BigDecimal
+import java.math.RoundingMode
 
-// Fixed widths for each column
+// column widths
 val colCategoryWidth = 72.dp
 val colQtyWidth = 44.dp
 val colWeightWidth = 62.dp
 val colMatchedQtyWidth = 44.dp
 val colMatchedWtWidth = 62.dp
-val colStatusWidth = 54.dp // Previously too small for "Status" text
+val colStatusWidth = 54.dp
+val colDesignNameWidth = 80.dp
+val colRfidWidth = 100.dp
+val colItemCodeWidth = 90.dp
+val colGWtWidth = 50.dp
+val colStatusIconWidth = 54.dp
+
+private const val MENU_ALL = "ALL"
+private const val MENU_MATCHED = "MATCHED"
+private const val MENU_UNMATCHED = "UNMATCHED"
+private const val MENU_SEARCH = "SEARCH"
 
 @SuppressLint("UnrememberedMutableState")
 @Composable
@@ -92,16 +99,44 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     val bulkViewModel: BulkViewModel = hiltViewModel()
     val context: Context = LocalContext.current
 
-    val categoryResponse = singleProductViewModel.categoryResponse.observeAsState().value
-    val productResponse = singleProductViewModel.productResponse.observeAsState().value
-    val designResponse = singleProductViewModel.designResponse.observeAsState().value
+    val filterTypeName = navController.previousBackStackEntry
+        ?.savedStateHandle
+        ?.get<String>("filterType")
+    val filterValue = navController.previousBackStackEntry
+        ?.savedStateHandle
+        ?.get<String>("filterValue")
 
-    val allCategories =
-        (categoryResponse as? Resource.Success<List<CategoryModel>>)?.data ?: emptyList()
-    val allProducts =
-        (productResponse as? Resource.Success<List<ProductModel>>)?.data ?: emptyList()
-    val allDesigns = (designResponse as? Resource.Success<List<DesignModel>>)?.data ?: emptyList()
+    LaunchedEffect(filterTypeName, filterValue) {
+        if (!filterTypeName.isNullOrEmpty() && !filterValue.isNullOrEmpty()) {
+            bulkViewModel.setFilteredItemsByType(filterTypeName, filterValue)
+        }
+    }
+
     val allItems by productListViewModel.productList.collectAsState(initial = emptyList())
+
+    val filteredItems = remember(allItems, filterTypeName, filterValue) {
+        if (filterTypeName.isNullOrEmpty() || filterValue.isNullOrEmpty()) {
+            allItems
+        } else {
+            when (filterTypeName.lowercase()) {
+                "box" -> allItems.filter { it.boxName == filterValue }
+                "counter" -> allItems.filter { it.counterName == filterValue }
+                "branch" -> allItems.filter { it.branchName == filterValue }
+                "exhibition" -> allItems.filter { it.branchName == filterValue }
+                else -> allItems
+            }
+        }
+    }
+
+    val allCategories = remember(filteredItems) {
+        filteredItems.mapNotNull { it.category }.distinct().sorted()
+    }
+    val allProducts = remember(filteredItems) {
+        filteredItems.mapNotNull { it.productName }.distinct().sorted()
+    }
+    val allDesigns = remember(filteredItems) {
+        filteredItems.mapNotNull { it.design }.distinct().sorted()
+    }
 
     val selectedCategories = remember { mutableStateListOf<String>() }
     val selectedProducts = remember { mutableStateListOf<String>() }
@@ -110,87 +145,79 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     var currentLevel by rememberSaveable { mutableStateOf("Category") }
     var currentCategory by rememberSaveable { mutableStateOf<String?>(null) }
     var currentProduct by rememberSaveable { mutableStateOf<String?>(null) }
+    var currentDesign by rememberSaveable { mutableStateOf<String?>(null) }
 
     var showMenu by remember { mutableStateOf(false) }
-
     var showDialog by remember { mutableStateOf(false) }
     var filterType by remember { mutableStateOf("Category") }
+    var selectedMenu by remember { mutableStateOf(MENU_ALL) }
 
-    var showSearchScreen by remember { mutableStateOf(false) }
-
-    var selectedMenu by remember { mutableStateOf("All") }
-
-
-    //   val scannedFilteredItems by bulkViewModel.scannedFilteredItems
+    var selectedItem by remember { mutableStateOf<BulkItem?>(null) }
+    var showItemDialog by remember { mutableStateOf(false) }
 
     var selectedPower by remember { mutableIntStateOf(10) }
-    var firstPress by remember { mutableStateOf(false) }
+    var isScanning by remember { mutableStateOf(false) }
 
-    val filteredItems by remember(allItems, selectedCategories, selectedProducts, selectedDesigns) {
-        derivedStateOf {
-            allItems.filter {
-                (selectedCategories.isEmpty() || selectedCategories.contains(it.category.orEmpty())) &&
-                        (selectedProducts.isEmpty() || selectedProducts.contains(it.productName.orEmpty())) &&
-                        (selectedDesigns.isEmpty() || selectedDesigns.contains(it.design.orEmpty()))
-            }
-        }
-    }
+    val scannedFiltered by bulkViewModel.scannedFilteredItems
 
-// Backing list shown in the UI
-    val scannedFilteredItems = bulkViewModel.scannedFilteredItems.value
-    val displayItems = when (selectedMenu) {
-        "Matched" -> bulkViewModel.scannedFilteredItems.value.filter { it.scannedStatus == "Matched" }
-        "Unmatched" -> bulkViewModel.scannedFilteredItems.value.filter { it.scannedStatus == "Unmatched" }
-        else -> if (bulkViewModel.scannedFilteredItems.value.isNotEmpty()) {
-            bulkViewModel.scannedFilteredItems.value
-        } else filteredItems
-    }
-
-
-    LaunchedEffect(currentLevel, currentCategory, currentProduct) {
-        println("🧩 Level: $currentLevel, Category: $currentCategory, Product: $currentProduct")
-    }
-
-    val tableRows by remember(displayItems, currentLevel, currentCategory, currentProduct) {
-        derivedStateOf {
-            when (currentLevel) {
-                "Category" -> {
-                    displayItems.groupBy { it.category ?: "Unknown" }
-                        .map { (category, items) -> TableRow(category, items) }
-                }
-
-                "Product" -> {
-                    displayItems.filter { it.category == currentCategory }
-                        .groupBy { it.productName ?: "Unknown" }
-                        .map { (product, items) -> TableRow(product, items) }
-                }
-
-                "Design" -> {
-                    displayItems.filter {
-                        it.category == currentCategory && it.productName == currentProduct
+    val scopeItems = remember(
+        filteredItems, selectedCategories, selectedProducts, selectedDesigns,
+        currentLevel, currentCategory, currentProduct, currentDesign, scannedFiltered
+    ) {
+        val baseList = filteredItems.filter { item ->
+            (selectedCategories.isEmpty() || selectedCategories.contains(item.category.orEmpty())) &&
+                    (selectedProducts.isEmpty() || selectedProducts.contains(item.productName.orEmpty())) &&
+                    (selectedDesigns.isEmpty() || selectedDesigns.contains(item.design.orEmpty())) &&
+                    when (currentLevel) {
+                        "Category" -> true
+                        "Product" -> item.category == currentCategory
+                        "Design" -> item.category == currentCategory && item.productName == currentProduct
+                        "DesignItems" -> item.category == currentCategory && item.productName == currentProduct && item.design == currentDesign
+                        else -> true
                     }
-                        .groupBy { it.design ?: "Unknown" }
-                        .map { (design, items) -> TableRow(design, items) }
-                }
-
-                else -> emptyList()
-            }
+        }
+        val scanMap = scannedFiltered.associateBy { it.rfid }
+        baseList.map { original ->
+            scanMap[original.rfid]?.let { scanned ->
+                original.copy(scannedStatus = scanned.scannedStatus)
+            } ?: original
         }
     }
 
+    val displayItems = remember(scopeItems, selectedMenu) {
+        when (selectedMenu) {
+            MENU_MATCHED -> scopeItems.filter { it.scannedStatus == "Matched" }
+            MENU_UNMATCHED -> scopeItems.filter { it.scannedStatus == "Unmatched" }
+            else -> scopeItems
+        }
+    }
+
+    LaunchedEffect(scopeItems) {
+        if (isScanning && scopeItems.isNotEmpty() && scopeItems.all { it.scannedStatus == "Matched" }) {
+            bulkViewModel.stopScanning()
+            isScanning = false
+        }
+    }
 
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
     LaunchedEffect(Unit) {
         employee?.clientCode?.let {
             singleProductViewModel.fetchAllDropdownData(ClientCodeRequest(it))
         }
+        bulkViewModel.getAllItems()
     }
 
-    Box {
-        Scaffold(
-            topBar = {
+    LaunchedEffect(scopeItems) {
+        if (isScanning) {
+            bulkViewModel.setFilteredItems(scopeItems)
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            filterValue?.let {
                 GradientTopBar(
-                    title = "Scan Display",
+                    title = it,
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(
@@ -202,137 +229,165 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                     },
                     showCounter = true,
                     selectedCount = selectedPower,
-                    onCountSelected = {
-                        selectedPower = it
-                    }
+                    onCountSelected = { selectedPower = it }
                 )
-            },
-            bottomBar = {
-                Column {
-                    SummaryRow(tableRows)
-                    ScanBottomBar(
-                        onSave = { /* Save */ },
-                        onList = { showMenu = true },
-                        onScan = { },
-                        onGscan = {
-                            if (!firstPress) {
-                                firstPress = true
-                                if (selectedCategories.isNotEmpty()) {
-                                    bulkViewModel.startScanning(selectedPower)
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        "Please select a Category first",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            } else {
-                                firstPress = false
-                                bulkViewModel.onScanStopped()
-                                bulkViewModel.computeScanResults(allItems = filteredItems)
-
-                            }
-
-
-                        },
-                        onReset = {
-                            firstPress = false
-                            selectedCategories.clear()
-                            selectedProducts.clear()
-                            selectedDesigns.clear()
+            }
+        },
+        bottomBar = {
+            Column {
+                SummaryRow(currentLevel, displayItems, selectedMenu)
+                ScanBottomBar(
+                    onSave = { /* save */ },
+                    onList = { showMenu = true },
+                    onScan = {},
+                    onGscan = {
+                        if (!isScanning) {
+                            isScanning = true
+                            bulkViewModel.setFilteredItems(scopeItems)
+                            bulkViewModel.startScanning(selectedPower)
+                        } else {
+                            isScanning = false
+                            bulkViewModel.stopScanning()
+                            bulkViewModel.computeScanResults(scopeItems)
                         }
-                    )
-                }
-            }
-        ) { innerPadding ->
-            Column(Modifier.padding(innerPadding)) {
-                FilterRow(
-                    onCategoryClick = {
-                        filterType = "Category"
-                        showDialog = true
                     },
-                    onProductClick = {
-                        filterType = "Product"
-                        showDialog = true
-                    },
-                    onDesignClick = {
-                        filterType = "Design"
-                        showDialog = true
-                    }
-                )
-
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    item {
-                        TableHeader(currentLevel)
-                    }
-                    items(tableRows) { row ->
-                        TableDataRow(row, currentLevel) {
-                            when (currentLevel) {
-                                "Category" -> {
-                                    currentCategory = row.label
-                                    currentLevel = "Product"
-                                }
-
-                                "Product" -> {
-                                    currentProduct = row.label
-                                    currentLevel = "Design"
-                                }
-                            }
-                        }
-                    }
-                }
-
-            }
-        }
-
-        if (showDialog) {
-            val items = when (filterType) {
-                "Category" -> allCategories.map { it.CategoryName }
-                "Product" -> allProducts.map { it.ProductName }
-                "Design" -> allDesigns.map { it.DesignName }
-                else -> emptyList()
-            }
-
-            val selected = when (filterType) {
-                "Category" -> selectedCategories
-                "Product" -> selectedProducts
-                "Design" -> selectedDesigns
-                else -> mutableStateListOf()
-            }
-
-            FilterSelectionDialog(
-                title = filterType,
-                items = items,
-                selectedItems = selected,
-                onDismiss = { showDialog = false },
-                onConfirm = {
-                    // Clear dependent selections
-                    if (filterType == "Category") {
+                    onReset = {
+                        bulkViewModel.stopScanning()
+                        isScanning = false
+                        selectedCategories.clear()
                         selectedProducts.clear()
                         selectedDesigns.clear()
-                    } else if (filterType == "Product") {
-                        selectedDesigns.clear()
+                        bulkViewModel.setFilteredItems(emptyList())
+                        bulkViewModel.resetScanResults()
+                        selectedMenu = MENU_ALL
+                        currentLevel = "Category"
+                        currentCategory = null
+                        currentProduct = null
+                        currentDesign = null
                     }
-                    showDialog = false
+                )
+            }
+        }
+    ) { innerPadding ->
+        Column(Modifier.padding(innerPadding)) {
+            FilterRow(
+                selectedCategories,
+                selectedProducts,
+                selectedDesigns,
+                onCategoryClick = {
+                    filterType = "Category"
+                    currentLevel = "Category" // ✅ Reset drill-down
+                    currentCategory = null
+                    currentProduct = null
+                    currentDesign = null
+                    showDialog = true
+                },
+                onProductClick = {
+                    if (selectedCategories.isNotEmpty()) {
+                        filterType = "Product"; showDialog = true
+                    } else Toast.makeText(context, "Select category first", Toast.LENGTH_SHORT)
+                        .show()
+                },
+                onDesignClick = {
+                    if (selectedProducts.isNotEmpty()) {
+                        filterType = "Design"; showDialog = true
+                    } else Toast.makeText(context, "Select product first", Toast.LENGTH_SHORT)
+                        .show()
                 }
             )
+
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                item { TableHeader(currentLevel) }
+
+                if (currentLevel != "DesignItems") {
+                    val groupedRows = when (currentLevel) {
+                        "Category" -> displayItems.groupBy { it.category ?: "Unknown" }
+                        "Product" -> displayItems
+                            .filter { it.category == currentCategory } // ✅ filter by selected category
+                            .groupBy { it.productName ?: "Unknown" }
+
+                        "Design" -> displayItems
+                            .filter { it.category == currentCategory && it.productName == currentProduct } // ✅ filter by selected category + product
+                            .groupBy { it.design ?: "Unknown" }
+
+                        else -> emptyMap()
+                    }
+
+                    groupedRows.forEach { (label, items) ->
+                        item {
+                            TableDataRow(TableRow(label, items), currentLevel) {
+                                when (currentLevel) {
+                                    "Category" -> {
+                                        currentCategory = label
+                                        currentLevel = "Product"
+                                        selectedProducts.clear()
+                                        selectedDesigns.clear()
+                                    }
+
+                                    "Product" -> {
+                                        currentProduct = label
+                                        currentLevel = "Design"
+                                        selectedDesigns.clear()
+                                    }
+
+                                    "Design" -> {
+                                        currentDesign = label
+                                        currentLevel = "DesignItems"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (currentLevel == "DesignItems") {
+                    items(displayItems) { item ->
+                        DesignItemRow(item) { clickedItem ->
+                            selectedItem = clickedItem
+                            showItemDialog = true
+                        }
+                    }
+                }
+            }
         }
+    }
 
-        // Vertical Drawer
-        if (showMenu) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0x80000000))
-                    .clickable { showMenu = false }
-            )
+    if (showDialog) {
+        val items = when (filterType) {
+            "Category" -> allCategories
+            "Product" -> allProducts
+            "Design" -> allDesigns
+            else -> emptyList()
+        }
+        val selected = when (filterType) {
+            "Category" -> selectedCategories
+            "Product" -> selectedProducts
+            "Design" -> selectedDesigns
+            else -> mutableStateListOf()
+        }
+        FilterSelectionDialog(
+            title = filterType,
+            items = items,
+            selectedItems = selected,
+            onDismiss = { showDialog = false },
+            onConfirm = {
+                bulkViewModel.setFilteredItems(scopeItems)
+                bulkViewModel.resetScanResults()
+                showDialog = false
+            }
+        )
+    }
 
+    if (showMenu) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0x80000000))
+                .clickable { showMenu = false }
+        ) {
             Surface(
                 modifier = Modifier
-                    .padding(
-                        top = 60.dp,
-                        bottom = 70.dp
-                    ) // adjust to your topBar & bottomBar height
+                    .padding(top = 60.dp, bottom = 70.dp)
                     .width(180.dp)
                     .fillMaxHeight()
                     .align(Alignment.TopStart),
@@ -340,84 +395,108 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                 shadowElevation = 8.dp,
                 color = Color.White
             ) {
-                VerticalMenu(
-                    onMenuClick = { menuItem ->
-                        when (menuItem.title) {
-                            "Matched Items" -> selectedMenu = "Matched"
-                            "UnMatched Items" -> selectedMenu = "Unmatched"
-                            "Search" -> {
-                                val displayedUnmatchedItems =
-                                    displayItems.filter { it.scannedStatus == "Unmatched" }
-                                try {
-                                    navController.getBackStackEntry(Screens.SearchScreen.route)
-                                        .savedStateHandle["unmatchedItems"] =
-                                        displayedUnmatchedItems
-                                } catch (e: Exception) {
-                                    navController.navigate(Screens.SearchScreen.route)
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("unmatchedItems", displayedUnmatchedItems)
-                                    return@VerticalMenu
-                                }
+                VerticalMenu { menuItem ->
+                    when (menuItem.title) {
+                        "Matched Items" -> selectedMenu = MENU_MATCHED
+                        "UnMatched Items" -> selectedMenu = MENU_UNMATCHED
+                        "Unlabelled Items" -> selectedMenu = MENU_ALL
+                        "Search" -> {
+                            val scanMap =
+                                bulkViewModel.scannedFilteredItems.value.associateBy { it.rfid }
+                            val latestUnmatched = scopeItems
+                                .map { original -> scanMap[original.rfid] ?: original }
+                                .filter { it.scannedStatus == "Unmatched" }
 
-                                navController.navigate(Screens.SearchScreen.route)
-                            }
-
-                            else -> selectedMenu = "All"
+                            navController.currentBackStackEntry?.savedStateHandle
+                                ?.set("unmatchedItems", latestUnmatched)
+                            navController.navigate(Screens.SearchScreen.route)
                         }
-                        showMenu = false
                     }
-                )
-
-
+                    showMenu = false
+                }
             }
+        }
+    }
+
+    if (showItemDialog && selectedItem != null) {
+        ItemDetailsDialog(item = selectedItem!!, onDismiss = { showItemDialog = false })
+    }
+}
+
+@Composable
+fun DesignItemRow(item: BulkItem, onClick: (BulkItem) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White, RoundedCornerShape(4.dp))
+            .padding(vertical = 4.dp)
+            .clickable { onClick(item) },
+        horizontalArrangement = Arrangement.Start
+    ) {
+        TableCell(item.design ?: "-", colDesignNameWidth)
+        TableCell(item.rfid ?: "-", colRfidWidth)
+        TableCell(item.itemCode ?: "-", colItemCodeWidth)
+        TableCell(item.grossWeight ?: "-", colGWtWidth)
+        StatusIconCell(item.scannedStatus, colStatusIconWidth)
+    }
+}
+
+@Composable
+fun SummaryRow(currentLevel: String, items: List<BulkItem>, selectedMenu: String) {
+    val totalQty = items.size
+    val totalGwtBD = items.fold(BigDecimal.ZERO) { acc, it ->
+        acc + parseWeightToBigDecimal(it.grossWeight)
+    }
+    val matchedItems = items.filter { it.scannedStatus == "Matched" }
+    val totalMatchedQty = matchedItems.size
+    val totalMatchedWtBD = matchedItems.fold(BigDecimal.ZERO) { acc, it ->
+        acc + parseWeightToBigDecimal(it.grossWeight)
+    }
+
+    val unmatchedItems = items.filter { it.scannedStatus == "Unmatched" }
+    val unmatchedQty = unmatchedItems.size
+    val unmatchedWtBD = unmatchedItems.fold(BigDecimal.ZERO) { acc, it ->
+        acc + parseWeightToBigDecimal(it.grossWeight)
+    }
+
+    if (selectedMenu == MENU_UNMATCHED) {
+        // 🔴 Show only unmatched totals
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF3B363E))
+                .padding(vertical = 4.dp)
+        ) {
+            TableHeaderCell("Total", colCategoryWidth)
+            TableHeaderCell("$unmatchedQty", colQtyWidth)
+            TableHeaderCell(formatMatchedUpTo3(unmatchedWtBD), colWeightWidth)
+            TableHeaderCell("", colMatchedQtyWidth)
+            TableHeaderCell("", colMatchedWtWidth)
+            TableHeaderCell("", colStatusWidth)
+        }
+    } else {
+        // 🟢 Normal totals
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF3B363E))
+                .padding(vertical = 4.dp)
+        ) {
+            TableHeaderCell("Total", colCategoryWidth)
+            TableHeaderCell(if (currentLevel == "DesignItems") "" else "$totalQty", colQtyWidth)
+            TableHeaderCell(
+                if (currentLevel == "DesignItems") "" else formatMatchedUpTo3(totalGwtBD),
+                colWeightWidth
+            )
+            TableHeaderCell("$totalMatchedQty", colMatchedQtyWidth)
+            TableHeaderCell(formatMatchedUpTo3(totalMatchedWtBD), colMatchedWtWidth)
+            TableHeaderCell("", colStatusWidth)
         }
     }
 }
 
-@Composable
-fun FilterRow(
-    onCategoryClick: () -> Unit,
-    onProductClick: () -> Unit,
-    onDesignClick: () -> Unit
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        FilterButton("Category", onCategoryClick)
-        FilterButton("Product", onProductClick)
-        FilterButton("Design", onDesignClick)
-    }
-}
 
-@Composable
-fun SummaryRow(rows: List<TableRow>) {
-    val totalQty = rows.sumOf { it.items.size }
-    val totalGwt = rows.sumOf { it.items.sumOf { it.grossWeight?.toDoubleOrNull() ?: 0.0 } }
-    val totalMatchedQty = rows.sumOf { it.items.count { !it.rfid.isNullOrBlank() } }
-    val totalMatchedWt = rows.sumOf {
-        it.items.filter { !it.rfid.isNullOrBlank() }
-            .sumOf { it.netWeight?.toDoubleOrNull() ?: 0.0 }
-    }
-
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .background(Color(0xFF3B363E))
-            .padding(vertical = 4.dp)
-    ) {
-        TableHeaderCell("Total", colCategoryWidth)
-        TableHeaderCell("$totalQty", colQtyWidth)
-        TableHeaderCell("%.2f".format(totalGwt), colWeightWidth)
-        TableHeaderCell("$totalMatchedQty", colMatchedQtyWidth)
-        TableHeaderCell("%.2f".format(totalMatchedWt), colMatchedWtWidth)
-        TableHeaderCell("", colStatusWidth)
-    }
-}
-
+// ... (rest of your helpers: TableHeader, TableDataRow, TableCell, StatusIconCell, VerticalMenu, FilterSelectionDialog, MenuCard, parseWeightToBigDecimal, formatMatchedUpTo3, etc.)
 
 @Composable
 fun TableHeaderCell(text: String, width: Dp) {
@@ -431,69 +510,53 @@ fun TableHeaderCell(text: String, width: Dp) {
             text = text,
             fontWeight = FontWeight.Bold,
             color = Color.White,
-            fontSize = 10.sp, // Reduced font to fit better
+            fontSize = 10.sp,
             maxLines = 1,
-            overflow = TextOverflow.Clip // No ellipsis
+            overflow = TextOverflow.Clip
         )
     }
 }
 
+/* Reworked TableHeader: shows different headers when in DesignItems level */
 @Composable
-fun TableHeader(title: String) {
+fun TableHeader(currentLevel: String) {
     Row(
         Modifier
             .fillMaxWidth()
             .background(Color(0xFF3B363E))
             .padding(vertical = 2.dp)
     ) {
-        TableHeaderCell(title, colCategoryWidth) // shows Category/Product/Design
-        TableHeaderCell("Qty", colQtyWidth)
-        TableHeaderCell("G.Wt", colWeightWidth)
-        TableHeaderCell("M.Qty", colMatchedQtyWidth)
-        TableHeaderCell("M.Wt", colMatchedWtWidth)
-        TableHeaderCell("Status", colStatusWidth)
-    }
-}
-
-@Composable
-fun FilterButton(label: String, onClick: () -> Unit) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier
-            .padding(horizontal = 6.dp, vertical = 4.dp)
-            .height(36.dp),
-        shape = RoundedCornerShape(6.dp),
-        border = BorderStroke(
-            1.dp,
-            Brush.horizontalGradient(listOf(Color(0xFF3053F0), Color(0xFFE82E5A)))
-        )
-    ) {
-        Text(
-            text = label,
-            color = Color.DarkGray,
-            fontFamily = poppins,
-            fontSize = 12.sp
-        )
+        if (currentLevel == "DesignItems") {
+            TableHeaderCell("Design", colDesignNameWidth)
+            TableHeaderCell("RFID No", colRfidWidth)
+            TableHeaderCell("Item Code", colItemCodeWidth)
+            TableHeaderCell("G.Wt", colGWtWidth)
+            TableHeaderCell("Status", colStatusIconWidth)
+        } else {
+            TableHeaderCell(currentLevel, colCategoryWidth)
+            TableHeaderCell("Qty", colQtyWidth)
+            TableHeaderCell("G.Wt", colWeightWidth)
+            TableHeaderCell("M.Qty", colMatchedQtyWidth)
+            TableHeaderCell("M.Wt", colMatchedWtWidth)
+            TableHeaderCell("Status", colStatusWidth)
+        }
     }
 }
 
 @Composable
 fun TableDataRow(row: TableRow, currentLevel: String, onRowClick: () -> Unit) {
     val qty = row.items.size
-    val matchedItems = row.items.filter { !it.rfid.isNullOrBlank() }
+    val matchedItems = row.items.filter { it.scannedStatus == "Matched" }
     val matchedQty = matchedItems.size
     val grossWeight = row.items.sumOf { it.grossWeight?.toDoubleOrNull() ?: 0.0 }
     val matchedWeight = matchedItems.sumOf { it.netWeight?.toDoubleOrNull() ?: 0.0 }
-    val isMatched = matchedQty == qty && qty != 0
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
             .padding(vertical = 4.dp)
-            .clickable {
-                onRowClick()
-            }
+            .clickable { onRowClick() }
     ) {
         TableCell(row.label, colCategoryWidth)
         TableCell("$qty", colQtyWidth)
@@ -504,7 +567,6 @@ fun TableDataRow(row: TableRow, currentLevel: String, onRowClick: () -> Unit) {
         StatusIconCell(status, colStatusWidth)
     }
 }
-
 
 @Composable
 fun TableCell(text: String, width: Dp) {
@@ -523,15 +585,11 @@ fun StatusIconCell(status: String?, width: Dp) {
     val iconRes = when (status) {
         "Matched" -> R.drawable.ic_matched
         "Unmatched" -> R.drawable.ic_unmatched
-        else -> R.drawable.ic_unmatched // optional
+        else -> R.drawable.ic_unmatched
     }
-
-    Box(
-        modifier = Modifier
-            .width(width)
-            .padding(2.dp),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = Modifier
+        .width(width)
+        .padding(2.dp), contentAlignment = Alignment.Center) {
         Icon(
             painter = painterResource(id = iconRes),
             contentDescription = null,
@@ -541,13 +599,12 @@ fun StatusIconCell(status: String?, width: Dp) {
     }
 }
 
-
 @Composable
 fun VerticalMenu(onMenuClick: (MenuItem) -> Unit) {
     val menuItems = listOf(
         MenuItem("Matched Items", R.drawable.ic_list_matched),
         MenuItem("UnMatched Items", R.drawable.ic_list_unmatched),
-        MenuItem("Unlabeled Items", R.drawable.ic_list_unlabelled),
+        MenuItem("Unlabelled Items", R.drawable.ic_list_unlabelled),
         MenuItem("Resume Scan", R.drawable.ic_resume_scan),
         MenuItem("Search", R.drawable.search_gr_svg)
     )
@@ -565,7 +622,6 @@ fun VerticalMenu(onMenuClick: (MenuItem) -> Unit) {
     }
 }
 
-
 @Composable
 fun FilterSelectionDialog(
     title: String,
@@ -574,78 +630,149 @@ fun FilterSelectionDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Select $title",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                fontFamily = poppins
-            )
-        },
-        text = {
-            Column {
-                LazyColumn(
-                    modifier = Modifier
-                        .heightIn(max = 280.dp)
-                        .fillMaxWidth()
-                        .padding(vertical = 2.dp)
-                ) {
-                    items(items) { item ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    if (selectedItems.contains(item)) {
-                                        selectedItems.remove(item)
-                                    } else {
-                                        selectedItems.add(item)
-                                    }
-                                }
-                                .padding(vertical = 10.dp, horizontal = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = selectedItems.contains(item),
-                                onCheckedChange = null, // Don't override clickable behavior
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Text(
-                                text = item,
-                                fontSize = 11.sp,
-                                color = Color.DarkGray,
-                                fontFamily = poppins,
-                                maxLines = 1
-                            )
-                        }
-
+    AlertDialog(onDismissRequest = onDismiss, title = {
+        Text(
+            text = "Select $title",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = poppins
+        )
+    }, text = {
+        Column {
+            LazyColumn(
+                modifier = Modifier
+                    .heightIn(max = 280.dp)
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp)
+            ) {
+                items(items) { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (selectedItems.contains(item)) selectedItems.remove(item) else selectedItems.add(
+                                    item
+                                )
+                            }
+                            .padding(vertical = 10.dp, horizontal = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = selectedItems.contains(item),
+                            onCheckedChange = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = item,
+                            fontSize = 11.sp,
+                            color = Color.DarkGray,
+                            fontFamily = poppins,
+                            maxLines = 1
+                        )
                     }
                 }
-
-                // ✅ Centered Buttons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    GradientButton(text = "Cancel", onClick = onDismiss)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    GradientButton(text = "OK", onClick = onConfirm)
-                }
             }
-        },
-        confirmButton = {
 
-        }, // Empty because we handled buttons manually
-        dismissButton = {}
-    )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                GradientButton(text = "Cancel", onClick = onDismiss)
+                Spacer(modifier = Modifier.width(12.dp))
+                GradientButton(text = "OK", onClick = onConfirm)
+            }
+        }
+    }, confirmButton = {}, dismissButton = {})
 }
 
-
 data class MenuItem(val title: String, val iconRes: Int)
+
+@Composable
+fun FilterRow(
+    selectedCategories: List<String>,
+    selectedProducts: List<String>,
+    selectedDesigns: List<String>,
+    onCategoryClick: () -> Unit,
+    onProductClick: () -> Unit,
+    onDesignClick: () -> Unit
+) {
+    val catLabel = selectedCategories.joinToString(", ").ifBlank { "Category" }
+    val prodLabel = selectedProducts.joinToString(", ").ifBlank { "Product" }
+    val designLabel = selectedDesigns.joinToString(", ").ifBlank { "Design" }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        OutlinedButton(
+            onClick = onCategoryClick,
+            modifier = Modifier
+                .width(100.dp)
+                .height(40.dp),
+            shape = RoundedCornerShape(6.dp),
+            border = BorderStroke(
+                1.dp,
+                Brush.horizontalGradient(listOf(Color(0xFF3053F0), Color(0xFFE82E5A)))
+            )
+        ) {
+            Text(
+                catLabel,
+                color = Color.DarkGray,
+                fontFamily = poppins,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        OutlinedButton(
+            onClick = onProductClick,
+            modifier = Modifier
+                .width(100.dp)
+                .height(40.dp),
+            shape = RoundedCornerShape(6.dp),
+            border = BorderStroke(
+                1.dp,
+                Brush.horizontalGradient(listOf(Color(0xFF3053F0), Color(0xFFE82E5A)))
+            )
+        ) {
+            Text(
+                prodLabel,
+                color = Color.DarkGray,
+                fontFamily = poppins,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        OutlinedButton(
+            onClick = onDesignClick,
+            modifier = Modifier
+                .width(100.dp)
+                .height(40.dp),
+            shape = RoundedCornerShape(6.dp),
+            border = BorderStroke(
+                1.dp,
+                Brush.horizontalGradient(listOf(Color(0xFF3053F0), Color(0xFFE82E5A)))
+            )
+        ) {
+            Text(
+                designLabel,
+                color = Color.DarkGray,
+                fontFamily = poppins,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
 
 @Composable
 fun MenuCard(item: MenuItem, onClick: () -> Unit) {
@@ -680,6 +807,28 @@ fun MenuCard(item: MenuItem, onClick: () -> Unit) {
             )
         }
     }
+}
+
+// parse string weights like "1,234.56", "  12.345 ", or maybe "12g" safely to BigDecimal
+fun parseWeightToBigDecimal(weight: String?): BigDecimal {
+    if (weight.isNullOrBlank()) return BigDecimal.ZERO
+    return try {
+        // Remove any non-numeric (except . and -)
+        val cleaned = weight.replace(Regex("[^0-9.]"), "")
+        if (cleaned.isBlank()) BigDecimal.ZERO else BigDecimal(cleaned)
+    } catch (e: Exception) {
+        BigDecimal.ZERO
+    }
+}
+
+// format total G.Wt (2 decimals)
+fun formatTotalGwt(b: BigDecimal): String =
+    b.setScale(2, RoundingMode.HALF_UP).toPlainString()
+
+// format matched weight up to 3 decimals, DO NOT ROUND UP (truncate)
+fun formatMatchedUpTo3(b: BigDecimal): String {
+    val truncated = b.setScale(3, RoundingMode.DOWN)
+    return truncated.stripTrailingZeros().toPlainString()
 }
 
 

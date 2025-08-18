@@ -140,7 +140,7 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
                 },
                 onReset = {
                     firstPress = false
-                    viewModel.resetData()
+                    viewModel.resetScanResults()
                     viewModel.stopBarcodeScanner()
                 }
             )

@@ -24,11 +24,11 @@ import com.loyalstring.rfid.ui.screens.OrderLisrScreen
 import com.loyalstring.rfid.ui.screens.OrderScreen
 import com.loyalstring.rfid.ui.screens.ProductListScreen
 import com.loyalstring.rfid.ui.screens.ProductManagementScreen
-import com.loyalstring.rfid.ui.screens.ScanBoxScreeen
-import com.loyalstring.rfid.ui.screens.ScanBranchScreen
-import com.loyalstring.rfid.ui.screens.ScanCounterScreen
 import com.loyalstring.rfid.ui.screens.ScanDisplayScreen
-import com.loyalstring.rfid.ui.screens.ScanExhibitionScreen
+//import com.loyalstring.rfid.ui.screens.ScanBoxScreeen
+//import com.loyalstring.rfid.ui.screens.ScanBranchScreen
+//import com.loyalstring.rfid.ui.screens.ScanCounterScreen
+//import com.loyalstring.rfid.ui.screens.ScanExhibitionScreen
 import com.loyalstring.rfid.ui.screens.ScanToDesktopScreen
 import com.loyalstring.rfid.ui.screens.SearchScreen
 import com.loyalstring.rfid.ui.screens.SettingsScreen
@@ -100,19 +100,18 @@ fun AppNavigation(
         composable(Screens.ScanDisplayScreen.route) {
             ScanDisplayScreen(onBack = { navController.popBackStack() }, navController)
         }
-        composable(Screens.ScanCounterScreen.route) {
-            ScanCounterScreen(onBack = { navController.popBackStack() }, navController)
-        }
-        composable(Screens.ScanBranchScreen.route) {
-            ScanBranchScreen(onBack = { navController.popBackStack() }, navController)
-        }
-        composable(Screens.ScanExhibitionScreen.route) {
-            ScanExhibitionScreen(onBack = { navController.popBackStack() }, navController)
-        }
-
-        composable(Screens.ScanBoxScreen.route) {
-            ScanBoxScreeen(onBack = { navController.popBackStack() }, navController)
-        }
+        //  composable(Screens.ScanCounterScreen.route) {
+        //      ScanCounterScreen(onBack = { navController.popBackStack() }, navController)
+        //  }
+        //  composable(Screens.ScanBranchScreen.route) {
+        //      ScanBranchScreen(onBack = { navController.popBackStack() }, navController)
+        //  }
+        //  composable(Screens.ScanExhibitionScreen.route) {
+        //      ScanExhibitionScreen(onBack = { navController.popBackStack() }, navController)
+        //  }
+        //  composable(Screens.ScanBoxScreen.route) {
+        //      ScanBoxScreeen(onBack = { navController.popBackStack() }, navController)
+        //  }
         composable(Screens.SearchScreen.route) {
             SearchScreen(
                 onBack = { navController.popBackStack() },
