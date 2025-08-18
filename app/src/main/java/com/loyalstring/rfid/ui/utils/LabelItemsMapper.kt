@@ -53,7 +53,7 @@ fun AlllabelResponse.LabelItem.toBulkItem(): BulkItem {
         counterName = this.counterName ?: "",
         counterId = this.counterId?.toInt() ?: 0,
         boxId = this.boxId?.toInt() ?: 0,
-        boxName = this.boxId ?: "",
+        boxName = this.boxName ?: "",
         scannedStatus = "",
         branchId = this.branchId ?: 0,
         branchName = this.branchName ?: "",

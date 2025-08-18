@@ -88,6 +88,7 @@ fun HomeScreen(
                 .background(Color.White)
         ) {
             val screenWidth = maxWidth
+            val screenHeight = maxHeight
             val columns = when {
                 screenWidth < 328.dp -> 2
                 screenWidth < 400.dp -> 3

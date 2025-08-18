@@ -186,7 +186,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                             }
                         }
                         ToastUtils.showToast(context, "Items saved successfully")
-                        viewModel.resetData()
+                        viewModel.resetScanResults()
                         navController.navigate(Screens.ProductManagementScreen.route)
                     } else {
                         ToastUtils.showToast(context, "Category/Product/Design cannot be empty")
@@ -212,7 +212,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                 },
                 onReset = {
                     firstPress = false
-                    viewModel.resetData()
+                    viewModel.resetScanResults()
                     viewModel.stopBarcodeScanner()
                 }
             )

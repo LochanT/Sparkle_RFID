@@ -28,6 +28,7 @@ import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
 import com.loyalstring.rfid.data.remote.data.DeleteOrderResponse
 import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
 import com.loyalstring.rfid.data.remote.data.ProductDeleteResponse
+import com.loyalstring.rfid.data.model.stockTransfer.StockTransferResponse
 import com.loyalstring.rfid.data.remote.data.StockTransferRequest
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.MultipartBody
@@ -153,10 +154,11 @@ interface RetrofitInterface {
     ): Response<DeleteOrderResponse>
 
 
+
     @POST("/api/ProductMaster/AddStockTransfer")
     suspend fun postStockTransfer(
         @Body request: StockTransferRequest
-    ): Response<String>
+    ): Response<StockTransferResponse>
 
 
     /*delete product api*/

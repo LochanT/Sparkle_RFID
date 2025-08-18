@@ -25,8 +25,6 @@ import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.reader.BarcodeReader
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
-import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
-import com.loyalstring.rfid.data.remote.data.ProductDeleteResponse
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.BulkRepository
 import com.loyalstring.rfid.repository.DropdownRepository

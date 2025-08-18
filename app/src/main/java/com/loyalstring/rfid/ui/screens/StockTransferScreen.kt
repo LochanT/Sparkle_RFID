@@ -1,6 +1,7 @@
 package com.loyalstring.rfid.ui.screens
 
 import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -57,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.R
+import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.navigation.GradientTopBar
@@ -93,6 +96,11 @@ fun StockTransferScreen(
     val branches by remember { derivedStateOf { singleProductViewModel.branches } }
     val boxes by remember { derivedStateOf { singleProductViewModel.boxes } }
     val packets by remember { derivedStateOf { singleProductViewModel.packets } }
+
+    val transferredItems = remember { mutableStateListOf<BulkItem>() }
+
+
+
 
     val (fromType, toType) = remember(selectedTransferType) {
         selectedTransferType.split(" to ", ignoreCase = true).map { it.trim().lowercase() }.let {
@@ -218,11 +226,11 @@ fun StockTransferScreen(
                     .padding(vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                listOf("Sr", "Product Name", "Label", "Gross WT", "Net WT").forEach {
+                listOf("SrNo", "Product Name", "Label", "Gross WT", "Net WT").forEach {
                     Text(
                         it,
                         color = Color.White,
-                        fontSize = 12.sp,
+                        fontSize = 8.sp,
                         fontFamily = poppins,
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.Center
@@ -238,8 +246,8 @@ fun StockTransferScreen(
                         Text(
                             "All",
                             color = Color.White,
-                            fontSize = 10.sp,
-                            modifier = Modifier.padding(start = 2.dp)
+                            fontSize = 8.sp,
+                            modifier = Modifier.padding(end = 2.dp)
                         )
                     }
                 }
@@ -258,35 +266,35 @@ fun StockTransferScreen(
                             "${index + 1}",
                             Modifier.weight(1f),
                             textAlign = TextAlign.Center,
-                            fontSize = 10.sp,
+                            fontSize = 8.sp,
                             fontFamily = poppins
                         )
                         Text(
                             item.productName.orEmpty(),
                             Modifier.weight(1f),
                             textAlign = TextAlign.Center,
-                            fontSize = 10.sp,
+                            fontSize = 8.sp,
                             fontFamily = poppins
                         )
                         Text(
                             item.rfid.orEmpty(),
                             Modifier.weight(1f),
                             textAlign = TextAlign.Center,
-                            fontSize = 10.sp,
+                            fontSize = 8.sp,
                             fontFamily = poppins
                         )
                         Text(
                             item.grossWeight.orEmpty(),
                             Modifier.weight(1f),
                             textAlign = TextAlign.Center,
-                            fontSize = 10.sp,
+                            fontSize = 8.sp,
                             fontFamily = poppins
                         )
                         Text(
                             item.netWeight.orEmpty(),
                             Modifier.weight(1f),
                             textAlign = TextAlign.Center,
-                            fontSize = 10.sp,
+                            fontSize = 8.sp,
                             fontFamily = poppins
                         )
 
@@ -317,14 +325,32 @@ fun StockTransferScreen(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Qty: ${selectedItems.size}", fontSize = 13.sp, fontFamily = poppins)
-                Text("T G.WT: $totalGrossWeight", fontSize = 13.sp, fontFamily = poppins)
-                Text("T N.WT: $totalNetWeight", fontSize = 13.sp, fontFamily = poppins)
+                Text(
+                    text = "Qty : ${selectedItems.size}",
+                    fontSize = 12.sp,
+                    fontFamily = poppins,
+                    color = Color(0xFF3C3C3C)
+                )
 
+                Text(
+                    text = "T G.wt : %.3f".format(totalGrossWeight),
+                    fontSize = 12.sp,
+                    fontFamily = poppins,
+                    color = Color(0xFF3C3C3C)
+                )
+
+                Text(
+                    text = "T N.wt : %.3f".format(totalNetWeight),
+                    fontSize = 12.sp,
+                    fontFamily = poppins,
+                    color = Color(0xFF3C3C3C)
+                )
 
                 GradientButton(
                     onClick = {
@@ -349,7 +375,28 @@ fun StockTransferScreen(
                                                 it.employeeId.toString(),
                                                 it2,
                                                 it3
-                                            )
+                                            ) { success ->
+                                                if (success) {
+                                                    // ✅ Add stock IDs to the transferredItems list
+                                                    transferredItems.addAll(selectedItems.mapNotNull {
+                                                        filteredItems.getOrNull(
+                                                            it
+                                                        )
+                                                    })
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Transfer Successful",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                } else {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Transfer Failed",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            }
+
                                         }
                                     }
                                 }
@@ -358,10 +405,121 @@ fun StockTransferScreen(
                     },
                     icon = painterResource(id = R.drawable.stock_transfer_svg),
                     text = "",
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.size(48.dp)
                 )
-
             }
+
+
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+// Header
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .background(Color.DarkGray)
+                    .padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                listOf("SrNo", "Product Name", "Label", "Gross WT", "Net WT", "Remove").forEach {
+                    Text(
+                        it,
+                        color = Color.White,
+                        fontSize = 8.sp,
+                        fontFamily = poppins,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+// List
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 250.dp)
+            ) {
+                itemsIndexed(transferredItems) { index, item ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "${index + 1}",
+                            Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
+                            fontSize = 8.sp,
+                            fontFamily = poppins
+                        )
+                        Text(
+                            item.productName.orEmpty(),
+                            Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
+                            fontSize = 8.sp,
+                            fontFamily = poppins
+                        )
+                        Text(
+                            item.rfid.orEmpty(),
+                            Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
+                            fontSize = 8.sp,
+                            fontFamily = poppins
+                        )
+                        Text(
+                            item.grossWeight.orEmpty(),
+                            Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
+                            fontSize = 8.sp,
+                            fontFamily = poppins
+                        )
+                        Text(
+                            item.netWeight.orEmpty(),
+                            Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
+                            fontSize = 8.sp,
+                            fontFamily = poppins
+                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .wrapContentWidth(Alignment.CenterHorizontally)
+                        ) {
+                            Checkbox(
+                                checked = false,
+                                onCheckedChange = {
+                                    transferredItems.removeAt(index)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+// Total Row
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val transferredGross = transferredItems.sumOf {
+                it.grossWeight?.toDoubleOrNull() ?: 0.0
+            }
+            val transferredNet = transferredItems.sumOf {
+                it.netWeight?.toDoubleOrNull() ?: 0.0
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Qty: ${transferredItems.size}", fontSize = 13.sp, fontFamily = poppins)
+                Text("T G.WT: $transferredGross", fontSize = 13.sp, fontFamily = poppins)
+                Text("T N.WT: $transferredNet", fontSize = 13.sp, fontFamily = poppins)
+            }
+
+
         }
     }
 }
@@ -474,7 +632,7 @@ fun GradientButton(
 ) {
     Box(
         modifier = modifier
-            .height(50.dp)
+            .height(40.dp)
             .background(BackgroundGradient, shape = RoundedCornerShape(10.dp)),
         contentAlignment = Alignment.Center
     ) {
