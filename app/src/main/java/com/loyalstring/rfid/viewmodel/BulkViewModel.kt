@@ -225,7 +225,7 @@ class BulkViewModel @Inject constructor(
     }
 
 
-    fun startScanning(selectedPower: Int) {
+    fun startScanningInventory(selectedPower: Int) {
         if (!success || isScanning) return
         isScanning = true
         scannedEpcList.clear()
@@ -255,6 +255,65 @@ class BulkViewModel @Inject constructor(
                     }
                 }
             }
+        }
+    }
+
+
+    fun startScanning(selectedPower: Int) {
+        if (success) {
+            readerManager.startInventoryTag(selectedPower)
+            readerManager.playSound(1, 0)
+            scanJob?.cancel()
+            if (scanJob?.isActive == true) return
+
+            scanJob = viewModelScope.launch(Dispatchers.IO) {
+
+                while (isActive) {
+                    val tag = readerManager.readTagFromBuffer()
+                    if (tag != null) {
+                        val epc = tag.epc ?: continue
+
+                        val exists = isTagExistsInDatabase(epc)
+
+                        withContext(Dispatchers.Main) {
+                            val alreadyInExisting = existingTags.any { it.epc == epc }
+                            val alreadyInScanned = _allScannedTags.value.any { it.epc == epc }
+                            val alreadyInDuplicates = duplicateTags.any { it.epc == epc }
+
+                            // Case 1: Already marked existing → ignore
+                            if (alreadyInExisting) return@withContext
+
+                            // Case 2: Seen before but not in duplicates → mark as duplicate
+                            if (alreadyInScanned) {
+                                if (!alreadyInDuplicates) {
+                                    duplicateTags.add(tag)
+                                    _duplicateItems.value = duplicateTags.toList()
+                                }
+                            } else {
+                                // First time scanned → add to list
+                                _allScannedTags.value += tag
+
+                                // Only mark as existing if it exists in DB and is not a duplicate
+                                if (exists && !alreadyInDuplicates) {
+                                    existingTags.add(tag)
+                                    _existingItems.value = existingTags.toList()
+                                }
+                            }
+
+                            // Always update scannedTags with distinct values
+                            _scannedTags.update { currentList ->
+                                if (currentList.any { it.epc == epc }) currentList
+                                else currentList + tag
+                            }
+
+                            Log.d("RFID", "Scanned EPC: $epc")
+                        }
+                    }
+                }
+            }
+        } else {
+            Log.e("RFID", "Reader not connected.")
+            return
         }
     }
 

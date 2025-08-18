@@ -98,7 +98,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
     val allScannedTags by viewModel.allScannedTags
     val existingTags by viewModel.existingItems
     val duplicateTags by viewModel.duplicateItems
-    var showSuccessDialog by remember { mutableStateOf(false) }
+    //var showSuccessDialog by remember { mutableStateOf(false) }
 
 
     LaunchedEffect(scanTrigger) {
@@ -137,9 +137,9 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
 //        }
 //    }
 
-    if (showSuccessDialog) {
+   /* if (showSuccessDialog) {
         SyncSuccessDialog(onDismiss = { showSuccessDialog = false })
-    }
+    }*/
 
     Scaffold(
         topBar = {

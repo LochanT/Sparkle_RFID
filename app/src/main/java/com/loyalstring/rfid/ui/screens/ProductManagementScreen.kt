@@ -91,6 +91,7 @@ fun ProductManagementScreen(
     var showMappingDialog by remember { mutableStateOf(false) }
     var showProgress by remember { mutableStateOf(false) }
     var showOverlay by remember { mutableStateOf(false) }
+    val backStackEntry = remember(navController) { navController.currentBackStackEntry!! }
 
     val scanTrigger by viewModel.scanTrigger.collectAsState()
     val bulkItemFieldNames = listOf(
@@ -163,6 +164,7 @@ fun ProductManagementScreen(
                 // ✅ Show toast and dialog only on "Sync completed"
                // Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 showSuccessDialog = true
+                //backStackEntry.savedStateHandle.remove<Boolean>("completed")
             }
         }
     }

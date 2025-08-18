@@ -35,8 +35,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -128,19 +130,40 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
         }
     }
 
+    val selectedCategories = remember { mutableStateListOf<String>() }
+    val selectedProducts  = remember { mutableStateListOf<String>() }
+    val selectedDesigns   = remember { mutableStateListOf<String>() }
+
+// === 4) IMPORTANT: stable keys for state-list contents ===
+    val selectedCategoriesKey = selectedCategories.toList()
+    val selectedProductsKey   = selectedProducts.toList()
+    val selectedDesignsKey    = selectedDesigns.toList()
+
     val allCategories = remember(filteredItems) {
         filteredItems.mapNotNull { it.category }.distinct().sorted()
     }
-    val allProducts = remember(filteredItems) {
-        filteredItems.mapNotNull { it.productName }.distinct().sorted()
-    }
-    val allDesigns = remember(filteredItems) {
-        filteredItems.mapNotNull { it.design }.distinct().sorted()
+
+    val allProducts = remember(filteredItems, selectedCategoriesKey) {
+        filteredItems
+            .asSequence()
+            .filter { selectedCategoriesKey.isEmpty() || it.category in selectedCategoriesKey }
+            .mapNotNull { it.productName }
+            .distinct()
+            .sorted()
+            .toList()
     }
 
-    val selectedCategories = remember { mutableStateListOf<String>() }
-    val selectedProducts = remember { mutableStateListOf<String>() }
-    val selectedDesigns = remember { mutableStateListOf<String>() }
+    val allDesigns = remember(filteredItems, selectedCategoriesKey, selectedProductsKey) {
+        filteredItems
+            .asSequence()
+            .filter { selectedCategoriesKey.isEmpty() || it.category in selectedCategoriesKey }
+            .filter { selectedProductsKey.isEmpty() || it.productName in selectedProductsKey }
+            .mapNotNull { it.design }
+            .distinct()
+            .sorted()
+            .toList()
+    }
+
 
     var currentLevel by rememberSaveable { mutableStateOf("Category") }
     var currentCategory by rememberSaveable { mutableStateOf<String?>(null) }
@@ -161,36 +184,65 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     val scannedFiltered by bulkViewModel.scannedFilteredItems
 
     val scopeItems = remember(
-        filteredItems, selectedCategories, selectedProducts, selectedDesigns,
-        currentLevel, currentCategory, currentProduct, currentDesign, scannedFiltered
+        filteredItems,
+        selectedCategoriesKey,
+        selectedProductsKey,
+        selectedDesignsKey,
+        currentLevel, currentCategory, currentProduct, currentDesign,
+        scannedFiltered
     ) {
         val baseList = filteredItems.filter { item ->
-            (selectedCategories.isEmpty() || selectedCategories.contains(item.category.orEmpty())) &&
-                    (selectedProducts.isEmpty() || selectedProducts.contains(item.productName.orEmpty())) &&
-                    (selectedDesigns.isEmpty() || selectedDesigns.contains(item.design.orEmpty())) &&
+            (selectedCategoriesKey.isEmpty() || selectedCategoriesKey.contains(item.category.orEmpty())) &&
+                    (selectedProductsKey.isEmpty()  || selectedProductsKey.contains(item.productName.orEmpty())) &&
+                    (selectedDesignsKey.isEmpty()   || selectedDesignsKey.contains(item.design.orEmpty())) &&
                     when (currentLevel) {
-                        "Category" -> true
-                        "Product" -> item.category == currentCategory
-                        "Design" -> item.category == currentCategory && item.productName == currentProduct
-                        "DesignItems" -> item.category == currentCategory && item.productName == currentProduct && item.design == currentDesign
-                        else -> true
+                        "Category"     -> true
+                        "Product"      -> item.category == currentCategory
+                        "Design"       -> item.category == currentCategory && item.productName == currentProduct
+                        "DesignItems"  -> item.category == currentCategory && item.productName == currentProduct && item.design == currentDesign
+                        else           -> true
                     }
         }
+
         val scanMap = scannedFiltered.associateBy { it.rfid }
         baseList.map { original ->
-            scanMap[original.rfid]?.let { scanned ->
-                original.copy(scannedStatus = scanned.scannedStatus)
-            } ?: original
+            scanMap[original.rfid]?.let { scanned -> original.copy(scannedStatus = scanned.scannedStatus) } ?: original
         }
     }
 
     val displayItems = remember(scopeItems, selectedMenu) {
         when (selectedMenu) {
-            MENU_MATCHED -> scopeItems.filter { it.scannedStatus == "Matched" }
+            MENU_MATCHED   -> scopeItems.filter { it.scannedStatus == "Matched" }
             MENU_UNMATCHED -> scopeItems.filter { it.scannedStatus == "Unmatched" }
-            else -> scopeItems
+            else           -> scopeItems
         }
     }
+    val allMatched by remember(scopeItems) {
+        derivedStateOf {
+            scopeItems.isNotEmpty() && scopeItems.all { it.scannedStatus == "Matched" }
+        }
+    }
+    LaunchedEffect(isScanning, allMatched) {
+        if (isScanning && allMatched) {
+            bulkViewModel.stopScanning()
+            // Ensure final statuses are computed in case your VM does any post pass
+            bulkViewModel.computeScanResults(scopeItems)
+            isScanning = false
+            Toast.makeText(context, "All items matched. Scan stopped.", Toast.LENGTH_SHORT).show()
+        }
+    }
+    LaunchedEffect(isScanning, scopeItems.size) {
+        if (isScanning && scopeItems.isEmpty()) {
+            bulkViewModel.stopScanning()
+            isScanning = false
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            bulkViewModel.stopScanning()
+        }
+    }
+
 
     LaunchedEffect(scopeItems) {
         if (isScanning && scopeItems.isNotEmpty() && scopeItems.all { it.scannedStatus == "Matched" }) {
@@ -244,7 +296,7 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         if (!isScanning) {
                             isScanning = true
                             bulkViewModel.setFilteredItems(scopeItems)
-                            bulkViewModel.startScanning(selectedPower)
+                            bulkViewModel.startScanningInventory(selectedPower)
                         } else {
                             isScanning = false
                             bulkViewModel.stopScanning()
@@ -371,6 +423,12 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
             selectedItems = selected,
             onDismiss = { showDialog = false },
             onConfirm = {
+                if (filterType == "Category") {
+                    selectedProducts.clear()
+                    selectedDesigns.clear()
+                } else if (filterType == "Product") {
+                    selectedDesigns.clear()
+                }
                 bulkViewModel.setFilteredItems(scopeItems)
                 bulkViewModel.resetScanResults()
                 showDialog = false

@@ -78,10 +78,10 @@ fun SearchScreen(
         }
     }
 
-    LaunchedEffect(unmatchedItems) {
+  /*  LaunchedEffect(unmatchedItems) {
         searchViewModel.startSearch(unmatchedItems)
     }
-
+*/
     DisposableEffect(Unit) {
         onDispose { searchViewModel.stopSearch() }
     }
