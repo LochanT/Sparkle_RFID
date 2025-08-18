@@ -25,6 +25,8 @@ import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.reader.BarcodeReader
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
+import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
+import com.loyalstring.rfid.data.remote.data.ProductDeleteResponse
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.BulkRepository
 import com.loyalstring.rfid.repository.DropdownRepository
@@ -35,6 +37,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -93,6 +96,9 @@ class SingleProductViewModel @Inject constructor(
         private set
     var exhibitions by mutableStateOf<List<BranchModel>>(emptyList())
         private set
+
+    private val _productDeleteResponse = MutableLiveData<Resource<List<ProductDeleteResponse>>>()
+    val productDeleetResponse: LiveData<Resource<List<ProductDeleteResponse>>> = _productDeleteResponse
 
 
     /*venodr function*/
@@ -260,6 +266,26 @@ class SingleProductViewModel @Inject constructor(
         }
     }
 
+    /*delete product*/
+
+    fun deleetProduct(request: List<ProductDeleteModelReq>) {
+        viewModelScope.launch {
+            _productDeleteResponse.value = Resource.Loading()
+            try {
+                val response = repository.deleteProduct(request)
+                if (response.isSuccessful && response.body() != null) {
+                    _productDeleteResponse.value = Resource.Success((response.body()!!))
+
+                    Log.d("SingleProductViewModel", "Product delete" + response.body())
+                } else {
+                    _productDeleteResponse.value = Resource.Error("Something went wrong please check: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                _productDeleteResponse.value = Resource.Error("Exception: ${e.message}")
+            }
+        }
+    }
+
     /*product function*/
     fun getAllDesign(request: ClientCodeRequest) {
         viewModelScope.launch {
@@ -364,26 +390,27 @@ class SingleProductViewModel @Inject constructor(
         }
     }
 
-    var isSuccess: Boolean = false
-    fun insertLabelledStock(request: InsertProductRequest, context: Context): Boolean {
-        viewModelScope.launch {
-            stockResponse = repository.insertLabelledStock(request)
-
-
-            stockResponse!!.onSuccess {
-                ToastUtils.showToast(context, "Stock Added Successfully!")
+    suspend fun insertLabelledStock(request: InsertProductRequest): Boolean =
+        withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val result = repository.insertLabelledStock(request) // suspend repo call that returns Result<*>
+            val ok = result.isSuccess
+            if (ok) {
+                // side effects are fine here
                 bulkRepository.syncBulkItemsFromServer(ClientCodeRequest(request.ClientCode))
-                isSuccess = true
-
             }
-            stockResponse!!.onFailure {
-                ToastUtils.showToast(context, "Failed to Add Stock")
-            }
-
+            ok
         }
 
-        return isSuccess
-    }
+    suspend fun updateLabelledStock(request: InsertProductRequest): Boolean =
+        withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val result = repository.updateLabelledStock(request) // suspend repo call that returns Result<*>
+            val ok = result.isSuccess
+            if (ok) {
+                // side effects are fine here
+                bulkRepository.syncBulkItemsFromServer(ClientCodeRequest(request.ClientCode))
+            }
+            ok
+        }
 
     @Entity
     data class UploadedImage(

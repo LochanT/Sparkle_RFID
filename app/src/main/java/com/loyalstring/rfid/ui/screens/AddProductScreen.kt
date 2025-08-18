@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddAPhoto
@@ -52,6 +54,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
@@ -60,10 +63,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.nativeKeyCode
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -87,6 +96,10 @@ import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.EditProductViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import java.io.File
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import androidx.lifecycle.coroutineScope
+import com.loyalstring.rfid.ui.utils.ToastUtils
 
 // Imports skipped for brevity — keep your existing ones
 
@@ -161,6 +174,10 @@ fun AddProductScreen(
     val purityName = fieldValues["Purity"].orEmpty()
     val vendorName = fieldValues["Vendor"].orEmpty()
     val skuName = fieldValues["SKU"].orEmpty()
+    val scope = rememberCoroutineScope()
+
+
+
 
     val formFields = remember(
         vendorNames, skuList, categoryNames, categoryName, productName, designName, vendorName
@@ -235,6 +252,8 @@ fun AddProductScreen(
         }
     }
 
+
+
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
@@ -306,6 +325,12 @@ fun AddProductScreen(
     )
 
     fun onSkuSelected(sku: SKUModel) {
+
+        if (categoryList.isNullOrEmpty() ||
+            productList.isNullOrEmpty() ||
+            designList.isNullOrEmpty() ||
+            purityList.isNullOrEmpty()
+        ) return
         updateField(
             "Category",
             categoryList?.find { it.Id == sku.CategoryId }?.CategoryName.orEmpty()
@@ -321,9 +346,24 @@ fun AddProductScreen(
     }
 
     Scaffold(
+        modifier = Modifier
+            .focusable(true)
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown) {
+                    when (event.key.nativeKeyCode) {
+                        293, 280, 139 -> {
+                            val keyType = if (event.key.nativeKeyCode == 139) "barcode" else "scan"
+                            bulkViewModel.onScanKeyPressed(keyType)
+                            true
+                        }
+                        else -> false
+                    }
+                } else false
+            },
         topBar = {
             GradientTopBar(
                 title = "Add Single Product",
+
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -336,138 +376,164 @@ fun AddProductScreen(
             )
         },
         bottomBar = {
+            var isSaving by remember { mutableStateOf(false) }
+            val scope = rememberCoroutineScope()
             ScanBottomBar(
                 onSave = {
-                    viewModel.barcodeReader.close()
+                    if (isSaving) return@ScanBottomBar
+                    isSaving = true
+                    try {
+                        viewModel.barcodeReader.close()
 
-                    formFields.forEach { field ->
+                        fun get(label: String) =
+                            formFields.firstOrNull { it.label == label }?.value.orEmpty()
 
-
-                        val itemCode = formFields.find { it.label == "Item Code" }?.value.orEmpty()
-                        val rfidCode = formFields.find { it.label == "RFIDcode" }?.value.orEmpty()
-                        val epc = formFields.find { it.label == "EPC" }?.value.orEmpty()
-                        val gWt = formFields.find { it.label == "Gross Weight" }?.value.orEmpty()
-                        val ntWt = formFields.find { it.label == "Net Weight" }?.value.orEmpty()
-                        val sWt = formFields.find { it.label == "Stone Weight" }?.value.orEmpty()
-                        val dWt = formFields.find { it.label == "Diamond Weight" }?.value.orEmpty()
-                        val making_gm =
-                            formFields.find { it.label == "Making/Gram" }?.value.orEmpty()
-                        val making_perc =
-                            formFields.find { it.label == "Making %" }?.value.orEmpty()
-                        val fMaking = formFields.find { it.label == "Fix Making" }?.value.orEmpty()
-                        val fWastage =
-                            formFields.find { it.label == "Fix Wastage" }?.value.orEmpty()
-                        val stAmt = formFields.find { it.label == "Stone Amount" }?.value.orEmpty()
-                        val dAmt =
-                            formFields.find { it.label == "Diamond Amount " }?.value.orEmpty()
+                        val itemCode = get("Item Code")
+                        val rfidCode = get("RFID Code")
+                        val epc = get("EPC")
+                        val gWt = get("Gross Weight")
+                        val ntWt = get("Net Weight")
+                        val sWt = get("Stone Weight")
+                        val dWt = get("Diamond Weight")
+                        val making_gm = get("Making/Gram")
+                        val making_perc = get("Making %")
+                        val fMaking = get("Fix Making")
+                        val fWastage = get("Fix Wastage")
+                        val stAmt = get("Stone Amount")
+                        val dAmt = get("Diamond Amount ")
 
                         val categoryId =
                             categoryList?.find { it.CategoryName == categoryName }?.Id ?: 0
                         val productId = productList?.find { it.ProductName == productName }?.Id ?: 0
                         val designId = designList?.find { it.DesignName == designName }?.Id ?: 0
                         val vendorId = vendorList?.find { it.VendorName == vendorName }?.Id ?: 0
-                        val skuId = skuList?.find { it.StockKeepingUnit == skuName }?.Id ?: 0
                         val purityId = purityList?.find { it.PurityName == purityName }?.Id ?: 0
 
-                        val request = skuList?.get(0)?.let {
-                            InsertProductRequest(
-                                CategoryId = categoryId,
-                                ProductId = productId,
-                                DesignId = designId,
-                                VendorId = vendorId,
-                                PurityId = purityId,
-                                RFIDCode = rfidCode,
-                                HUIDCode = "",
-                                HSNCode = "",
-                                Quantity = "",
-                                TotalWeight = 0.0,
-                                PackingWeight = 0.0,
-                                GrossWt = gWt,
-                                TotalStoneWeight = "",
-                                NetWt = ntWt,
-                                Pieces = "",
-                                MakingPercentage = making_perc,
-                                MakingPerGram = making_gm,
-                                MakingFixedAmt = fMaking,
-                                MakingFixedWastage = fWastage,
-                                MRP = "",
-                                ClipWeight = "",
-                                ClipQuantity = "",
-                                ProductCode = "",
-                                Featured = "",
-                                ProductTitle = "",
-                                Description = "",
-                                Gender = "",
-                                DiamondId = "",
-                                DiamondName = "",
-                                DiamondShape = "",
-                                DiamondShapeName = "",
-                                DiamondClarity = "",
-                                DiamondClarityName = "",
-                                DiamondColour = "",
-                                DiamondColourName = "",
-                                DiamondSleve = "",
-                                DiamondSize = "",
-                                DiamondSellRate = "",
-                                DiamondWeight = dWt,
-                                DiamondCut = "",
-                                DiamondCutName = "",
-                                DiamondSettingType = "",
-                                DiamondSettingTypeName = "",
-                                DiamondCertificate = "",
-                                DiamondDescription = "",
-                                DiamondPacket = "",
-                                DiamondBox = "",
-                                DiamondPieces = "",
-                                Stones = emptyList(),
-                                DButton = "",
-                                StoneName = "",
-                                StoneShape = "",
-                                StoneSize = "",
-                                StoneWeight = sWt,
-                                StonePieces = "",
-                                StoneRatePiece = "",
-                                StoneRateKarate = "",
-                                StoneAmount = stAmt,
-                                StoneDescription = "",
-                                StoneCertificate = "",
-                                StoneSettingType = "",
-                                BranchName = "",
-                                BranchId = it.BranchId,
-                                //   SKU = "",
-                                PurityName = "",
-                                TotalStoneAmount = "",
-                                TotalStonePieces = "",
-                                ClientCode = it.ClientCode,
-                                EmployeeCode = it.EmployeeId,
-                                StoneColour = "",
-                                CompanyId = 0,
-                                MetalId = 0,
-                                WarehouseId = 0,
-                                TIDNumber = epc,
-                                grosswt = "",
-                                TotalDiamondWeight = dWt,
-                                TotalDiamondAmount = "",
-                                Status = "",
+                        val sku = skuList?.firstOrNull()
+                        val savedClientCode = employee?.clientCode.orEmpty()
+                        val savedEmployeeId = employee?.employeeId ?: 0
+                        val savedBranchId = employee?.defaultBranchId ?: 0
 
-                                )
-
-                        }
-                        request?.let {
+                        val request = InsertProductRequest(
+                            CategoryId = categoryId,
+                            ProductId = productId,
+                            DesignId = designId,
+                            VendorId = vendorId,
+                            PurityId = purityId,
+                            RFIDCode = rfidCode,
+                            HUIDCode = "",
+                            HSNCode = "",
+                            Quantity = "",
+                            TotalWeight = 0.0,
+                            PackingWeight = 0.0,
+                            GrossWt = gWt,
+                            TotalStoneWeight = "",
+                            NetWt = ntWt,
+                            Pieces = "",
+                            MakingPercentage = making_perc,
+                            MakingPerGram = making_gm,
+                            MakingFixedAmt = fMaking,
+                            MakingFixedWastage = fWastage,
+                            MRP = "",
+                            ClipWeight = "",
+                            ClipQuantity = "",
+                            ProductCode = "",
+                            Featured = "",
+                            ProductTitle = "",
+                            Description = "",
+                            Gender = "",
+                            DiamondId = "",
+                            DiamondName = "",
+                            DiamondShape = "",
+                            DiamondShapeName = "",
+                            DiamondClarity = "",
+                            DiamondClarityName = "",
+                            DiamondColour = "",
+                            DiamondColourName = "",
+                            DiamondSleve = "",
+                            DiamondSize = "",
+                            DiamondSellRate = "",
+                            DiamondWeight = dWt,
+                            DiamondCut = "",
+                            DiamondCutName = "",
+                            DiamondSettingType = "",
+                            DiamondSettingTypeName = "",
+                            DiamondCertificate = "",
+                            DiamondDescription = "",
+                            DiamondPacket = "",
+                            DiamondBox = "",
+                            DiamondPieces = "",
+                            Stones = emptyList(),
+                            DButton = "",
+                            StoneName = "",
+                            StoneShape = "",
+                            StoneSize = "",
+                            StoneWeight = sWt,
+                            StonePieces = "",
+                            StoneRatePiece = "",
+                            StoneRateKarate = "",
+                            StoneAmount = stAmt,
+                            StoneDescription = "",
+                            StoneCertificate = "",
+                            StoneSettingType = "",
+                            BranchName = "",
+                            BranchId = sku?.BranchId?.takeIf { it != 0 } ?: savedBranchId,
+                            PurityName = "",
+                            TotalStoneAmount = "",
+                            TotalStonePieces = "",
+                            ClientCode = (sku?.ClientCode?.takeIf { !it.isNullOrBlank() }
+                                ?: savedClientCode),
+                            EmployeeCode = sku?.EmployeeId?.takeIf { it != 0 } ?: savedEmployeeId,
+                            StoneColour = "",
+                            CompanyId = 0,
+                            MetalId = 0,
+                            WarehouseId = 0,
+                            TIDNumber = epc,
+                            grosswt = "",
+                            TotalDiamondWeight = dWt,
+                            TotalDiamondAmount = "",
+                            Status = "Active"
+                        )
+                        scope.launch {
                             val isStockAdded =
-                                viewModel.insertLabelledStock(
-                                    it,
-                                    context = context
-                                )
+                                viewModel.insertLabelledStock(request)
+
+
+
+                            Log.d("AddProductScreen", "isStockAdded" + isStockAdded)
                             if (isStockAdded) {
+                                ToastUtils.showToast(context, "Stock Added Successfully!")
                                 bulkViewModel.syncItems()
+
+                            }else
+                            {
+                                ToastUtils.showToast(context, "Failed to Add Stock")
                             }
+                            updateField("Vendor", "")
+                            updateField("Product", "")
+                            updateField("Category", "")
+                            updateField("Design", "")
+                            updateField("Purity", "")
+                            updateField("SKU", "")
+                            updateField("Gross Weight", "")
+                            updateField("RFID Code", "")
+                            updateField("EPC", "")
+                            updateField("Net Weight", "")
+                            updateField("Diamond Weight", "")
+                            updateField("Making/Gram", "")
+                            updateField("Making %", "")
+                            updateField("Fix Making", "")
+                            updateField("Fix Wastage", "")
+                            updateField("Stone Amount", "")
+                            updateField("Diamond Amount", "")
+                            updateField("Stone Weight", "")
 
                         }
-
+                    } finally {
+                        isSaving = false
                     }
-
                 },
+
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
                 onScan = {
                     bulkViewModel.startSingleScan(20) { tag ->
@@ -475,7 +541,26 @@ fun AddProductScreen(
                     }
                 },
                 onGscan = {},
-                onReset = {}
+                onReset = {
+                    updateField("Vendor", "")
+                    updateField("Product", "")
+                    updateField("Category", "")
+                    updateField("Design", "")
+                    updateField("Purity", "")
+                    updateField("SKU", "")
+                    updateField("Gross Weight", "")
+                    updateField("RFID Code", "")
+                    updateField("EPC", "")
+                    updateField("Net Weight", "")
+                    updateField("Diamond Weight", "")
+                    updateField("Making/Gram", "")
+                    updateField("Making %", "")
+                    updateField("Fix Making", "")
+                    updateField("Fix Wastage", "")
+                    updateField("Stone Amount", "")
+                    updateField("Diamond Amount", "")
+                    updateField("Stone Weight", "")
+                }
             )
         }
     ) { innerPadding ->
@@ -744,6 +829,16 @@ fun FormRow(
                             onValueChange = {},
                             readOnly = true,
                             singleLine = true,
+                            keyboardOptions = if (
+                                field.label.contains("Weight", ignoreCase = true) ||
+                                field.label.contains("Amount", ignoreCase = true) ||
+                                field.label.contains("Wastage", ignoreCase = true) ||
+                                field.label.contains("Making", ignoreCase = true)
+                            ) {
+                                KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                            } else {
+                                KeyboardOptions.Default
+                            },
                             textStyle = TextStyle(fontSize = 14.sp, color = Color.Black),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -830,6 +925,16 @@ fun FormRow(
                     onValueChange = { if (!isReadOnly) onValueChange(it) },
                     singleLine = true,
                     readOnly = isReadOnly,
+                    keyboardOptions = if (
+                        field.label.contains("Weight", ignoreCase = true) ||
+                        field.label.contains("Amount", ignoreCase = true) ||
+                        field.label.contains("Wastage", ignoreCase = true) ||
+                        field.label.contains("Making", ignoreCase = true)
+                    ) {
+                        KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    } else {
+                        KeyboardOptions.Default
+                    },
                     textStyle = TextStyle(fontSize = 14.sp, color = Color.Black),
                     decorationBox = { inner ->
                         if (value.isEmpty()) {
@@ -1056,6 +1161,8 @@ fun ImageUploadDialog(
         )
 
     }
+
+
 }
 
 

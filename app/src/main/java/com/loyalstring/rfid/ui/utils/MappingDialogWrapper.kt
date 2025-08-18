@@ -25,9 +25,9 @@ fun MappingDialogWrapper(
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(5.dp),
             modifier = Modifier
-                .padding(16.dp)
+                .padding(2.dp)
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
         ) {

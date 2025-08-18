@@ -59,6 +59,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.loyalstring.rfid.data.local.entity.BulkItem
+import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
@@ -66,6 +67,7 @@ import com.loyalstring.rfid.ui.utils.GradientButton
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.EditProductViewModel
+import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import com.loyalstring.rfid.viewmodel.UploadState
 import java.io.File
 import java.io.FileOutputStream
@@ -79,6 +81,7 @@ fun EditProductScreen(
 ) {
     val context = LocalContext.current
     val viewModel: EditProductViewModel = hiltViewModel()
+    val singleProductViewModel: SingleProductViewModel=hiltViewModel()
     val cacheDir = context.cacheDir
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
 
@@ -104,7 +107,7 @@ fun EditProductScreen(
             UploadState.Success -> {
                 snackbarHostState.showSnackbar("✅ Image uploaded successfully!")
                 navController.navigate(Screens.ProductListScreen.route) {
-                    popUpTo(Screens.ProductListScreen) { inclusive = true }
+                    popUpTo(Screens.ProductListScreen.route) { inclusive = true }
                 }
             }
 
@@ -167,6 +170,7 @@ fun EditProductScreen(
         }
 
     var productName by remember { mutableStateOf(item.productName.orEmpty()) }
+    var categoryId by remember { mutableStateOf(item.categoryId) }
     var itemCode by remember { mutableStateOf(item.itemCode.orEmpty()) }
     var rfid by remember { mutableStateOf(item.rfid.orEmpty()) }
     var gwt by remember { mutableStateOf(item.grossWeight.orEmpty()) }
@@ -213,6 +217,90 @@ fun EditProductScreen(
                             )
                         }
                     } ?: Toast.makeText(context, "Select image", Toast.LENGTH_SHORT).show()
+
+                  /*  val request ={
+                        InsertProductRequest(
+                             CategoryId = categoryId!! as Int,
+                            ProductId = item.productId as Int,
+                            DesignId = item.designId as Int,
+                            VendorId = item.vendor as Int,
+                            PurityId = item.purity as Int,
+                            RFIDCode = rfidCode,
+                            HUIDCode = "",
+                            HSNCode = "",
+                            Quantity = "",
+                            TotalWeight = 0.0,
+                            PackingWeight = 0.0,
+                            GrossWt = gWt,
+                            TotalStoneWeight = "",
+                            NetWt = ntWt,
+                            Pieces = "",
+                            MakingPercentage = making_perc,
+                            MakingPerGram = making_gm,
+                            MakingFixedAmt = fMaking,
+                            MakingFixedWastage = fWastage,
+                            MRP = "",
+                            ClipWeight = "",
+                            ClipQuantity = "",
+                            ProductCode = "",
+                            Featured = "",
+                            ProductTitle = "",
+                            Description = "",
+                            Gender = "",
+                            DiamondId = "",
+                            DiamondName = "",
+                            DiamondShape = "",
+                            DiamondShapeName = "",
+                            DiamondClarity = "",
+                            DiamondClarityName = "",
+                            DiamondColour = "",
+                            DiamondColourName = "",
+                            DiamondSleve = "",
+                            DiamondSize = "",
+                            DiamondSellRate = "",
+                            DiamondWeight = dWt,
+                            DiamondCut = "",
+                            DiamondCutName = "",
+                            DiamondSettingType = "",
+                            DiamondSettingTypeName = "",
+                            DiamondCertificate = "",
+                            DiamondDescription = "",
+                            DiamondPacket = "",
+                            DiamondBox = "",
+                            DiamondPieces = "",
+                            Stones = emptyList(),
+                            DButton = "",
+                            StoneName = "",
+                            StoneShape = "",
+                            StoneSize = "",
+                            StoneWeight = sWt,
+                            StonePieces = "",
+                            StoneRatePiece = "",
+                            StoneRateKarate = "",
+                            StoneAmount = stAmt,
+                            StoneDescription = "",
+                            StoneCertificate = "",
+                            StoneSettingType = "",
+                            BranchName = "",
+                            BranchId = sku?.BranchId?.takeIf { it != 0 } ?: savedBranchId,
+                            PurityName = "",
+                            TotalStoneAmount = "",
+                            TotalStonePieces = "",
+                            ClientCode = (sku?.ClientCode?.takeIf { !it.isNullOrBlank() }
+                                ?: savedClientCode),
+                            EmployeeCode = sku?.EmployeeId?.takeIf { it != 0 } ?: savedEmployeeId,
+                            StoneColour = "",
+                            CompanyId = 0,
+                            MetalId = 0,
+                            WarehouseId = 0,
+                            TIDNumber = epc,
+                            grosswt = "",
+                            TotalDiamondWeight = dWt,
+                            TotalDiamondAmount = "",
+                            Status = "Active"
+                        )
+                    }*/
+                   // singleProductViewModel.updateLabelledStock(request)
                 }
                 )
             }
@@ -338,6 +426,23 @@ fun EditProductScreen(
 
     }
 }
+
+private fun toIntOrZero(v: Any?): Int = when (v) {
+    is Int -> v
+    is Number -> v.toInt()
+    is String -> v.toIntOrNull() ?: 0
+    else -> 0
+}
+
+private fun toDoubleOrNullSafe(v: Any?): Double? = when (v) {
+    is Double -> v
+    is Number -> v.toDouble()
+    is String -> v.toDoubleOrNull()
+    else -> null
+}
+
+private fun toDoubleOrZero(v: Any?): Double = toDoubleOrNullSafe(v) ?: 0.0
+private fun str(v: Any?): String = v?.toString().orEmpty()
 
 fun showImageChooser(
     context: Context,

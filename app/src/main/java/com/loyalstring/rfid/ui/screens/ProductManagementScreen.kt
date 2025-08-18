@@ -94,7 +94,6 @@ fun ProductManagementScreen(
 
     val scanTrigger by viewModel.scanTrigger.collectAsState()
     val bulkItemFieldNames = listOf(
-        "productName",
         "itemCode",
         "rfid",
         "grossWeight",
@@ -102,6 +101,7 @@ fun ProductManagementScreen(
         "dustWeight",
         "netWeight",
         "category",
+        "productName",
         "design",
         "purity",
         "makingPerGram",

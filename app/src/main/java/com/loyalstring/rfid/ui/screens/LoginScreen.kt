@@ -87,6 +87,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltVi
             val loginData = (loginResponse as? Resource.Success<LoginResponse>)?.data
             loginData?.let { response ->
                 userPrefs.saveToken(response.token.orEmpty())
+                userPrefs.saveUserName(response.employee?.username.toString())
                 userPrefs.saveEmployee(response.employee)
                 userPrefs.setLoggedIn(true)
                 userPrefs.saveClient(response.employee?.clients!!)

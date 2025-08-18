@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,6 +52,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.nativeKeyCode
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -151,6 +157,7 @@ private fun SetupNavigation(
     val currentRoute = navBackStackEntry?.destination?.route
     val orderViewModel: OrderViewModel = hiltViewModel()
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
+    Log.d("login screen","employee"+employee)
    /* LaunchedEffect(Unit) {
         employee?.clientCode?.let {
             orderViewModel.getAllEmpList(ClientCodeRequest(it))
@@ -189,7 +196,8 @@ private fun SetupNavigation(
                             // Spacing between icon and app name
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(
-                                text = userPreferences.getSavedUsername(),
+
+                                text = employee?.username.toString(),
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.Normal,
                                     color = Color.White
@@ -224,6 +232,10 @@ private fun SetupNavigation(
                                     if (selectedItemIndex >= 4) {
                                         if (navigationItem.route.equals("login")) {
                                             userPreferences.logout()
+                                            navController.navigate("login") {
+                                                popUpTo(0) { inclusive = true } // removes all destinations from backstack
+                                                launchSingleTop = true
+                                            }
                                             scope.launch {
                                                 drawerState.close()
                                             }
@@ -279,6 +291,20 @@ private fun SetupNavigation(
 
 
         Scaffold(
+            modifier = Modifier
+                .focusable(true)
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown) {
+                        when (event.key.nativeKeyCode) {
+                            293, 280, 139 -> {
+                                val keyType = if (event.key.nativeKeyCode == 139) "barcode" else "scan"
+                              //  viewModel.onScanKeyPressed(keyType)
+                                true
+                            }
+                            else -> false
+                        }
+                    } else false
+                },
             topBar = {
                 when (currentRoute) {
                     Screens.HomeScreen.route    -> HomeTopBar {

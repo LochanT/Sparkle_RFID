@@ -11,6 +11,7 @@ import com.loyalstring.rfid.repository.BulkRepositoryImpl
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -254,6 +255,7 @@ class ImportExcelViewModel @Inject constructor(
                     bulkRepository.insertBulkItems(items)
                     _parsedItems.value = items
                     _isImportDone.value = true
+                    delay(200)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

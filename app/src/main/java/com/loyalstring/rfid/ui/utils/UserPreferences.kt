@@ -46,6 +46,11 @@ class UserPreferences @Inject constructor(
         prefs.edit() { putString(KEY_TOKEN, token) }
     }
 
+    fun saveUserName(username: String) {
+        prefs.edit() { putString(KEY_USERNAME, username) }
+
+    }
+
     fun getToken(): String? {
         return prefs.getString(KEY_TOKEN, null)
     }
@@ -99,6 +104,11 @@ class UserPreferences @Inject constructor(
 
     fun logout() {
         prefs.edit() { clear() }
+        prefs.edit()
+            .remove(KEY_USERNAME)
+            .remove(KEY_PASSWORD)
+            .remove(KEY_REMEMBER_ME)
+            .apply()
     }
 
     fun saveClient(client: Clients) {

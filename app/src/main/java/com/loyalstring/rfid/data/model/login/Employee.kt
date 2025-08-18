@@ -41,5 +41,14 @@ data class Employee(
     @SerializedName("LabelFormat") val labelFormat: String?,
     @SerializedName("InvoiceFormat") val invoiceFormat: String?,
     @SerializedName("Password2") val password2: String?,
-    @SerializedName("Clients") val clients: Clients?
+    @SerializedName("Clients") val clients: Clients?,
+
+    @SerializedName("DefaultCompany") val defaultCompany: String?,
+    @SerializedName("DefaultCompanyId") val defaultCompanyId: Int?,
+    @SerializedName("DefaultBranch") val defaultBranch: String?,
+    @SerializedName("DefaultBranchId") val defaultBranchId: Int?,
+    @SerializedName("DefaultCounter") val defaultCounter: String?,
+    @SerializedName("DefaultCounterId") val defaultCounterId: Int?,
+    @SerializedName("Username") val username: String?,
+
 )

@@ -1,7 +1,10 @@
 package com.loyalstring.rfid.ui.screens
 
 import android.R
+import android.annotation.SuppressLint
+import android.preference.Preference
 import android.util.Log
+import android.view.KeyEvent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -79,9 +82,15 @@ import java.io.File
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import com.loyalstring.rfid.data.model.login.Employee
+import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
+import com.loyalstring.rfid.ui.utils.GradientButton
+import com.loyalstring.rfid.ui.utils.UserPreferences
+import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 
 
 @Composable
@@ -90,6 +99,7 @@ fun ProductListScreen(
     navController: NavHostController
 ) {
     val viewModel: ProductListViewModel = hiltViewModel()
+    val singleproductViewModel: SingleProductViewModel = hiltViewModel()
     val searchQuery = remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
     var selectedCount by remember { mutableStateOf(1) }
@@ -97,6 +107,9 @@ fun ProductListScreen(
 
     var showDialog by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableStateOf<BulkItem?>(null) }
+    val context = LocalContext.current
+    val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
+    var showConfirmDelete by remember { mutableStateOf(false) }
     val baseUrl = "https://rrgold.loyalstring.co.in/"
 
     val allItems by viewModel.productList.collectAsState(initial = emptyList())
@@ -338,11 +351,11 @@ fun ProductListScreen(
                 ) {
                     Text(
                         "S.No",
-                        Modifier.width(60.dp),
+                        Modifier.width(40.dp),
                         color = Color.White,
-                        textAlign = TextAlign.Center,
+                        textAlign = TextAlign.Start,
                         fontFamily = poppins,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         maxLines = 1
                     )
                     Row(
@@ -352,33 +365,34 @@ fun ProductListScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf(
-                            "Product Name" to 150.dp,
-                            "Item code" to 180.dp,
-                            "RFID" to 90.dp,
-                            "G.wt" to 90.dp,
-                            "S.wt" to 90.dp,
-                            "D.wt" to 90.dp,
-                            "N.wt" to 90.dp,
-                            "Category" to 80.dp,
-                            "Design" to 70.dp,
-                            "Purity" to 70.dp,
-                            "Making/g" to 90.dp,
-                            "Making%" to 90.dp,
-                            "Fix Making" to 100.dp,
-                            "Fix Wastage" to 100.dp,
-                            "S Amount" to 100.dp,
-                            "D Amount" to 100.dp,
-                            "SKU" to 120.dp,
-                            "EPC" to 120.dp,
-                            "Vendor" to 120.dp,
-                            "TID" to 90.dp
+                            "Product Name" to 120.dp,
+                            "Item code" to 70.dp,
+                            "RFID" to 60.dp,
+                            "G.wt" to 60.dp,
+                            "S.wt" to 60.dp,
+                            "D.wt" to 60.dp,
+                            "N.wt" to 60.dp,
+                            "Category" to 70.dp,
+                            "Design" to 60.dp,
+                            "Purity" to 60.dp,
+                            "Making/g" to 80.dp,
+                            "Making%" to 80.dp,
+                            "Fix Making" to 80.dp,
+                            "Fix Wastage" to 80.dp,
+                            "S Amt" to 60.dp,
+                            "D Amt" to 60.dp,
+                            "SKU" to 70.dp,
+                            "EPC" to 160.dp,
+                            "Vendor" to 80.dp
+                           // "TID" to 90.dp
                         ).forEach { (label, width) ->
                             Text(
                                 label,
                                 Modifier.width(width),
                                 color = Color.White,
-                                textAlign = TextAlign.Center,
+                                textAlign = TextAlign.Start,
                                 fontFamily = poppins,
+                                fontSize = 12.sp,
                                 maxLines = 1
                             )
                         }
@@ -387,17 +401,17 @@ fun ProductListScreen(
                         "Edit",
                         Modifier.width(35.dp),
                         color = Color.White,
-                        textAlign = TextAlign.Center,
+                        textAlign = TextAlign.Start,
                         fontFamily = poppins,
-                        fontSize = 14.sp
+                        fontSize = 12.sp
                     )
                     Text(
                         "Delete",
                         Modifier.width(55.dp),
                         color = Color.White,
-                        textAlign = TextAlign.Center,
+                        textAlign = TextAlign.Start,
                         fontFamily = poppins,
-                        fontSize = 14.sp
+                        fontSize = 12.sp
                     )
                 }
 
@@ -413,8 +427,10 @@ fun ProductListScreen(
                         ) {
                             Text(
                                 "${index + 1}",
-                                Modifier.width(60.dp),
-                                textAlign = TextAlign.Center,
+                                Modifier
+                                    .width(40.dp)
+                                    .padding(5.dp),
+                                textAlign = TextAlign.Start,
                                 fontFamily = poppins,
                                 fontSize = 12.sp
                             )
@@ -430,32 +446,32 @@ fun ProductListScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 listOf(
-                                    item.productName to 150.dp,
-                                    item.itemCode to 180.dp,
-                                    item.rfid to 90.dp,
-                                    item.grossWeight to 90.dp,
-                                    item.stoneWeight to 90.dp,
-                                    item.dustWeight to 90.dp,
-                                    item.netWeight to 90.dp,
-                                    item.category to 80.dp,
-                                    item.design to 70.dp,
-                                    item.purity to 70.dp,
-                                    item.makingPerGram to 90.dp,
-                                    item.makingPercent to 90.dp,
-                                    item.fixMaking to 100.dp,
-                                    item.fixWastage to 100.dp,
-                                    item.stoneAmount to 100.dp,
-                                    item.dustAmount to 100.dp,
-                                    item.sku to 120.dp,
-                                    (item.uhfTagInfo?.epc ?: item.epc) to 120.dp,
-                                    item.vendor to 120.dp,
-                                    (item.uhfTagInfo?.epc ?: item.epc) to 90.dp
+                                    item.productName to 120.dp,
+                                    item.itemCode to 70.dp,
+                                    item.rfid to 60.dp,
+                                    item.grossWeight to 60.dp,
+                                    item.stoneWeight to 60.dp,
+                                    item.dustWeight to 60.dp,
+                                    item.netWeight to 60.dp,
+                                    item.category to 70.dp,
+                                    item.design to 60.dp,
+                                    item.purity to 60.dp,
+                                    item.makingPerGram to 80.dp,
+                                    item.makingPercent to 80.dp,
+                                    item.fixMaking to 80.dp,
+                                    item.fixWastage to 80.dp,
+                                    item.stoneAmount to 60.dp,
+                                    item.dustAmount to 60.dp,
+                                    item.sku to 70.dp,
+                                    (item.uhfTagInfo?.epc ?: item.epc) to 160.dp,
+                                    item.vendor to 80.dp
+                                  //  (item.uhfTagInfo?.epc ?: item.epc) to 90.dp
                                 ).forEach { (value, width) ->
                                     Text(
                                         value?.ifBlank { "-" } ?: "-",
                                         Modifier.width(width),
-                                        fontSize = 12.sp,
-                                        textAlign = TextAlign.Center,
+                                        fontSize = 10.sp,
+                                        textAlign = TextAlign.Start,
                                         fontFamily = poppins,
                                         maxLines = 1
                                     )
@@ -478,8 +494,13 @@ fun ProductListScreen(
                                 )
                             }
                             IconButton(
+                                onClick = {
+                                    selectedItem = item
+                                    showConfirmDelete = true
+                                },
 
-                                onClick = { /* Delete */ },
+
+                               // onClick = { /* Delete */ },
                                 modifier = Modifier.width(50.dp)
                             ) {
                                 Icon(
@@ -495,8 +516,70 @@ fun ProductListScreen(
             if (showDialog && selectedItem != null) {
                 ItemDetailsDialog(item = selectedItem!!, onDismiss = { showDialog = false })
             }
+            // existing product details popup
+            if (showDialog && selectedItem != null) {
+                ItemDetailsDialog(item = selectedItem!!, onDismiss = { showDialog = false })
+            }
+
+// ✅ add confirmation popup here
+            ConfirmDeleteDialog(
+                visible = showConfirmDelete,
+                productName = selectedItem?.productName,
+                onConfirm = {
+                    val id = selectedItem?.id ?: 0 // replace with your actual ID property
+                    val clientCode = employee?.clientCode    // or from UserPreferences
+                    if (id > 0) {
+                        singleproductViewModel.deleetProduct(
+                            listOf(
+                                ProductDeleteModelReq(
+                                    Id = id,
+                                    ClientCode = clientCode.toString()
+                                )
+                            )
+                        )
+                    }
+                    showConfirmDelete = false
+                    selectedItem = null
+                },
+                onDismiss = {
+                    showConfirmDelete = false
+                }
+            )
+
         }
     }
+}
+
+@Composable
+fun ConfirmDeleteDialog(
+    visible: Boolean,
+    productName: String?,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (!visible) return
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Product Delete",
+            fontSize = 18.sp,
+            fontFamily = poppins,// 👈 set your desired size
+            fontWeight = FontWeight.Bold) },
+        text = {
+            Text(
+                "Are you sure you want to delete ${productName ?: "this item"}?",
+                fontSize = 16.sp,
+                fontFamily = poppins
+            )
+        },
+        confirmButton = {
+           // TextButton(onClick = onConfirm) { Text("Yes") }
+            GradientButton(text = "Yes", onClick = onConfirm)
+        },
+        dismissButton = {
+            GradientButton(text ="Cancel",onClick = onDismiss)
+        }
+    )
 }
 
 
@@ -641,3 +724,5 @@ fun InfoRow(label: String, value: String?) {
         Text(value ?: "-", modifier = Modifier.weight(1.5f), fontSize = 12.sp, fontFamily = poppins)
     }
 }
+
+

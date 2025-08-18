@@ -13,6 +13,8 @@ import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.remote.api.RetrofitInterface
+import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
+import com.loyalstring.rfid.data.remote.data.ProductDeleteResponse
 import retrofit2.Response
 import javax.inject.Inject
 
@@ -62,10 +64,32 @@ class SingleProductRepository @Inject constructor(
     }
 
 
+    suspend fun deleteProduct(request: List<ProductDeleteModelReq>): Response<List<ProductDeleteResponse>> {
+        return apiService.deleteProduct(request)
+    }
+
+
+
+
     suspend fun insertLabelledStock(request: InsertProductRequest): Result<List<PurityModel>> {
         return try {
             val payload = listOf(request) // not a single object
             val response = apiService.insertStock(payload)
+            if (response.isSuccessful) {
+                Result.success(response.body() ?: emptyList())
+            } else {
+                Result.failure(Exception("Failed: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /*update label stock*/
+    suspend fun updateLabelledStock(request: InsertProductRequest): Result<List<PurityModel>> {
+        return try {
+            val payload = listOf(request) // not a single object
+            val response = apiService.updateStock(payload)
             if (response.isSuccessful) {
                 Result.success(response.body() ?: emptyList())
             } else {

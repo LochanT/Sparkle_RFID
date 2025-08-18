@@ -35,7 +35,7 @@ fun SplashScreen(
     val viewModel: LoginViewModel = hiltViewModel()
 
     LaunchedEffect(Unit) {
-        delay(1500) // Show splash for 1 second
+        delay(500) // Show splash for 1 second
         val isLoggedIn = viewModel.isUserRemembered()
         onNavigateNext(if (isLoggedIn) Screens.HomeScreen.route else Screens.LoginScreen.route)
     }
