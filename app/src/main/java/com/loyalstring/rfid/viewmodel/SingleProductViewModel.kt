@@ -25,6 +25,7 @@ import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.reader.BarcodeReader
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
+import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.BulkRepository
 import com.loyalstring.rfid.repository.DropdownRepository
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import  com.loyalstring.rfid.data.remote.data.ProductDeleteResponse
 
 @HiltViewModel
 class SingleProductViewModel @Inject constructor(

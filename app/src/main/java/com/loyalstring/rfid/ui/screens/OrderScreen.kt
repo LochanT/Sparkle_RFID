@@ -1208,7 +1208,7 @@ fun OrderScreenContent(
                 },
                 onReset = {
 
-                    bulkViewModel.resetData()
+                   // bulkViewModel.resetData()
                     bulkViewModel.stopBarcodeScanner()
                     orderViewModel.clearOrderItems()
 
@@ -1837,7 +1837,7 @@ fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
 
 fun resetScan(model: BulkViewModel, firstPress: Boolean) {
     // Add logic to stop or clear scanning state
-    model.resetData()
+ //   model.resetData()
     model.stopBarcodeScanner()
     model.stopScanning()  // Make sure scanning stops properly
      // Reset any data that might be lingering
