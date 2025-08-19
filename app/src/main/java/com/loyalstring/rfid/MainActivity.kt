@@ -2,6 +2,7 @@ package com.loyalstring.rfid
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
@@ -9,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -79,7 +81,6 @@ import com.loyalstring.rfid.viewmodel.OrderViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.getValue
 
 
 @AndroidEntryPoint
@@ -131,6 +132,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.R)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -297,10 +299,12 @@ private fun SetupNavigation(
                     if (event.type == KeyEventType.KeyDown) {
                         when (event.key.nativeKeyCode) {
                             293, 280, 139 -> {
-                                val keyType = if (event.key.nativeKeyCode == 139) "barcode" else "scan"
-                              //  viewModel.onScanKeyPressed(keyType)
+                                val keyType =
+                                    if (event.key.nativeKeyCode == 139) "barcode" else "scan"
+                                //  viewModel.onScanKeyPressed(keyType)
                                 true
                             }
+
                             else -> false
                         }
                     } else false
@@ -319,7 +323,9 @@ private fun SetupNavigation(
                 }
             },
             content = { innerPadding ->
-                AppNavigation(navController, drawerState, scope, context, userPreferences)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    AppNavigation(navController, drawerState, scope, context, userPreferences)
+                }
 
 
             }

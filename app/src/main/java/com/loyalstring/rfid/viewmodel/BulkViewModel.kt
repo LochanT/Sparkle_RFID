@@ -227,8 +227,9 @@ class BulkViewModel @Inject constructor(
 
     fun startScanningInventory(selectedPower: Int) {
         if (!success || isScanning) return
-        isScanning = true
+        scanJob?.cancel()
         scannedEpcList.clear()
+        isScanning = true
 
         readerManager.startInventoryTag(selectedPower)
         readerManager.playSound(1, 0)
@@ -240,7 +241,9 @@ class BulkViewModel @Inject constructor(
                 if (tag != null) {
                     val epc = tag.epc ?: continue
                     if (!scannedEpcList.contains(epc)) {
-                        scannedEpcList.add(epc)
+                        if (scannedEpcList.add(epc)) {
+                            computeScanResults(_filteredSource)
+                        }
 
                         withContext(Dispatchers.Main) {
                             val updatedList = _filteredSource.map { item ->
@@ -443,6 +446,7 @@ class BulkViewModel @Inject constructor(
     }
 
     fun stopScanning() {
+        isScanning = false
         scanJob?.cancel()
         scanJob = null
         readerManager.stopInventory()

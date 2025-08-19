@@ -295,22 +295,29 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                     onGscan = {
                         if (!isScanning) {
                             isScanning = true
-                            bulkViewModel.setFilteredItems(scopeItems)
+                            // Always restore full scope before scanning
+                            bulkViewModel.resetScanResults()
+                            bulkViewModel.setFilteredItems(scopeItems)   // restore full dataset
                             bulkViewModel.startScanningInventory(selectedPower)
                         } else {
                             isScanning = false
                             bulkViewModel.stopScanning()
-                            bulkViewModel.computeScanResults(scopeItems)
+                            bulkViewModel.computeScanResults(scopeItems) // safe: scopeItems passed
                         }
                     },
                     onReset = {
                         bulkViewModel.stopScanning()
                         isScanning = false
+
                         selectedCategories.clear()
                         selectedProducts.clear()
                         selectedDesigns.clear()
-                        bulkViewModel.setFilteredItems(emptyList())
+
+                        // Restore full list, not empty
+                        bulkViewModel.setFilteredItems(allItems)
+
                         bulkViewModel.resetScanResults()
+
                         selectedMenu = MENU_ALL
                         currentLevel = "Category"
                         currentCategory = null
