@@ -140,6 +140,17 @@ class BulkViewModel @Inject constructor(
     private var _filteredSource: List<BulkItem> = emptyList()
     private var isScanning = false
 
+
+
+    fun setSyncCompleted() {
+        _syncStatusText.value = "completed"
+    }
+
+    // ← the function your UI calls
+    fun clearSyncStatus() {
+        _syncStatusText.value = ""
+    }
+
     fun setFilteredItems(filtered: List<BulkItem>) {
         _filteredSource = filtered
     }
