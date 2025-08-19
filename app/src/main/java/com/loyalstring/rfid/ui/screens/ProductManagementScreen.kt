@@ -1,5 +1,6 @@
 package com.loyalstring.rfid.ui.screens
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -54,6 +55,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.navigation.GradientTopBar
@@ -71,6 +73,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun ProductManagementScreen(
     onBack: () -> Unit,
@@ -92,6 +95,7 @@ fun ProductManagementScreen(
     var showProgress by remember { mutableStateOf(false) }
     var showOverlay by remember { mutableStateOf(false) }
     val backStackEntry = remember(navController) { navController.currentBackStackEntry!! }
+    val syncStatus by viewModel.syncStatusText.collectAsStateWithLifecycle(initialValue = "")
 
     val scanTrigger by viewModel.scanTrigger.collectAsState()
     val bulkItemFieldNames = listOf(
@@ -156,7 +160,7 @@ fun ProductManagementScreen(
 
 
 
-    LaunchedEffect(Unit) {
+/*    LaunchedEffect(syncStatus) {
         viewModel.syncStatusText.collect { message ->
             Log.d("syncStatusText", "Received message: $message")
 
@@ -164,17 +168,29 @@ fun ProductManagementScreen(
                 // ✅ Show toast and dialog only on "Sync completed"
                // Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 showSuccessDialog = true
+
                 //backStackEntry.savedStateHandle.remove<Boolean>("completed")
             }
+        }
+    }*/
+
+
+
+
+
+
+   // val syncStatus by viewModel.syncStatusText.collectAsStateWithLifecycle(initialValue = null)
+
+    LaunchedEffect(syncStatus) {
+        if (syncStatus?.contains("completed", ignoreCase = true) == true) {
+            showSuccessDialog = true
+            viewModel.clearSyncStatus() // no more error now
         }
     }
 
     if (showSuccessDialog) {
         SyncSuccessDialog(onDismiss = { showSuccessDialog = false })
     }
-
-
-
 
 
     Scaffold(
