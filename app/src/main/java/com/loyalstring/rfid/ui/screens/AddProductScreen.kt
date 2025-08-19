@@ -96,9 +96,7 @@ import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.EditProductViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import java.io.File
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import androidx.lifecycle.coroutineScope
 import com.loyalstring.rfid.ui.utils.ToastUtils
 
 // Imports skipped for brevity — keep your existing ones

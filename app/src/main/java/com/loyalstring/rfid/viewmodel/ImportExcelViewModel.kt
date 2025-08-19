@@ -196,6 +196,16 @@ class ImportExcelViewModel @Inject constructor(
                                     rawHeaderIndexMap,
                                     normalizedFieldMapping["stoneamount"]
                                 ),
+                                counterName = getStringFromRow(
+                                    row,
+                                    rawHeaderIndexMap,
+                                    normalizedFieldMapping["countername"]
+                                ),
+                                branchName = getStringFromRow(
+                                    row,
+                                    rawHeaderIndexMap,
+                                    normalizedFieldMapping["branchname"]
+                                ),
                                 id = 0,
                                 dustWeight = "",
                                 dustAmount = "",
@@ -220,13 +230,11 @@ class ImportExcelViewModel @Inject constructor(
                                 matchedQty = 0,
                                 unmatchedGrossWt = 0.0,
                                 mrp = 0.0,
-                                counterName = "",
                                 counterId = 0,
                                 scannedStatus = "",
                                 boxId = 0,
                                 boxName = "",
                                 branchId = 0,
-                                branchName = "",
                                 categoryId = 0,
                                 productId = 0,
                                 designId = 0,

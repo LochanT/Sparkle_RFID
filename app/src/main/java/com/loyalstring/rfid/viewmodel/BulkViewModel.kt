@@ -717,7 +717,7 @@ class BulkViewModel @Inject constructor(
                 )
 
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Exported to ${file.absolutePath}", Toast.LENGTH_LONG)
+                    Toast.makeText(context, "Exported to ${file.absolutePath}", Toast.LENGTH_SHORT)
                         .show()
                     openExcelFile(context, file)
                 }
@@ -791,7 +791,7 @@ class BulkViewModel @Inject constructor(
                 _syncStatusText.value = "Fetching data..."
                 val response = bulkRepository.syncBulkItemsFromServer(request)
                 val bulkItems = response
-                    .filter { it.status == "ApiActive" || it.status == "Active" }
+                    .filter { (it.status == "ApiActive" || it.status == "Active") && it.rfidCode.isNullOrBlank()  }
                     .map { it.toBulkItem() }
 
                 val total = bulkItems.size
