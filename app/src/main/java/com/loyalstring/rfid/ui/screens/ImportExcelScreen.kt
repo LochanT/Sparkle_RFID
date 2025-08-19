@@ -51,7 +51,6 @@ import com.loyalstring.rfid.ui.utils.FilePickerDialog
 import com.loyalstring.rfid.ui.utils.MappingDialogWrapper
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.ImportExcelViewModel
-import kotlinx.coroutines.launch
 
 @Composable
 fun ImportExcelScreen(
@@ -152,6 +151,7 @@ fun ImportExcelScreen(
         ImportResultDialog(
             message = dialogMessage!!,
             isError = isError,
+            navController = navController,
             onDismiss = { dialogMessage = null }
         )
     }
@@ -269,7 +269,8 @@ fun ImportExcelScreen(
 fun ImportResultDialog(
     message: String,
     isError: Boolean,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    navController: NavHostController
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -286,7 +287,11 @@ fun ImportResultDialog(
                         .align(Alignment.TopEnd)
                         .padding(0.dp)
                         .size(20.dp)
-                        .clickable { onDismiss() }
+                        .clickable { onDismiss()
+                            navController.navigate(Screens.ProductManagementScreen.route) {
+                                popUpTo(Screens.ImportExcelScreen.route) { inclusive = true }
+                            }
+                        }
                 )
 
                 // Main Content
@@ -323,9 +328,10 @@ fun ImportResultDialog(
                                 )
                             )
                             .clickable { onDismiss()
-                               /* navController.navigate(Screens.ProductManagementScreen.route) {
-                                    popUpTo(Screens.ImportExcelScreen.route) { inclusive = true }*/
-                               // }
+                                navController.navigate(Screens.ProductManagementScreen.route) {
+                                    popUpTo(Screens.ImportExcelScreen.route) { inclusive = true }
+                                }
+
                   },
                         contentAlignment = Alignment.Center
                     ) {
