@@ -74,7 +74,6 @@ data class InsertProductRequest(
     val WarehouseId: Int,
     val RFIDCode: String,
     val TIDNumber: String,
-    val grosswt: String,
     val TotalDiamondWeight: String,
     val TotalDiamondAmount: String = "",
     val Status: String

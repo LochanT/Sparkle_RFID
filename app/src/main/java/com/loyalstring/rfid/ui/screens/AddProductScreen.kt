@@ -383,8 +383,9 @@ fun AddProductScreen(
                     try {
                         viewModel.barcodeReader.close()
 
-                        fun get(label: String) =
-                            formFields.firstOrNull { it.label == label }?.value.orEmpty()
+                       /* fun get(label: String) =
+                            formFields.firstOrNull { it.label == label }?.value.orEmpty()*/
+                       fun get(label: String) = fieldValues[label].orEmpty()
 
                         val itemCode = get("Item Code")
                         val rfidCode = get("RFID Code")
@@ -398,7 +399,7 @@ fun AddProductScreen(
                         val fMaking = get("Fix Making")
                         val fWastage = get("Fix Wastage")
                         val stAmt = get("Stone Amount")
-                        val dAmt = get("Diamond Amount ")
+                        val dAmt = get("Diamond Amount")
 
                         val categoryId =
                             categoryList?.find { it.CategoryName == categoryName }?.Id ?: 0
@@ -421,7 +422,7 @@ fun AddProductScreen(
                             RFIDCode = rfidCode,
                             HUIDCode = "",
                             HSNCode = "",
-                            Quantity = "",
+                            Quantity = "1",
                             TotalWeight = 0.0,
                             PackingWeight = 0.0,
                             GrossWt = gWt,
@@ -487,7 +488,6 @@ fun AddProductScreen(
                             MetalId = 0,
                             WarehouseId = 0,
                             TIDNumber = epc,
-                            grosswt = "",
                             TotalDiamondWeight = dWt,
                             TotalDiamondAmount = "",
                             Status = "Active"
@@ -824,7 +824,7 @@ fun FormRow(
                     Column {
                         BasicTextField(
                             value = value,
-                            onValueChange = {},
+                            onValueChange = {newValue -> onValueChange(newValue)},
                             readOnly = true,
                             singleLine = true,
                             keyboardOptions = if (
