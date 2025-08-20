@@ -30,7 +30,7 @@ class SearchViewModel @Inject constructor(
     init {
         val unmatched = savedStateHandle.get<List<BulkItem>>("unmatchedItems") ?: emptyList()
         Log.d("SearchViewModel", "Received ${unmatched.size} items")
-        startSearch(unmatched)
+      //  startSearch(unmatched)
     }
 
     private var scanJob: Job? = null
@@ -79,6 +79,7 @@ class SearchViewModel @Inject constructor(
                     if (id != -1) {
                         lastSoundId = id
                         withContext(Dispatchers.Main) {
+                            Log.d("@@","@@ sound")
                             readerManager.playSound(id)
                         }
                     }
