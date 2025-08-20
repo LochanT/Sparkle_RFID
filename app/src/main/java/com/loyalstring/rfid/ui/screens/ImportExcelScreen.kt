@@ -4,6 +4,9 @@ import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +14,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -24,17 +33,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.loyalstring.rfid.R
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.FilePickerDialog
 import com.loyalstring.rfid.ui.utils.MappingDialogWrapper
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.ImportExcelViewModel
-import kotlinx.coroutines.launch
 
 @Composable
 fun ImportExcelScreen(
@@ -58,16 +74,21 @@ fun ImportExcelScreen(
     val isImportDone by viewModel.isImportDone.collectAsState()
     val importProgress by viewModel.importProgress.collectAsState()
     val isDone by viewModel.isImportDone.collectAsState()
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf<String?>(null) }
+    var isError by remember { mutableStateOf(false) }
 
     val bulkItemFieldNames = listOf(
-        "productName",
         "itemCode",
         "rfid",
         "grossWeight",
         "stoneWeight",
         "dustWeight",
         "netWeight",
+        "counterName",
         "category",
+        "productName",
+        "branchName",
         "design",
         "purity",
         "makingPerGram",
@@ -77,13 +98,9 @@ fun ImportExcelScreen(
         "stoneAmount",
         "dustAmount",
         "sku",
-        "epc",
         "vendor",
-        "tid",
-        "box",
-        "designCode",
-        "productCode",
-        "uhftagInfo"
+        "boxName"
+
     )
 
 
@@ -95,18 +112,48 @@ fun ImportExcelScreen(
         if (isImportDone) {
             showOverlay = false
             showProgress = false
-            val message = if (importProgress.failedFields.isEmpty()) {
-                "✅ Import successful: ${importProgress.importedFields} fields"
+
+            if (importProgress.failedFields.isEmpty()) {
+                dialogMessage = "✅ Import successful: ${importProgress.importedFields} fields"
+                isError = false
             } else {
-                "⚠️ Imported with errors: ${importProgress.failedFields.joinToString()}"
+                dialogMessage = "⚠️ Imported with errors: ${importProgress.failedFields.joinToString()}"
+                isError = true
             }
-            scope.launch {
-                snackbarHostState.showSnackbar(message)
-            }
-            navController.navigate(Screens.ProductManagementScreen.route) {
+          /*  navController.navigate(Screens.ProductManagementScreen.route) {
                 popUpTo(Screens.ImportExcelScreen.route) { inclusive = true }
-            }
+            }*/
         }
+    }
+
+
+    /* LaunchedEffect(isImportDone) {
+         if (isImportDone) {
+             showOverlay = false
+             showProgress = false
+             val message = if (importProgress.failedFields.isEmpty()) {
+                 //showSuccessDialog = true
+                 "✅ Import successful: ${importProgress.importedFields} fields"
+             } else {
+               //  showSuccessDialog = true
+                 "⚠️ Imported with errors: ${importProgress.failedFields.joinToString()}"
+             }
+             scope.launch {
+                 //snackbarHostState.showSnackbar(message)
+                 showSuccessDialog = true
+             }
+             navController.navigate(Screens.ProductManagementScreen.route) {
+                 popUpTo(Screens.ImportExcelScreen.route) { inclusive = true }
+             }
+         }
+     }*/
+    if (dialogMessage != null) {
+        ImportResultDialog(
+            message = dialogMessage!!,
+            isError = isError,
+            navController = navController,
+            onDismiss = { dialogMessage = null }
+        )
     }
 
     val launcher =
@@ -146,7 +193,8 @@ fun ImportExcelScreen(
                                 "application/vnd.ms-excel"
                             )
                         )
-                    }
+                    },
+                    onConfirm = {}
                 )
             }
 
@@ -215,4 +263,158 @@ fun ImportExcelScreen(
         }
 
     }
+}
+
+@Composable
+fun ImportResultDialog(
+    message: String,
+    isError: Boolean,
+    onDismiss: () -> Unit,
+    navController: NavHostController
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        title = {},
+        text = {
+            Box {
+                // Close Button
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close",
+                    tint = Color.Gray,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(0.dp)
+                        .size(20.dp)
+                        .clickable { onDismiss()
+                            navController.navigate(Screens.ProductManagementScreen.route) {
+                                popUpTo(Screens.ImportExcelScreen.route) { inclusive = true }
+                            }
+                        }
+                )
+
+                // Main Content
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(top = 32.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
+                ) {
+                    Image(
+                        painter = painterResource(
+                            id = if (isError) R.drawable.new_order_icon else R.drawable.sucsess
+                        ),
+                        contentDescription = null,
+                        modifier = Modifier.size(120.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = message,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isError) Color.Red else Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(25.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    if (isError)
+                                        listOf(Color(0xFFE82E5A), Color(0xFF8B1A1A))
+                                    else
+                                        listOf(Color(0xFF3053F0), Color(0xFFE82E5A))
+                                )
+                            )
+                            .clickable { onDismiss()
+                                navController.navigate(Screens.ProductManagementScreen.route) {
+                                    popUpTo(Screens.ImportExcelScreen.route) { inclusive = true }
+                                }
+
+                  },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Done",
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
+}
+
+
+
+@Composable
+fun importSuccessDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {}, // We'll handle dismiss with icon + "Done"
+        title = {},
+        text = {
+            Box {
+                // Close (X) Button in top-right corner
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close",
+                    tint = Color.Gray,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(0.dp)
+                        .size(20.dp)
+                        .clickable { onDismiss() }
+                )
+
+                // Main dialog content
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .padding(top = 32.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.sucsess),
+                        contentDescription = null,
+                        modifier = Modifier.size(120.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Data Sync Successfully!",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(25.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(Color(0xFF3053F0), Color(0xFFE82E5A))
+                                )
+                            )
+                            .clickable { onDismiss() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Done",
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
 }

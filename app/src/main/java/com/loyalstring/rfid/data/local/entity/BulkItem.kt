@@ -61,7 +61,7 @@ data class BulkItem(
     val packetId: Int?,
     val packetName: String?,
     val scannedStatus: String?,
-    val categoryId: Int?,
+    val categoryId: Int,
     val productId: Int?,
     val branchType: String?,
     val designId: Int?

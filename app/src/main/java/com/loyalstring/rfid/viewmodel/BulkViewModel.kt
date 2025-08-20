@@ -796,7 +796,7 @@ class BulkViewModel @Inject constructor(
                 )
 
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Exported to ${file.absolutePath}", Toast.LENGTH_LONG)
+                    Toast.makeText(context, "Exported to ${file.absolutePath}", Toast.LENGTH_SHORT)
                         .show()
                     openExcelFile(context, file)
                 }

@@ -220,7 +220,7 @@ fun EditProductScreen(
 
                   /*  val request ={
                         InsertProductRequest(
-                             CategoryId = categoryId!! as Int,
+                             CategoryId =  categoryId,
                             ProductId = item.productId as Int,
                             DesignId = item.designId as Int,
                             VendorId = item.vendor as Int,
@@ -300,7 +300,7 @@ fun EditProductScreen(
                             Status = "Active"
                         )
                     }*/
-                   // singleProductViewModel.updateLabelledStock(request)
+                 //  singleProductViewModel.updateLabelledStock(request)
                 }
                 )
             }

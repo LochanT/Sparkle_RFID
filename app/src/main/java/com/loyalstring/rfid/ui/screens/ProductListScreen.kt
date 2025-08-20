@@ -1,10 +1,7 @@
 package com.loyalstring.rfid.ui.screens
 
-import android.R
-import android.annotation.SuppressLint
-import android.preference.Preference
+
 import android.util.Log
-import android.view.KeyEvent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -36,18 +33,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -82,10 +75,12 @@ import java.io.File
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
 import com.loyalstring.rfid.ui.utils.GradientButton
@@ -205,6 +200,11 @@ fun ProductListScreen(
                         colors = listOf(Color(0xFFD32940), Color(0xFF5231A7)) // blue to cyan gradient
                     ),
                     backgroundColor = Color.Transparent,
+                    icon = if (isGridView) {
+                        painterResource(id = R.drawable.list_svg)   // 👈 your drawable
+                    } else {
+                        painterResource(id = R.drawable.grid_svg)
+                    }
                 )
                 ActionButton(
                     text = "Filter",
@@ -212,16 +212,16 @@ fun ProductListScreen(
                     gradient = Brush.horizontalGradient(
                         colors = listOf(Color(0xFFD32940), Color(0xFF5231A7)) // red to purple
                     ),
-                    backgroundColor = Color.Transparent,
+                    icon =  painterResource(id = R.drawable.filter_svg)
                 )
                 ActionButton(
                     text = "Export Pdf",
                     onClick = { },
+                    modifier = Modifier.defaultMinSize(minWidth = 120.dp),
                     gradient = Brush.horizontalGradient(
                         colors = listOf(Color(0xFFD32940), Color(0xFF5231A7)) // red to purple
                     ),
-                    backgroundColor = Color.Transparent,
-                    modifier = Modifier.defaultMinSize(minWidth = 120.dp) // Or .defaultMinSize(minWidth = 120.dp)
+                    icon = painterResource(id = R.drawable.pdf)
                 )
 
             }
@@ -592,7 +592,8 @@ fun ActionButton(
     gradient: Brush,
     cornerRadius: Dp = 8.dp,
     backgroundColor: Color = Color.Transparent,
-    textColor: Color = Color.Black
+    textColor: Color = Color.Black,
+    icon: Painter
 ) {
     Box(
         modifier = modifier
@@ -611,7 +612,7 @@ fun ActionButton(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Default.Tune,
+                painter = icon,
                 contentDescription = null,
                 tint = textColor,
                 modifier = Modifier.size(16.dp)
