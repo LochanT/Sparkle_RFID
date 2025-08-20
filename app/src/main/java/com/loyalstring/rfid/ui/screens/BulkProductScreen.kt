@@ -1,10 +1,8 @@
 
 package com.loyalstring.rfid.ui.screens
 
-import android.util.Log
-import android.widget.Toast
+import android.annotation.SuppressLint
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +24,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,11 +44,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,7 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.loyalstring.rfid.R
+import com.loyalstring.rfid.MainActivity
+import com.loyalstring.rfid.data.reader.ScanKeyListener
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.AddItemDialog
@@ -66,11 +62,14 @@ import com.loyalstring.rfid.ui.utils.BackgroundGradient
 import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
-import kotlinx.coroutines.delay
 
+@SuppressLint("RestrictedApi")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
+fun BulkProductScreen(
+    onBack: () -> Unit, navController: NavHostController// hardware key events
+) {
+
     val viewModel: BulkViewModel = hiltViewModel()
     val context = LocalContext.current
     // Observe barcode and tag data
@@ -98,28 +97,28 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
     val allScannedTags by viewModel.allScannedTags
     val existingTags by viewModel.existingItems
     val duplicateTags by viewModel.duplicateItems
+
+    val activity = LocalContext.current as MainActivity
     //var showSuccessDialog by remember { mutableStateOf(false) }
 
 
-    LaunchedEffect(scanTrigger) {
-        scanTrigger?.let { type ->
-            // Do something based on the key
-            when (type) {
-                "scan" -> {
-                    if (items.size != 1) {
-                        viewModel.startScanning(selectedPower)
-                    }
-                }
-
-                "barcode" -> {
-                    viewModel.startBarcodeScanning()
-                }
+    DisposableEffect(Unit) {
+        val listener = object : ScanKeyListener {
+            override fun onBarcodeKeyPressed() {
+                viewModel.startBarcodeScanning()
             }
 
-            // Important: clear after handling to prevent repeated triggers
-            viewModel.clearScanTrigger()
+            override fun onRfidKeyPressed() {
+                viewModel.startScanning(selectedPower) // or toggle start/stop
+            }
+        }
+        activity.registerScanKeyListener(listener)
+
+        onDispose {
+            activity.unregisterScanKeyListener()
         }
     }
+
 
     // ✅ Set barcode scan callback ONCE
     LaunchedEffect(Unit) {
@@ -131,15 +130,7 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
         }
     }
 
-//    LaunchedEffect(tags) {
-//        itemCodes = List(tags.size) { index ->
-//            itemCodes.getOrNull(index) ?: ""
-//        }
-//    }
 
-   /* if (showSuccessDialog) {
-        SyncSuccessDialog(onDismiss = { showSuccessDialog = false })
-    }*/
 
     Scaffold(
         topBar = {
@@ -201,18 +192,12 @@ fun BulkProductScreen(onBack: () -> Unit, navController: NavHostController) {
                     }
                 },
                 onGscan = {
-                    if (!firstPress) {
-                        firstPress = true
-                        viewModel.startScanning(selectedPower)
-                        //   viewModel.startBarcodeScanning()
-                    } else {
-                        viewModel.stopScanning()
-                        //     viewModel.startBarcodeScanning()
-                    }
+                    viewModel.toggleScanning(selectedPower)
+
                 },
                 onReset = {
                     firstPress = false
-                    viewModel.resetScanResults()
+                    viewModel.resetProductScanResults()
                     viewModel.stopBarcodeScanner()
                 }
             )

@@ -68,6 +68,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.loyalstring.rfid.data.model.login.Employee
+import com.loyalstring.rfid.data.reader.ScanKeyListener
 import com.loyalstring.rfid.navigation.AppNavigation
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.navigation.listOfNavItems
@@ -89,19 +90,22 @@ class MainActivity : ComponentActivity() {
     lateinit var userPreferences: UserPreferences
     private val viewModel: BulkViewModel by viewModels()
     lateinit var networkMonitor: NetworkMonitor
+
     val orderViewModel: OrderViewModel by viewModels()
+    private var scanKeyListener: ScanKeyListener? = null
 
 
-
-
+    @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("@@","Start")
-        networkMonitor = NetworkMonitor(this) {
-            orderViewModel.syncDataWhenOnline()
-        }
-        networkMonitor.startMonitoring()
+//        Log.d("@@","Start")
+//        networkMonitor = NetworkMonitor(this) {
+//            orderViewModel.syncDataWhenOnline()
+//        }
+//        networkMonitor.startMonitoring()
+
         setContent {
+
             SparkleRFIDTheme {
                 SetupNavigation(baseContext, userPreferences,orderViewModel)
             }
@@ -117,19 +121,34 @@ class MainActivity : ComponentActivity() {
         networkMonitor.stopMonitoring()
     }
 
+
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
             when (event.keyCode) {
-                293, 280, 139 -> {
-                    val keyType = if (event.keyCode == 139) "barcode" else "scan"
-                    viewModel.onScanKeyPressed(keyType)
+                139 -> { // Barcode trigger
+                    scanKeyListener?.onBarcodeKeyPressed()
+                    return true
+                }
+
+                280, 293 -> { // RFID trigger
+                    scanKeyListener?.onRfidKeyPressed()
                     return true
                 }
             }
         }
         return super.dispatchKeyEvent(event)
     }
+
+
+    fun registerScanKeyListener(listener: ScanKeyListener) {
+        scanKeyListener = listener
+    }
+
+    fun unregisterScanKeyListener() {
+        scanKeyListener = null
+    }
+
 }
 
 @RequiresApi(Build.VERSION_CODES.R)
@@ -139,7 +158,7 @@ class MainActivity : ComponentActivity() {
 private fun SetupNavigation(
     context: Context,
     userPreferences: UserPreferences,
-    orderViewModel1: OrderViewModel
+    orderViewModel1: OrderViewModel,
 ) {
     lateinit var networkMonitor: NetworkMonitor
     //val orderViewModel: OrderViewModel by viewModels()

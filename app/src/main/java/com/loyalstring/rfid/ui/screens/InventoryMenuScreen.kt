@@ -20,6 +20,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +42,10 @@ import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun InventoryMenuScreen(
@@ -49,11 +55,25 @@ fun InventoryMenuScreen(
 ) {
     val context = LocalContext.current
 
+    // Cached lists
+    val counters by bulkViewModel.counters.collectAsState()
+    val branches by bulkViewModel.branches.collectAsState()
+    val boxes by bulkViewModel.boxes.collectAsState()
+    val exhibitions by bulkViewModel.exhibitions.collectAsState()
+
     // Dialog state
     var showDialog by remember { mutableStateOf(false) }
     var dialogTitle by remember { mutableStateOf("") }
     var dialogItems by remember { mutableStateOf(listOf<String>()) }
     var onItemSelected by remember { mutableStateOf<(String) -> Unit>({}) }
+
+    LaunchedEffect(Unit) {
+        showDialog = false
+        dialogTitle = ""
+        dialogItems = emptyList()
+    }
+
+
 
     val menuItems = listOf(
         "Scan Display" to R.drawable.scan_barcode,
@@ -86,6 +106,7 @@ fun InventoryMenuScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+
             menuItems.forEach { (title, icon) ->
                 MenuButton(title = title, icon = icon) {
                     when (title) {
@@ -100,85 +121,109 @@ fun InventoryMenuScreen(
                         }
 
                         "Scan Counter" -> {
-                            val counters = bulkViewModel.getLocalCounters()
-                            if (counters.isEmpty()) {
-                                ToastUtils.showToast(context, "No counters available in local data")
-                            } else {
-                                dialogTitle = "Select Counter"
-                                dialogItems = counters
-                                onItemSelected = { selected ->
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("filterType", "Counter")
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("filterValue", selected)
-                                    navController.navigate(Screens.ScanDisplayScreen.route)
+                            // 🔥 Load data in background, then open dialog
+                            CoroutineScope(Dispatchers.IO).launch {
+                                withContext(Dispatchers.Main) {
+                                    if (counters.isEmpty()) {
+                                        ToastUtils.showToast(
+                                            context,
+                                            "No counters available in local data"
+                                        )
+                                    } else {
+                                        dialogTitle = "Select Counter"
+                                        dialogItems = counters
+                                        onItemSelected = { selected ->
+                                            navController.currentBackStackEntry
+                                                ?.savedStateHandle
+                                                ?.set("filterType", "Counter")
+                                            navController.currentBackStackEntry
+                                                ?.savedStateHandle
+                                                ?.set("filterValue", selected)
+                                            navController.navigate(Screens.ScanDisplayScreen.route)
+                                        }
+                                        showDialog = true
+                                    }
                                 }
-                                showDialog = true
                             }
                         }
 
                         "Scan Branch" -> {
-                            val branches = bulkViewModel.getLocalBranches()
-                            if (branches.isEmpty()) {
-                                ToastUtils.showToast(context, "No branches available in local data")
-                            } else {
-                                dialogTitle = "Select Branch"
-                                dialogItems = branches
-                                onItemSelected = { selected ->
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("filterType", "Branch")
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("filterValue", selected)
-                                    navController.navigate(Screens.ScanDisplayScreen.route)
+                            CoroutineScope(Dispatchers.IO).launch {
+
+                                withContext(Dispatchers.Main) {
+                                    if (branches.isEmpty()) {
+                                        ToastUtils.showToast(
+                                            context,
+                                            "No branches available in local data"
+                                        )
+                                    } else {
+                                        dialogTitle = "Select Branch"
+                                        dialogItems = branches
+                                        onItemSelected = { selected ->
+                                            navController.currentBackStackEntry
+                                                ?.savedStateHandle
+                                                ?.set("filterType", "Branch")
+                                            navController.currentBackStackEntry
+                                                ?.savedStateHandle
+                                                ?.set("filterValue", selected)
+                                            navController.navigate(Screens.ScanDisplayScreen.route)
+                                        }
+                                        showDialog = true
+                                    }
                                 }
-                                showDialog = true
                             }
                         }
 
                         "Scan Box" -> {
-                            val boxes = bulkViewModel.getLocalBoxes()
-                            if (boxes.isEmpty()) {
-                                ToastUtils.showToast(context, "No boxes available in local data")
-                            } else {
-                                dialogTitle = "Select Box"
-                                dialogItems = boxes
-                                onItemSelected = { selected ->
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("filterType", "Box")
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("filterValue", selected)
-                                    navController.navigate(Screens.ScanDisplayScreen.route)
+                            CoroutineScope(Dispatchers.IO).launch {
+
+                                withContext(Dispatchers.Main) {
+                                    if (boxes.isEmpty()) {
+                                        ToastUtils.showToast(
+                                            context,
+                                            "No boxes available in local data"
+                                        )
+                                    } else {
+                                        dialogTitle = "Select Box"
+                                        dialogItems = boxes
+                                        onItemSelected = { selected ->
+                                            navController.currentBackStackEntry
+                                                ?.savedStateHandle
+                                                ?.set("filterType", "Box")
+                                            navController.currentBackStackEntry
+                                                ?.savedStateHandle
+                                                ?.set("filterValue", selected)
+                                            navController.navigate(Screens.ScanDisplayScreen.route)
+                                        }
+                                        showDialog = true
+                                    }
                                 }
-                                showDialog = true
                             }
                         }
 
                         "Exhibition" -> {
-                            val exhibitions = bulkViewModel.getLocalExhibitions()
-                            if (exhibitions.isEmpty()) {
-                                ToastUtils.showToast(
-                                    context,
-                                    "No exhibitions available in local data"
-                                )
-                            } else {
-                                dialogTitle = "Select Exhibition"
-                                dialogItems = exhibitions
-                                onItemSelected = { selected ->
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("filterType", "Exhibition")
-                                    navController.currentBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("filterValue", selected)
-                                    navController.navigate(Screens.ScanDisplayScreen.route)
+                            CoroutineScope(Dispatchers.IO).launch {
+                                withContext(Dispatchers.Main) {
+                                    if (exhibitions.isEmpty()) {
+                                        ToastUtils.showToast(
+                                            context,
+                                            "No exhibitions available in local data"
+                                        )
+                                    } else {
+                                        dialogTitle = "Select Exhibition"
+                                        dialogItems = exhibitions
+                                        onItemSelected = { selected ->
+                                            navController.currentBackStackEntry
+                                                ?.savedStateHandle
+                                                ?.set("filterType", "Exhibition")
+                                            navController.currentBackStackEntry
+                                                ?.savedStateHandle
+                                                ?.set("filterValue", selected)
+                                            navController.navigate(Screens.ScanDisplayScreen.route)
+                                        }
+                                        showDialog = true
+                                    }
                                 }
-                                showDialog = true
                             }
                         }
                     }
@@ -199,6 +244,7 @@ fun InventoryMenuScreen(
         )
     }
 }
+
 
 @Composable
 fun MenuButton(title: String, icon: Int, onClick: () -> Unit) {

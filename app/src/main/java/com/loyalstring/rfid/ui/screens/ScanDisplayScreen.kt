@@ -60,10 +60,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.loyalstring.rfid.MainActivity
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.login.Employee
+import com.loyalstring.rfid.data.reader.ScanKeyListener
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.GradientButton
@@ -124,7 +126,7 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                 "box" -> allItems.filter { it.boxName == filterValue }
                 "counter" -> allItems.filter { it.counterName == filterValue }
                 "branch" -> allItems.filter { it.branchName == filterValue }
-                "exhibition" -> allItems.filter { it.branchName == filterValue }
+                "exhibition" -> allItems.filter { it.branchType == filterTypeName && it.branchName == filterValue }
                 else -> allItems
             }
         }
@@ -222,6 +224,35 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
             scopeItems.isNotEmpty() && scopeItems.all { it.scannedStatus == "Matched" }
         }
     }
+
+    val activity = LocalContext.current as MainActivity
+
+
+    DisposableEffect(Unit) {
+        val listener = object : ScanKeyListener {
+            override fun onBarcodeKeyPressed() {
+                bulkViewModel.startBarcodeScanning()
+            }
+
+            override fun onRfidKeyPressed() {
+                if (!isScanning) {
+                    isScanning = true
+                    bulkViewModel.resetScanResults()
+                    bulkViewModel.setFilteredItems(allItems)
+                    bulkViewModel.startScanningInventory(selectedPower)
+                } else {
+                    isScanning = false
+                    bulkViewModel.stopScanning()
+                    bulkViewModel.computeScanResults(allItems)
+                }
+            }
+        }
+        activity.registerScanKeyListener(listener)
+
+        onDispose {
+            activity.unregisterScanKeyListener()
+        }
+    }
     LaunchedEffect(isScanning, allMatched) {
         if (isScanning && allMatched) {
             bulkViewModel.stopScanning()
@@ -295,14 +326,13 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                     onGscan = {
                         if (!isScanning) {
                             isScanning = true
-                            // Always restore full scope before scanning
                             bulkViewModel.resetScanResults()
-                            bulkViewModel.setFilteredItems(scopeItems)   // restore full dataset
+                            bulkViewModel.setFilteredItems(allItems)
                             bulkViewModel.startScanningInventory(selectedPower)
                         } else {
                             isScanning = false
                             bulkViewModel.stopScanning()
-                            bulkViewModel.computeScanResults(scopeItems) // safe: scopeItems passed
+                            bulkViewModel.computeScanResults(allItems)
                         }
                     },
                     onReset = {

@@ -90,16 +90,13 @@ import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.GradientButton
+import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
-import com.loyalstring.rfid.viewmodel.EditProductViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
-import java.io.File
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import androidx.lifecycle.coroutineScope
-import com.loyalstring.rfid.ui.utils.ToastUtils
+import java.io.File
 
 // Imports skipped for brevity — keep your existing ones
 
@@ -137,11 +134,10 @@ private val sampleFields = listOf(
 fun AddProductScreen(
     onBack: () -> Unit,
     navController: NavHostController,
-    viewModel: SingleProductViewModel = hiltViewModel()
 ) {
 
     val bulkViewModel: BulkViewModel = hiltViewModel()
-    val editProductViewModel: EditProductViewModel = hiltViewModel()
+    val viewModel:SingleProductViewModel = hiltViewModel()
     val context = LocalContext.current
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
 
@@ -333,11 +329,11 @@ fun AddProductScreen(
         ) return
         updateField(
             "Category",
-            categoryList?.find { it.Id == sku.CategoryId }?.CategoryName.orEmpty()
+            categoryList.find { it.Id == sku.CategoryId }?.CategoryName.orEmpty()
         )
-        updateField("Product", productList?.find { it.Id == sku.ProductId }?.ProductName.orEmpty())
-        updateField("Design", designList?.find { it.Id == sku.DesignId }?.DesignName.orEmpty())
-        updateField("Purity", purityList?.find { it.Id == sku.PurityId }?.PurityName.orEmpty())
+        updateField("Product", productList.find { it.Id == sku.ProductId }?.ProductName.orEmpty())
+        updateField("Design", designList.find { it.Id == sku.DesignId }?.DesignName.orEmpty())
+        updateField("Purity", purityList.find { it.Id == sku.PurityId }?.PurityName.orEmpty())
     }
 
     fun onVendorSelected(vendor: VendorModel) {

@@ -61,7 +61,8 @@ fun AlllabelResponse.LabelItem.toBulkItem(): BulkItem {
         productId = this.productId ?: 0,
         designId = this.designId ?: 0,
         packetId = this.packetId ?: 0,
-        packetName = this.packetName ?: ""
+        packetName = this.packetName ?: "",
+        branchType = this.branchType ?: ""
     ).apply {
         uhfTagInfo = null
     }
