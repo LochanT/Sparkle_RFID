@@ -301,7 +301,7 @@ fun ImportResultDialog(
                 ) {
                     Image(
                         painter = painterResource(
-                            id = if (isError) R.drawable.new_order_icon else R.drawable.sucsess
+                            id = if (isError) R.drawable.sucsess else R.drawable.sucsess
                         ),
                         contentDescription = null,
                         modifier = Modifier.size(120.dp)
