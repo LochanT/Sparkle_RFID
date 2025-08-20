@@ -2,6 +2,7 @@ package com.loyalstring.rfid.viewmodel
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.loyalstring.rfid.data.local.entity.BulkItem
@@ -303,7 +304,7 @@ class ImportExcelViewModel @Inject constructor(
             val index = columnName?.let { headerIndexMap[it] }
             if (index != null) getCellValue(row.getCell(index)).trim() else ""
         } catch (e: Exception) {
-            ""
+          ""
         }
     }
 
