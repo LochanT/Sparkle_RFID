@@ -116,11 +116,6 @@ class MainActivity : ComponentActivity() {
 //        nfcAdapter?.disableReaderMode(this)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        networkMonitor.stopMonitoring()
-    }
-
 
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -138,6 +133,22 @@ class MainActivity : ComponentActivity() {
             }
         }
         return super.dispatchKeyEvent(event)
+    }
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode == 293 || keyCode == 280 || keyCode == 139) {
+            // Toast.makeText(getApplicationContext(), "KEYCODE: "+keyCode, Toast.LENGTH_SHORT).show();
+            if (event.repeatCount == 0) {
+
+                if (KeyEvent.KEYCODE_F9 == event.keyCode) {
+                    scanKeyListener?.onBarcodeKeyPressed()
+                } else {
+                    scanKeyListener?.onRfidKeyPressed()
+                }
+
+            }
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
 
@@ -160,13 +171,13 @@ private fun SetupNavigation(
     userPreferences: UserPreferences,
     orderViewModel1: OrderViewModel,
 ) {
-    lateinit var networkMonitor: NetworkMonitor
-    //val orderViewModel: OrderViewModel by viewModels()
-    Log.d("@@","Start11")
-    networkMonitor = NetworkMonitor(context) {
-        orderViewModel1.syncDataWhenOnline()
-    }
-    networkMonitor.startMonitoring()
+    /*    lateinit var networkMonitor: NetworkMonitor
+        //val orderViewModel: OrderViewModel by viewModels()
+        Log.d("@@","Start11")
+        networkMonitor = NetworkMonitor(context) {
+            orderViewModel1.syncDataWhenOnline()
+        }
+        networkMonitor.startMonitoring()*/
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var selectedItemIndex by rememberSaveable {

@@ -247,7 +247,7 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
                                     .width(100.dp)
                                     .clickable {
                                         clickedIndex = index
-                                        viewModel.startBarcodeScanning()
+                                        viewModel.startBarcodeScanning(context)
                                     }, color = textColor, textDecoration = style,
                                 fontFamily = poppins,
                                 fontSize = 11.sp

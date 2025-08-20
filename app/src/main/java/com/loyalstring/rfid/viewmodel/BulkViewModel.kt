@@ -304,25 +304,22 @@ class BulkViewModel @Inject constructor(
 
         readerManager.startInventoryTag(selectedPower)
         readerManager.playSound(1)
-        scanJob?.cancel()
+
+        Log.d("SCANNED LIST :", scannedEpcList.toString())
+
+        Log.d("SCANNED LIST :", scannedEpcList.size.toString())
 
         scanJob = viewModelScope.launch(Dispatchers.IO) {
             while (isActive) {
                 val tag = readerManager.readTagFromBuffer()
                 if (tag != null) {
                     val epc = tag.epc ?: continue
-                    if (!scannedEpcList.contains(epc)) {
-                        if (scannedEpcList.add(epc)) {
-                            computeScanResults(_filteredSource)
-                        }
-
+                    if (scannedEpcList.add(epc)) {
                         withContext(Dispatchers.Main) {
-                            val updatedList = _filteredSource.map { item ->
-                                when {
-                                    item.epc == epc -> item.copy(scannedStatus = "Matched")
-                                    item.scannedStatus != "Matched" -> item.copy(scannedStatus = "Unmatched")
-                                    else -> item
-                                }
+                            // Only update matched items incrementally
+                            val updatedList = _scannedFilteredItems.value.map { item ->
+                                if (item.epc == epc) item.copy(scannedStatus = "Matched")
+                                else item
                             }
                             _scannedFilteredItems.value = updatedList
                         }
@@ -402,14 +399,19 @@ class BulkViewModel @Inject constructor(
         val scannedEpcSet = scannedEpcList.toSet()
 
         val updatedFiltered = filteredItems.map { item ->
-            if (!item.epc.isNullOrBlank() && scannedEpcSet.contains(item.epc)) {
-                val updatedItem = item.copy(scannedStatus = "Matched")
-                matched.add(updatedItem)
-                updatedItem
-            } else {
-                val updatedItem = item.copy(scannedStatus = "Unmatched")
-                unmatched.add(updatedItem)
-                updatedItem
+            when {
+                !item.epc.isNullOrBlank() && scannedEpcSet.contains(item.epc) -> {
+                    val updatedItem = item.copy(scannedStatus = "Matched")
+                    matched.add(updatedItem)
+                    updatedItem
+                }
+
+                item.scannedStatus == "Matched" -> item // keep matched items matched
+                else -> {
+                    val updatedItem = item.copy(scannedStatus = "Unmatched")
+                    unmatched.add(updatedItem)
+                    updatedItem
+                }
             }
         }
 
@@ -452,7 +454,10 @@ class BulkViewModel @Inject constructor(
 //            }
 //        }
 //    }
-    fun startBarcodeScanning() {
+    fun startBarcodeScanning(context: Context) {
+        if (!barcodeDecoder.isOpen) {
+            barcodeDecoder.open(context)
+        }
         barcodeDecoder.startScan()
 
     }
@@ -530,6 +535,7 @@ class BulkViewModel @Inject constructor(
     }
 
     fun stopScanning() {
+        //  onScanStopped()
         readerManager.stopSound(1)
         readerManager.stopInventory()
         _isScanning.value = false

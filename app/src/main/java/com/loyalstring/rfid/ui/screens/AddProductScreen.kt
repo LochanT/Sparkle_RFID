@@ -95,11 +95,8 @@ import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
-import java.io.File
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import androidx.lifecycle.coroutineScope
-import com.loyalstring.rfid.ui.utils.ToastUtils
+import java.io.File
 
 // Imports skipped for brevity — keep your existing ones
 
@@ -236,7 +233,7 @@ fun AddProductScreen(
         scanTrigger?.let { type ->
             when (type) {
                 "scan" -> if (items.size != 1) bulkViewModel.startScanning(20)
-                "barcode" -> bulkViewModel.startBarcodeScanning()
+                "barcode" -> bulkViewModel.startBarcodeScanning(context)
             }
             bulkViewModel.clearScanTrigger()
         }
@@ -355,6 +352,7 @@ fun AddProductScreen(
                             bulkViewModel.onScanKeyPressed(keyType)
                             true
                         }
+
                         else -> false
                     }
                 } else false

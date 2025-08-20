@@ -231,7 +231,7 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     DisposableEffect(Unit) {
         val listener = object : ScanKeyListener {
             override fun onBarcodeKeyPressed() {
-                bulkViewModel.startBarcodeScanning()
+                bulkViewModel.startBarcodeScanning(context)
             }
 
             override fun onRfidKeyPressed() {
