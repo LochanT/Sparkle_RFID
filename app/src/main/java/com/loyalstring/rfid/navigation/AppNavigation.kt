@@ -1,5 +1,9 @@
 package com.loyalstring.rfid.navigation
 
+//import com.loyalstring.rfid.ui.screens.ScanBoxScreeen
+//import com.loyalstring.rfid.ui.screens.ScanBranchScreen
+//import com.loyalstring.rfid.ui.screens.ScanCounterScreen
+//import com.loyalstring.rfid.ui.screens.ScanExhibitionScreen
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
@@ -20,15 +24,10 @@ import com.loyalstring.rfid.ui.screens.InventoryMenuScreen
 import com.loyalstring.rfid.ui.screens.InvoiceScreen
 import com.loyalstring.rfid.ui.screens.LoginScreen
 import com.loyalstring.rfid.ui.screens.OrderLisrScreen
-
 import com.loyalstring.rfid.ui.screens.OrderScreen
 import com.loyalstring.rfid.ui.screens.ProductListScreen
 import com.loyalstring.rfid.ui.screens.ProductManagementScreen
 import com.loyalstring.rfid.ui.screens.ScanDisplayScreen
-//import com.loyalstring.rfid.ui.screens.ScanBoxScreeen
-//import com.loyalstring.rfid.ui.screens.ScanBranchScreen
-//import com.loyalstring.rfid.ui.screens.ScanCounterScreen
-//import com.loyalstring.rfid.ui.screens.ScanExhibitionScreen
 import com.loyalstring.rfid.ui.screens.ScanToDesktopScreen
 import com.loyalstring.rfid.ui.screens.SearchScreen
 import com.loyalstring.rfid.ui.screens.SettingsScreen
@@ -46,7 +45,7 @@ fun AppNavigation(
     drawerState: DrawerState,
     scope: CoroutineScope,
     context: Context,
-    userPreferences: UserPreferences
+    userPreferences: UserPreferences,
 ) {
     NavHost(navController = navController, startDestination = Screens.SplashScreen.route) {
 

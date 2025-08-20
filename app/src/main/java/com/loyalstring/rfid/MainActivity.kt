@@ -2,6 +2,7 @@ package com.loyalstring.rfid
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
@@ -9,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -66,6 +68,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.loyalstring.rfid.data.model.login.Employee
+import com.loyalstring.rfid.data.reader.ScanKeyListener
 import com.loyalstring.rfid.navigation.AppNavigation
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.navigation.listOfNavItems
@@ -79,7 +82,6 @@ import com.loyalstring.rfid.viewmodel.OrderViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.getValue
 
 
 @AndroidEntryPoint
@@ -88,19 +90,22 @@ class MainActivity : ComponentActivity() {
     lateinit var userPreferences: UserPreferences
     private val viewModel: BulkViewModel by viewModels()
     lateinit var networkMonitor: NetworkMonitor
+
     val orderViewModel: OrderViewModel by viewModels()
+    private var scanKeyListener: ScanKeyListener? = null
 
 
-
-
+    @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("@@","Start")
-        networkMonitor = NetworkMonitor(this) {
-            orderViewModel.syncDataWhenOnline()
-        }
-        networkMonitor.startMonitoring()
+//        Log.d("@@","Start")
+//        networkMonitor = NetworkMonitor(this) {
+//            orderViewModel.syncDataWhenOnline()
+//        }
+//        networkMonitor.startMonitoring()
+
         setContent {
+
             SparkleRFIDTheme {
                 SetupNavigation(baseContext, userPreferences,orderViewModel)
             }
@@ -116,28 +121,44 @@ class MainActivity : ComponentActivity() {
         networkMonitor.stopMonitoring()
     }
 
+
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
             when (event.keyCode) {
-                293, 280, 139 -> {
-                    val keyType = if (event.keyCode == 139) "barcode" else "scan"
-                    viewModel.onScanKeyPressed(keyType)
+                139 -> { // Barcode trigger
+                    scanKeyListener?.onBarcodeKeyPressed()
+                    return true
+                }
+
+                280, 293 -> { // RFID trigger
+                    scanKeyListener?.onRfidKeyPressed()
                     return true
                 }
             }
         }
         return super.dispatchKeyEvent(event)
     }
+
+
+    fun registerScanKeyListener(listener: ScanKeyListener) {
+        scanKeyListener = listener
+    }
+
+    fun unregisterScanKeyListener() {
+        scanKeyListener = null
+    }
+
 }
 
+@RequiresApi(Build.VERSION_CODES.R)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun SetupNavigation(
     context: Context,
     userPreferences: UserPreferences,
-    orderViewModel1: OrderViewModel
+    orderViewModel1: OrderViewModel,
 ) {
     lateinit var networkMonitor: NetworkMonitor
     //val orderViewModel: OrderViewModel by viewModels()
@@ -297,10 +318,12 @@ private fun SetupNavigation(
                     if (event.type == KeyEventType.KeyDown) {
                         when (event.key.nativeKeyCode) {
                             293, 280, 139 -> {
-                                val keyType = if (event.key.nativeKeyCode == 139) "barcode" else "scan"
-                              //  viewModel.onScanKeyPressed(keyType)
+                                val keyType =
+                                    if (event.key.nativeKeyCode == 139) "barcode" else "scan"
+                                //  viewModel.onScanKeyPressed(keyType)
                                 true
                             }
+
                             else -> false
                         }
                     } else false
@@ -319,7 +342,9 @@ private fun SetupNavigation(
                 }
             },
             content = { innerPadding ->
-                AppNavigation(navController, drawerState, scope, context, userPreferences)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    AppNavigation(navController, drawerState, scope, context, userPreferences)
+                }
 
 
             }

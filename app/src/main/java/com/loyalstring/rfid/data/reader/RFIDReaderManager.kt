@@ -59,6 +59,7 @@ class RFIDReaderManager @Inject constructor(
         return started
     }
 
+
     fun stopInventory() {
         _reader?.stopInventory()
         soundPlayer.stopSound()

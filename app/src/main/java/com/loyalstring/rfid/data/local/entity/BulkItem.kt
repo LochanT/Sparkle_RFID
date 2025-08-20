@@ -63,6 +63,7 @@ data class BulkItem(
     val scannedStatus: String?,
     val categoryId: Int,
     val productId: Int?,
+    val branchType: String?,
     val designId: Int?
 
 ) : Parcelable {

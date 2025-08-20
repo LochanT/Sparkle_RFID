@@ -138,8 +138,32 @@ class BulkViewModel @Inject constructor(
     val scannedFilteredItems: State<List<BulkItem>> = _scannedFilteredItems
 
     private var _filteredSource: List<BulkItem> = emptyList()
-    private var isScanning = false
 
+    private val _isScanning = MutableStateFlow(false)
+    val isScanning: StateFlow<Boolean> = _isScanning
+
+    private val _counters = MutableStateFlow<List<String>>(emptyList())
+    val counters: StateFlow<List<String>> = _counters
+
+    private val _branches = MutableStateFlow<List<String>>(emptyList())
+    val branches: StateFlow<List<String>> = _branches
+
+    private val _boxes = MutableStateFlow<List<String>>(emptyList())
+    val boxes: StateFlow<List<String>> = _boxes
+
+    private val _exhibitions = MutableStateFlow<List<String>>(emptyList())
+    val exhibitions: StateFlow<List<String>> = _exhibitions
+
+
+    fun preloadFilters(allItems: List<BulkItem>) {
+        _counters.value = allItems.mapNotNull { it.counterName?.takeIf { it.isNotBlank() } }.distinct()
+        _branches.value = allItems.mapNotNull { it.branchName?.takeIf { it.isNotBlank() } }.distinct()
+        _boxes.value = allItems.mapNotNull { it.boxName?.takeIf { it.isNotBlank() } }.distinct()
+        _exhibitions.value = allItems
+            .filter { it.branchType?.equals("Exhibition", ignoreCase = true) == true }
+            .mapNotNull { it.branchName }
+            .distinct()
+    }
 
 
     fun setSyncCompleted() {
@@ -178,10 +202,46 @@ class BulkViewModel @Inject constructor(
         viewModelScope.launch {
             bulkRepository.getAllBulkItems().collect { items ->
                 _allItems = items
+                preloadFilters(_allItems)
                 _scannedFilteredItems.value = items
             }
         }
     }
+    fun toggleScanningInventory(selectedPower: Int) {
+
+        if (_isScanning.value) {
+            stopScanningAndCompute()
+            _isScanning.value = false
+            Log.d("RFID", "Scanning stopped by toggle")
+
+        } else {
+            _isScanning.value = true
+            resetScanResults()
+            setFilteredItems(_allItems) // or _filteredSource depending on scope
+            startScanningInventory(selectedPower)
+            Log.d("RFID", "Scanning started by toggle")
+
+        }
+
+
+    }
+
+    fun toggleScanning(selectedPower: Int) {
+        if (_isScanning.value) {
+            stopScanning()
+            _isScanning.value = false
+            Log.d("RFID", "Scanning stopped by toggle")
+        } else {
+           // resetScanResults()
+           // setFilteredItems(_allItems) // or _filteredSource depending on scope
+            startScanning(selectedPower)
+            _isScanning.value = true
+            Log.d("RFID", "Scanning started by toggle")
+        }
+    }
+
+
+
 
 
 
@@ -237,12 +297,13 @@ class BulkViewModel @Inject constructor(
 
 
     fun startScanningInventory(selectedPower: Int) {
-        if (!success || isScanning) return
-        isScanning = true
+        if (!success || _isScanning.value) return
+        scanJob?.cancel()
         scannedEpcList.clear()
+        _isScanning.value = true
 
         readerManager.startInventoryTag(selectedPower)
-        readerManager.playSound(1, 0)
+        readerManager.playSound(1)
         scanJob?.cancel()
 
         scanJob = viewModelScope.launch(Dispatchers.IO) {
@@ -251,7 +312,9 @@ class BulkViewModel @Inject constructor(
                 if (tag != null) {
                     val epc = tag.epc ?: continue
                     if (!scannedEpcList.contains(epc)) {
-                        scannedEpcList.add(epc)
+                        if (scannedEpcList.add(epc)) {
+                            computeScanResults(_filteredSource)
+                        }
 
                         withContext(Dispatchers.Main) {
                             val updatedList = _filteredSource.map { item ->
@@ -359,12 +422,24 @@ class BulkViewModel @Inject constructor(
         _scannedFilteredItems.value = updatedFiltered
     }
 
-    fun resetScanResults() {
-        _matchedItems.clear()
-        _unmatchedItems.clear()
-        scannedEpcList.clear()
-        _scannedFilteredItems.value = _filteredSource.map { it.copy(scannedStatus = null) }
+    fun resetProductScanResults(){
+        _scannedTags.value = emptyList()
+        _scannedItems.value = emptyList()
+        _rfidMap.value = emptyMap()
+        _allScannedTags.value = emptyList()
+        _existingItems.value = emptyList()
+        _duplicateItems.value = emptyList()
     }
+
+    fun resetScanResults() {
+        viewModelScope.launch(Dispatchers.Default)  {
+            _matchedItems.clear()
+            _unmatchedItems.clear()
+            scannedEpcList.clear()
+            _scannedFilteredItems.value = _filteredSource.map { it.copy(scannedStatus = null) }
+        }
+    }
+
     //    fun scanSingleTagBlocking(onResult: (String?) -> Unit) {
 //        viewModelScope.launch(Dispatchers.IO) {
 //            val tag = readerManager.inventorySingleTag(se)
@@ -395,8 +470,9 @@ class BulkViewModel @Inject constructor(
         allItems.mapNotNull { it.boxName?.takeIf { it.isNotBlank() } }.distinct()
 
     fun getLocalExhibitions(): List<String> =
-        allItems.filter { it.branchName?.equals("Exhibition", ignoreCase = true) == true }
-            .mapNotNull { it.branchName }
+        allItems
+            .filter { it.branchType?.equals("Exhibition", ignoreCase = true) == true }
+            .mapNotNull { it.branchName } // return the branch names
             .distinct()
 
     fun setFilteredItemsByType(type: String, value: String) {
@@ -406,7 +482,7 @@ class BulkViewModel @Inject constructor(
             "branch" -> allItems.filter { it.branchName == value }
             "box" -> allItems.filter { it.boxName == value }
             "exhibition" -> allItems.filter {
-                it.branchName == value && it.branchName.equals(
+                it.branchName == value && it.branchType.equals(
                     "Exhibition",
                     true
                 )
@@ -454,10 +530,12 @@ class BulkViewModel @Inject constructor(
     }
 
     fun stopScanning() {
+        readerManager.stopSound(1)
+        readerManager.stopInventory()
+        _isScanning.value = false
         scanJob?.cancel()
         scanJob = null
-        readerManager.stopInventory()
-        readerManager.stopSound(1)
+
     }
 
 
@@ -580,6 +658,7 @@ class BulkViewModel @Inject constructor(
                     designId = 0,
                     packetId = 0,
                     packetName = "",
+                    branchType = "",
                 ).apply {
                     uhfTagInfo = tag
                 }
@@ -773,6 +852,7 @@ class BulkViewModel @Inject constructor(
                 _allItems = items
                 _scannedFilteredItems.value = items
                 exportToExcel(context, items)
+                preloadFilters(_allItems)
             }
         }
     }
@@ -791,7 +871,7 @@ class BulkViewModel @Inject constructor(
                 _syncStatusText.value = "Fetching data..."
                 val response = bulkRepository.syncBulkItemsFromServer(request)
                 val bulkItems = response
-                    .filter { (it.status == "ApiActive" || it.status == "Active") && it.rfidCode.isNullOrBlank()  }
+                    .filter { it.status == "ApiActive" || it.status == "Active" && !it.rfidCode.isNullOrBlank()  }
                     .map { it.toBulkItem() }
 
                 val total = bulkItems.size

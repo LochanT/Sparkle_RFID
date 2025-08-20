@@ -240,7 +240,8 @@ class ImportExcelViewModel @Inject constructor(
                                 productId = 0,
                                 designId = 0,
                                 packetId = 0,
-                                packetName = ""
+                                packetName = "",
+                                branchType = ""
                             ).apply {
                                 uhfTagInfo = null
                             }
