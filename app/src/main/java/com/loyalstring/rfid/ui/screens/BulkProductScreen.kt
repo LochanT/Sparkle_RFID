@@ -194,6 +194,19 @@ fun BulkProductScreen(
                     }
                 },
                 onGscan = {
+                   /* if (!firstPress) {
+                        firstPress = true
+                        viewModel.toggleScanning(selectedPower)
+
+                        // 🔊 Start sound here
+
+                    } else {
+                        viewModel.stopScanning()
+                        firstPress = false
+
+                        // 🔇 Stop sound here
+
+                    }*/
                     viewModel.toggleScanning(selectedPower)
 
                 },

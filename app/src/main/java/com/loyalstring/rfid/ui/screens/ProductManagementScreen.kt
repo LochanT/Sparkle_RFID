@@ -179,7 +179,7 @@ fun ProductManagementScreen(
    // val syncStatus by viewModel.syncStatusText.collectAsStateWithLifecycle(initialValue = null)
 
     LaunchedEffect(syncStatus) {
-        if (syncStatus.contains("completed", ignoreCase = true) == true) {
+        if (syncStatus.contains("synced", ignoreCase = true) == true) {
             showSuccessDialog = true
             viewModel.clearSyncStatus() // no more error now
         }
@@ -279,7 +279,7 @@ fun ProductManagementScreen(
 
                             when (selectedItem.label) {
                                 "Click to\nSync Data" -> {
-                                    viewModel.syncItems()
+                                    viewModel.syncItems(context)
                                 }
 
                                 "Export\nExcel" -> {
