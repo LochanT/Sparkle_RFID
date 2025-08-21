@@ -596,7 +596,7 @@ fun OrderScreenContent(
         scanTrigger?.let { type ->
             when (type) {
                 "scan" -> if (items.size != 1) bulkViewModel.startScanning(30)
-                "barcode" -> bulkViewModel.startBarcodeScanning()
+                "barcode" -> bulkViewModel.startBarcodeScanning(context)
             }
             bulkViewModel.clearScanTrigger()
         }
@@ -703,7 +703,7 @@ fun OrderScreenContent(
     }
     var nextOrderNo = remember { mutableStateOf(0) }
     LaunchedEffect(lastOrder) {
-        lastOrder.LastOrderNo?.toIntOrNull()?.let { last ->
+        lastOrder.LastOrderNo.toIntOrNull()?.let { last ->
             nextOrderNo.value = last + 1
             Log.d("Order", "Last order number: $last")
             Log.d("Order", "Next order number: ${nextOrderNo.value}")
@@ -723,12 +723,12 @@ fun OrderScreenContent(
 
         totalAMt = productList.sumOf {
             val netWt = it.nWt?.toDoubleOrNull() ?: 0.0
-            val rate = it.todaysRate?.toDoubleOrNull() ?: 0.0
+            val rate = it.todaysRate.toDoubleOrNull() ?: 0.0
             netWt * rate
         }.toString()
         totalGrWt = productList.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }.toString()
         totalFinemetal = productList.sumOf {
-            val finePer = it.finePer?.toDoubleOrNull() ?: 0.0
+            val finePer = it.finePer.toDoubleOrNull() ?: 0.0
             val netWt = it.nWt?.toDoubleOrNull() ?: 0.0
             (finePer / 100.0) * netWt
         }.toString()
@@ -771,7 +771,7 @@ fun OrderScreenContent(
                         var lastOrderNo: Int? = null
                         while (attempts < 10 && lastOrderNo == null) {
                             delay(300)
-                            lastOrderNo = orderViewModel.lastOrderNoresponse.value.LastOrderNo?.toIntOrNull()
+                            lastOrderNo = orderViewModel.lastOrderNoresponse.value.LastOrderNo.toIntOrNull()
                             attempts++
                         }
 
@@ -2014,7 +2014,7 @@ fun OrderItemTableScreen(
     val totalStoneAmt = productList.sumOf { it.stoneAmt?.toDoubleOrNull() ?: 0.0 }
     val totalItemAmt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
     val totalQty = productList.size
-    val totalItemQty = productList.sumOf { it.qty?.toDoubleOrNull() ?: 0.0 }
+    val totalItemQty = productList.sumOf { it.qty.toDoubleOrNull() ?: 0.0 }
     val totalFinmePlusWt=productList.sumOf { it.finePlusWt?.toDoubleOrNull() ?: 0.0 }
 
     Column(
@@ -3453,7 +3453,7 @@ fun generateInvoicePdfAndOpen(
                     if (item.ItemCode.equals(x.ItemCode))
                     {
 
-                        val imageString = x?.Images.toString()
+                        val imageString = x.Images.toString()
                         val lastImagePath =
                             imageString.split(",").lastOrNull()?.trim()
                         Log.d("@@","lastImagePath"+lastImagePath)

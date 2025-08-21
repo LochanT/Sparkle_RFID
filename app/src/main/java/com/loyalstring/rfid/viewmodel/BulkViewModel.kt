@@ -176,7 +176,7 @@ class BulkViewModel @Inject constructor(
     }
 
     fun setFilteredItems(filtered: List<BulkItem>) {
-        _filteredSource = filtered
+        _filteredSource = if (filtered.isEmpty()) _allItems else filtered
     }
 
 
@@ -208,23 +208,19 @@ class BulkViewModel @Inject constructor(
         }
     }
     fun toggleScanningInventory(selectedPower: Int) {
-
         if (_isScanning.value) {
             stopScanningAndCompute()
             _isScanning.value = false
             Log.d("RFID", "Scanning stopped by toggle")
-
         } else {
             _isScanning.value = true
-            resetScanResults()
-            setFilteredItems(_allItems) // or _filteredSource depending on scope
+            resetScanResults()  // 🔑 Always reset before scanning
+            setFilteredItems(_allItems)
             startScanningInventory(selectedPower)
             Log.d("RFID", "Scanning started by toggle")
-
         }
-
-
     }
+
 
     fun toggleScanning(selectedPower: Int) {
         if (_isScanning.value) {
@@ -295,7 +291,6 @@ class BulkViewModel @Inject constructor(
         }
     }
 
-
     fun startScanningInventory(selectedPower: Int) {
         if (!success || _isScanning.value) return
         scanJob?.cancel()
@@ -304,24 +299,29 @@ class BulkViewModel @Inject constructor(
 
         readerManager.startInventoryTag(selectedPower)
         readerManager.playSound(1)
-        scanJob?.cancel()
 
         scanJob = viewModelScope.launch(Dispatchers.IO) {
             while (isActive) {
                 val tag = readerManager.readTagFromBuffer()
                 if (tag != null) {
-                    val epc = tag.epc ?: continue
-                    if (!scannedEpcList.contains(epc)) {
-                        if (scannedEpcList.add(epc)) {
-                            computeScanResults(_filteredSource)
-                        }
+                    val scannedEpc = tag.epc?.trim()?.uppercase() ?: continue
+                    if (scannedEpcList.add(scannedEpc)) {
+                        Log.d("SCAN_DEBUG", "New scanned EPC: $scannedEpc")
 
                         withContext(Dispatchers.Main) {
-                            val updatedList = _filteredSource.map { item ->
+                            val scannedSet = scannedEpcList.toSet()
+                            val updatedList = _scannedFilteredItems.value.map { item ->
+                                val dbEpc = item.epc?.trim()?.uppercase()
                                 when {
-                                    item.epc == epc -> item.copy(scannedStatus = "Matched")
-                                    item.scannedStatus != "Matched" -> item.copy(scannedStatus = "Unmatched")
-                                    else -> item
+                                    dbEpc != null && scannedSet.contains(dbEpc) -> {
+                                        Log.d(
+                                            "SCAN_MATCH",
+                                            "Matched DB EPC: $dbEpc with Scanned EPC: $scannedEpc"
+                                        )
+                                        item.copy(scannedStatus = "Matched")
+                                    }
+
+                                    else -> item.copy(scannedStatus = "Unmatched")
                                 }
                             }
                             _scannedFilteredItems.value = updatedList
@@ -330,6 +330,39 @@ class BulkViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun computeScanResults(filteredItems: List<BulkItem>) {
+        val matched = mutableListOf<BulkItem>()
+        val unmatched = mutableListOf<BulkItem>()
+        val scannedEpcSet = scannedEpcList.map { it.trim().uppercase() }.toSet()
+
+        val updatedFiltered = filteredItems.map { item ->
+            val dbEpc = item.epc?.trim()?.uppercase()
+            when {
+                dbEpc != null && scannedEpcSet.contains(dbEpc) -> {
+                    val updatedItem = item.copy(scannedStatus = "Matched")
+                    matched.add(updatedItem)
+                    updatedItem
+                }
+
+                else -> {
+                    val updatedItem = item.copy(scannedStatus = "Unmatched")
+                    unmatched.add(updatedItem)
+                    updatedItem
+                }
+            }
+        }
+
+        _matchedItems.clear()
+        _matchedItems.addAll(matched)
+
+        _unmatchedItems.clear()
+        _unmatchedItems.addAll(unmatched)
+
+        _scannedFilteredItems.value = updatedFiltered
+
+        Log.d("SCAN_RESULT", "Matched: ${matched.size}, Unmatched: ${unmatched.size}")
     }
 
 
@@ -396,40 +429,22 @@ class BulkViewModel @Inject constructor(
         computeScanResults(_filteredSource)
     }
 
-    fun computeScanResults(filteredItems: List<BulkItem>) {
-        val matched = mutableListOf<BulkItem>()
-        val unmatched = mutableListOf<BulkItem>()
-        val scannedEpcSet = scannedEpcList.toSet()
 
-        val updatedFiltered = filteredItems.map { item ->
-            if (!item.epc.isNullOrBlank() && scannedEpcSet.contains(item.epc)) {
-                val updatedItem = item.copy(scannedStatus = "Matched")
-                matched.add(updatedItem)
-                updatedItem
-            } else {
-                val updatedItem = item.copy(scannedStatus = "Unmatched")
-                unmatched.add(updatedItem)
-                updatedItem
-            }
+    fun resetProductScanResults() {
+        viewModelScope.launch(Dispatchers.Default) {
+            _scannedTags.value = emptyList()
+            _scannedItems.value = emptyList()
+            _rfidMap.value = emptyMap()
+            _allScannedTags.value = emptyList()
+            _existingItems.value = emptyList()
+            _duplicateItems.value = emptyList()
+            _matchedItems.clear()
+            _unmatchedItems.clear()
+            scannedEpcList.clear()
+            _scannedFilteredItems.value = _filteredSource.map { it.copy(scannedStatus = null) }
         }
-
-        _matchedItems.clear()
-        _matchedItems.addAll(matched)
-
-        _unmatchedItems.clear()
-        _unmatchedItems.addAll(unmatched)
-
-        _scannedFilteredItems.value = updatedFiltered
     }
 
-    fun resetProductScanResults(){
-        _scannedTags.value = emptyList()
-        _scannedItems.value = emptyList()
-        _rfidMap.value = emptyMap()
-        _allScannedTags.value = emptyList()
-        _existingItems.value = emptyList()
-        _duplicateItems.value = emptyList()
-    }
 
     fun resetScanResults() {
         viewModelScope.launch(Dispatchers.Default)  {
@@ -452,7 +467,10 @@ class BulkViewModel @Inject constructor(
 //            }
 //        }
 //    }
-    fun startBarcodeScanning() {
+    fun startBarcodeScanning(context: Context) {
+        if (!barcodeDecoder.isOpen) {
+            barcodeDecoder.open(context)
+        }
         barcodeDecoder.startScan()
 
     }
@@ -530,6 +548,7 @@ class BulkViewModel @Inject constructor(
     }
 
     fun stopScanning() {
+        //  onScanStopped()
         readerManager.stopSound(1)
         readerManager.stopInventory()
         _isScanning.value = false

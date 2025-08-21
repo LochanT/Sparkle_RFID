@@ -123,7 +123,25 @@ fun HomeScreen(
                     }
                 }
 
+
+                /* Text(
+                     text = "TEST CRASH",
+                     fontSize = 13.sp,
+                     textAlign = TextAlign.Center,
+                     fontFamily = poppins,
+                     maxLines = 2,
+                     lineHeight = 16.sp, // adds line spacing
+                     modifier = Modifier
+                         .fillMaxWidth()
+                         .clickable {
+                             throw RuntimeException("Test Crash") // Force a crash
+                         }
+                         .padding(horizontal = 2.dp) // optional to help with narrow cards
+                 )*/
+
                 Spacer(modifier = Modifier.height(12.dp))
+
+
 
                 Box(
                     modifier = Modifier

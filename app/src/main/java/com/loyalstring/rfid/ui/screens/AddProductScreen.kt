@@ -95,10 +95,8 @@ import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
-import java.io.File
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import androidx.lifecycle.coroutineScope
+import java.io.File
 
 
 // Imports skipped for brevity — keep your existing ones
@@ -236,7 +234,7 @@ fun AddProductScreen(
         scanTrigger?.let { type ->
             when (type) {
                 "scan" -> if (items.size != 1) bulkViewModel.startScanning(20)
-                "barcode" -> bulkViewModel.startBarcodeScanning()
+                "barcode" -> bulkViewModel.startBarcodeScanning(context)
             }
             bulkViewModel.clearScanTrigger()
         }
@@ -318,7 +316,6 @@ fun AddProductScreen(
         imageUri = imageUri,
         onImageSelected = { uri ->
             bulkViewModel
-
             Log.d("ImageSelected", "URI: $uri")
         }
     )
@@ -355,6 +352,7 @@ fun AddProductScreen(
                             bulkViewModel.onScanKeyPressed(keyType)
                             true
                         }
+
                         else -> false
                     }
                 } else false
@@ -384,9 +382,9 @@ fun AddProductScreen(
                     try {
                         viewModel.barcodeReader.close()
 
-                       /* fun get(label: String) =
-                            formFields.firstOrNull { it.label == label }?.value.orEmpty()*/
-                       fun get(label: String) = fieldValues[label].orEmpty()
+                        /* fun get(label: String) =
+                             formFields.firstOrNull { it.label == label }?.value.orEmpty()*/
+                        fun get(label: String) = fieldValues[label].orEmpty()
 
                         val itemCode = get("Item Code")
                         val rfidCode = get("RFID Code")

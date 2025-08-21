@@ -105,7 +105,9 @@ fun BulkProductScreen(
     DisposableEffect(Unit) {
         val listener = object : ScanKeyListener {
             override fun onBarcodeKeyPressed() {
-                viewModel.startBarcodeScanning()
+
+
+                viewModel.startBarcodeScanning(context)
             }
 
             override fun onRfidKeyPressed() {
@@ -401,7 +403,7 @@ fun BulkProductScreen(
                                     text = displayText,
                                     modifier = Modifier.clickable {
                                         clickedIndex = index
-                                        viewModel.startBarcodeScanning()
+                                        viewModel.startBarcodeScanning(context)
                                     },
                                     fontSize = 11.sp,
                                     color = textColor,

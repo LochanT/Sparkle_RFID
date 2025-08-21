@@ -3,7 +3,6 @@ package com.loyalstring.rfid.ui.screens
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -60,7 +59,6 @@ import androidx.navigation.NavHostController
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
-import com.loyalstring.rfid.ui.utils.BackgroundGradient
 import com.loyalstring.rfid.ui.utils.MappingDialogWrapper
 import com.loyalstring.rfid.ui.utils.SyncProgressBar
 import com.loyalstring.rfid.ui.utils.ToastUtils
@@ -70,7 +68,6 @@ import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.ImportExcelViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
@@ -135,7 +132,7 @@ fun ProductManagementScreen(
                 }
 
                 "barcode" -> {
-                    viewModel.startBarcodeScanning()
+                    viewModel.startBarcodeScanning(context)
                 }
             }
 
@@ -182,7 +179,7 @@ fun ProductManagementScreen(
    // val syncStatus by viewModel.syncStatusText.collectAsStateWithLifecycle(initialValue = null)
 
     LaunchedEffect(syncStatus) {
-        if (syncStatus?.contains("completed", ignoreCase = true) == true) {
+        if (syncStatus.contains("completed", ignoreCase = true) == true) {
             showSuccessDialog = true
             viewModel.clearSyncStatus() // no more error now
         }
