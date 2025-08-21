@@ -25,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.loyalstring.rfid.MainActivity
+import com.loyalstring.rfid.data.reader.ScanKeyListener
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.ToastUtils
@@ -57,13 +60,34 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
     val tags by viewModel.scannedTags.collectAsState()
     val items by viewModel.scannedItems.collectAsState()
     val rfidMap by viewModel.rfidMap.collectAsState()
-    var itemCodes by remember { mutableStateOf("") }
     var firstPress by remember { mutableStateOf(false) }
-    val reloadTrigger by viewModel.reloadTrigger.collectAsState()
     var selectedCount by remember { mutableStateOf(1) }
 
 
     var clickedIndex by remember { mutableStateOf<Int?>(null) }
+    val activity = LocalContext.current as MainActivity
+    var selectedPower by remember { mutableStateOf(30) }
+
+
+
+    DisposableEffect(Unit) {
+        val listener = object : ScanKeyListener {
+            override fun onBarcodeKeyPressed() {
+
+
+                viewModel.startBarcodeScanning(context)
+            }
+
+            override fun onRfidKeyPressed() {
+                viewModel.startScanning(selectedPower) // or toggle start/stop
+            }
+        }
+        activity.registerScanKeyListener(listener)
+
+        onDispose {
+            activity.unregisterScanKeyListener()
+        }
+    }
 
     // ✅ Set barcode scan callback ONCE
     LaunchedEffect(Unit) {
