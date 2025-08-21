@@ -20,6 +20,6 @@ class SettingsViewModel @Inject constructor(
     fun updateSheetUrl(newUrl: String) {
         sheetUrl = newUrl
         userPreferences.saveSheetUrl(newUrl)
-        Log.e("SHEET ID", newUrl)
+        Log.e("SHEET ID", userPreferences.getSheetUrl().toString())
     }
 }

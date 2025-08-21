@@ -290,12 +290,14 @@ fun ProductManagementScreen(
 
                                 "CLick to\nSync Sheet Data" -> {
                                     val sheetId =
-                                        userPreferences.getSheetUrl()
-                                    if (sheetId.isNullOrBlank()) {
+                                        UserPreferences.getInstance(context).getSheetUrl()
+                                    Log.d("@@","sheetId"+sheetId)
+                                    if (sheetId.isNullOrEmpty()) {
                                         ToastUtils.showToast(
                                             context,
                                             "Please add a valid Sheet URL in Settings"
                                         )
+
                                         return@ProductGridCard
                                     }
                                     val sheetUrl =
