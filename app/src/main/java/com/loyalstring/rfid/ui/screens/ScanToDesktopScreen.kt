@@ -67,6 +67,7 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
     var clickedIndex by remember { mutableStateOf<Int?>(null) }
     val activity = LocalContext.current as MainActivity
     var selectedPower by remember { mutableStateOf(30) }
+    var isScanning by remember { mutableStateOf(false) }
 
 
 
@@ -79,13 +80,20 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
             }
 
             override fun onRfidKeyPressed() {
-                viewModel.startScanning(selectedPower) // or toggle start/stop
+                if (isScanning) {
+                    viewModel.stopScanning()   // ⛔ stop reader + sound
+                    isScanning = false
+                } else {
+                    viewModel.startScanning(selectedPower) // ▶️ start reader
+                    isScanning = true
+                }
             }
         }
         activity.registerScanKeyListener(listener)
 
         onDispose {
             activity.unregisterScanKeyListener()
+            viewModel.stopScanning()
         }
     }
 

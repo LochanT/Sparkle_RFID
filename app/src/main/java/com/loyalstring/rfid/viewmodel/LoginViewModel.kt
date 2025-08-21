@@ -15,6 +15,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
@@ -44,10 +46,14 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    fun isUserRemembered(): Boolean {
+   /* fun isUserRemembered(): Boolean {
         val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
         return prefs.getBoolean("remember_me", false)
-    }
+    }*/
+   suspend fun isUserRemembered(): Boolean = withContext(Dispatchers.IO) {
+       val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        prefs.getBoolean("remember_me", false)
+   }
 
     private fun setRememberMe(remember: Boolean) {
         val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)

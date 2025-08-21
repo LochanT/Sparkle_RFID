@@ -189,7 +189,7 @@ private fun SetupNavigation(
     val currentRoute = navBackStackEntry?.destination?.route
     val orderViewModel: OrderViewModel = hiltViewModel()
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
-    Log.d("login screen","employee"+employee)
+
    /* LaunchedEffect(Unit) {
         employee?.clientCode?.let {
             orderViewModel.getAllEmpList(ClientCodeRequest(it))

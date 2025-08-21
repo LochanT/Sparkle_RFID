@@ -46,6 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
@@ -80,12 +81,14 @@ import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.loyalstring.rfid.MainActivity
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.model.login.Employee
+import com.loyalstring.rfid.data.reader.ScanKeyListener
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
@@ -173,6 +176,13 @@ fun AddProductScreen(
     val skuName = fieldValues["SKU"].orEmpty()
     val scope = rememberCoroutineScope()
 
+    var isScanning by remember { mutableStateOf(false) }
+    //var showSuccessDialog by remember { mutableStateOf(false) }
+
+    var selectedPower by remember { mutableStateOf(10) }
+    val activity = LocalContext.current as MainActivity
+
+
 
 
 
@@ -213,7 +223,8 @@ fun AddProductScreen(
     fun updateField(label: String, value: String) {
         fieldValues[label] = value
         if (label == "Gross Weight" || label == "Stone Weight" || label == "Diamond Weight") {
-            val gross = fieldValues["Gross Weight"]?.toDoubleOrNull() ?: 0.0
+            val gross = fieldValues["" +
+                    "Gross Weight"]?.toDoubleOrNull() ?: 0.0
             val stone = fieldValues["Stone Weight"]?.toDoubleOrNull() ?: 0.0
             val diamond = fieldValues["Diamond Weight"]?.toDoubleOrNull() ?: 0.0
             val net = gross - stone - diamond
@@ -222,6 +233,34 @@ fun AddProductScreen(
     }
 
     val isCategoryDisabled = fieldValues["SKU"].isNullOrEmpty().not()
+
+    DisposableEffect(Unit) {
+        val listener = object : ScanKeyListener {
+            override fun onBarcodeKeyPressed() {
+
+
+                bulkViewModel.startBarcodeScanning(context)
+            }
+
+            override fun onRfidKeyPressed() {
+                if (isScanning) {
+                    bulkViewModel.stopScanning()
+                    isScanning = false
+                } else {
+                    bulkViewModel.startSingleScan(20) { tag ->
+                        tag.epc?.let { updateField("EPC", it) }
+                    }
+                    isScanning = true
+                }
+            }
+        }
+        activity.registerScanKeyListener(listener)
+
+        onDispose {
+            activity.unregisterScanKeyListener()
+        }
+    }
+
 
 
     LaunchedEffect(Unit) {

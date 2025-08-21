@@ -99,6 +99,7 @@ fun BulkProductScreen(
     val duplicateTags by viewModel.duplicateItems
 
     val activity = LocalContext.current as MainActivity
+    var isScanning by remember { mutableStateOf(false) }
     //var showSuccessDialog by remember { mutableStateOf(false) }
 
 
@@ -111,7 +112,13 @@ fun BulkProductScreen(
             }
 
             override fun onRfidKeyPressed() {
-                viewModel.startScanning(selectedPower) // or toggle start/stop
+                if (isScanning) {
+                    viewModel.stopScanning()
+                    isScanning = false
+                } else {
+                    viewModel.startScanning(selectedPower)
+                    isScanning = true
+                }
             }
         }
         activity.registerScanKeyListener(listener)
