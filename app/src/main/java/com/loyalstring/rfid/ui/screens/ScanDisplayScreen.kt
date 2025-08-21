@@ -180,12 +180,12 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     var selectedItem by remember { mutableStateOf<BulkItem?>(null) }
     var showItemDialog by remember { mutableStateOf(false) }
 
-    var selectedPower by remember { mutableIntStateOf(10) }
+    var selectedPower by remember { mutableIntStateOf(30) }
     var isScanning by remember { mutableStateOf(false) }
 
     val scannedFiltered by bulkViewModel.scannedFilteredItems
 
-    val scopeItems = remember(
+    val scopeItems by remember(
         filteredItems,
         selectedCategoriesKey,
         selectedProductsKey,
@@ -193,24 +193,29 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
         currentLevel, currentCategory, currentProduct, currentDesign,
         scannedFiltered
     ) {
-        val baseList = filteredItems.filter { item ->
-            (selectedCategoriesKey.isEmpty() || selectedCategoriesKey.contains(item.category.orEmpty())) &&
-                    (selectedProductsKey.isEmpty()  || selectedProductsKey.contains(item.productName.orEmpty())) &&
-                    (selectedDesignsKey.isEmpty()   || selectedDesignsKey.contains(item.design.orEmpty())) &&
-                    when (currentLevel) {
-                        "Category"     -> true
-                        "Product"      -> item.category == currentCategory
-                        "Design"       -> item.category == currentCategory && item.productName == currentProduct
-                        "DesignItems"  -> item.category == currentCategory && item.productName == currentProduct && item.design == currentDesign
-                        else           -> true
-                    }
-        }
-
-        val scanMap = scannedFiltered.associateBy { it.rfid }
-        baseList.map { original ->
-            scanMap[original.rfid]?.let { scanned -> original.copy(scannedStatus = scanned.scannedStatus) } ?: original
+        derivedStateOf {
+            val baseList = filteredItems.filter { item ->
+                (selectedCategoriesKey.isEmpty() || selectedCategoriesKey.contains(item.category.orEmpty())) &&
+                        (selectedProductsKey.isEmpty() || selectedProductsKey.contains(item.productName.orEmpty())) &&
+                        (selectedDesignsKey.isEmpty() || selectedDesignsKey.contains(item.design.orEmpty())) &&
+                        when (currentLevel) {
+                            "Category" -> true
+                            "Product" -> item.category == currentCategory
+                            "Design" -> item.category == currentCategory && item.productName == currentProduct
+                            "DesignItems" -> item.category == currentCategory && item.productName == currentProduct && item.design == currentDesign
+                            else -> true
+                        }
+            }
+            val scanMap = scannedFiltered.associateBy { it.epc?.trim()?.uppercase() }
+            baseList.map { original ->
+                val key = original.epc?.trim()?.uppercase()
+                scanMap[key]?.let { scanned ->
+                    original.copy(scannedStatus = scanned.scannedStatus)
+                } ?: original.copy(scannedStatus = "Unmatched")
+            }
         }
     }
+
 
     val displayItems = remember(scopeItems, selectedMenu) {
         when (selectedMenu) {
@@ -238,12 +243,11 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                 if (!isScanning) {
                     isScanning = true
                     bulkViewModel.resetScanResults()
-                    bulkViewModel.setFilteredItems(allItems)
+                    bulkViewModel.setFilteredItems(scopeItems)   // ✅
                     bulkViewModel.startScanningInventory(selectedPower)
                 } else {
                     isScanning = false
-                    bulkViewModel.stopScanning()
-                    bulkViewModel.computeScanResults(allItems)
+                    bulkViewModel.stopScanningAndCompute()
                 }
             }
         }
@@ -255,29 +259,29 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     }
     LaunchedEffect(isScanning, allMatched) {
         if (isScanning && allMatched) {
-            bulkViewModel.stopScanning()
+            bulkViewModel.stopScanningAndCompute()
             // Ensure final statuses are computed in case your VM does any post pass
-            bulkViewModel.computeScanResults(scopeItems)
+            //  bulkViewModel.computeScanResults(scopeItems)
             isScanning = false
             Toast.makeText(context, "All items matched. Scan stopped.", Toast.LENGTH_SHORT).show()
         }
     }
     LaunchedEffect(isScanning, scopeItems.size) {
         if (isScanning && scopeItems.isEmpty()) {
-            bulkViewModel.stopScanning()
+            bulkViewModel.stopScanningAndCompute()
             isScanning = false
         }
     }
     DisposableEffect(Unit) {
         onDispose {
-            bulkViewModel.stopScanning()
+            bulkViewModel.stopScanningAndCompute()
         }
     }
 
 
     LaunchedEffect(scopeItems) {
         if (isScanning && scopeItems.isNotEmpty() && scopeItems.all { it.scannedStatus == "Matched" }) {
-            bulkViewModel.stopScanning()
+            bulkViewModel.stopScanningAndCompute()
             isScanning = false
         }
     }
@@ -327,25 +331,22 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         if (!isScanning) {
                             isScanning = true
                             bulkViewModel.resetScanResults()
-                            bulkViewModel.setFilteredItems(allItems)
+                            bulkViewModel.setFilteredItems(scopeItems)   // ✅ only current scope
                             bulkViewModel.startScanningInventory(selectedPower)
                         } else {
                             isScanning = false
-                            bulkViewModel.stopScanning()
-                            bulkViewModel.computeScanResults(allItems)
+                            bulkViewModel.stopScanningAndCompute()
                         }
                     },
                     onReset = {
-                        bulkViewModel.stopScanning()
+                        bulkViewModel.stopScanningAndCompute()
                         isScanning = false
 
                         selectedCategories.clear()
                         selectedProducts.clear()
                         selectedDesigns.clear()
 
-                        // Restore full list, not empty
-                        bulkViewModel.setFilteredItems(allItems)
-
+                        bulkViewModel.setFilteredItems(allItems) // ✅ reset to full DB
                         bulkViewModel.resetScanResults()
 
                         selectedMenu = MENU_ALL
@@ -354,6 +355,7 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         currentProduct = null
                         currentDesign = null
                     }
+
                 )
             }
         }
@@ -384,21 +386,16 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         .show()
                 }
             )
-
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                item { TableHeader(currentLevel) }
-
+            TableHeader(currentLevel)
+            LazyColumn(modifier = Modifier.weight(1f)) {
                 if (currentLevel != "DesignItems") {
                     val groupedRows = when (currentLevel) {
                         "Category" -> displayItems.groupBy { it.category ?: "Unknown" }
-                        "Product" -> displayItems
-                            .filter { it.category == currentCategory } // ✅ filter by selected category
+                        "Product" -> displayItems.filter { it.category == currentCategory }
                             .groupBy { it.productName ?: "Unknown" }
 
-                        "Design" -> displayItems
-                            .filter { it.category == currentCategory && it.productName == currentProduct } // ✅ filter by selected category + product
+                        "Design" -> displayItems.filter { it.category == currentCategory && it.productName == currentProduct }
                             .groupBy { it.design ?: "Unknown" }
-
                         else -> emptyMap()
                     }
 
@@ -409,6 +406,11 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                                     "Category" -> {
                                         currentCategory = label
                                         currentLevel = "Product"
+
+                                        // ✅ Sync with filter row
+                                        selectedCategories.clear()
+                                        selectedCategories.add(label)
+
                                         selectedProducts.clear()
                                         selectedDesigns.clear()
                                     }
@@ -416,15 +418,25 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                                     "Product" -> {
                                         currentProduct = label
                                         currentLevel = "Design"
+
+                                        // ✅ Sync with filter row
+                                        selectedProducts.clear()
+                                        selectedProducts.add(label)
+
                                         selectedDesigns.clear()
                                     }
 
                                     "Design" -> {
                                         currentDesign = label
                                         currentLevel = "DesignItems"
+
+                                        // ✅ Sync with filter row
+                                        selectedDesigns.clear()
+                                        selectedDesigns.add(label)
                                     }
                                 }
                             }
+
                         }
                     }
                 }
@@ -440,7 +452,6 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
             }
         }
     }
-
     if (showDialog) {
         val items = when (filterType) {
             "Category" -> allCategories
@@ -454,24 +465,53 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
             "Design" -> selectedDesigns
             else -> mutableStateListOf()
         }
+
         FilterSelectionDialog(
             title = filterType,
             items = items,
             selectedItems = selected,
             onDismiss = { showDialog = false },
             onConfirm = {
-                if (filterType == "Category") {
-                    selectedProducts.clear()
-                    selectedDesigns.clear()
-                } else if (filterType == "Product") {
-                    selectedDesigns.clear()
+                // OK just closes
+                showDialog = false
+            },
+            onSelectionChanged = {
+                when (filterType) {
+                    "Category" -> {
+                        // ✅ Reset lower filters every time Category changes
+                        selectedProducts.clear()
+                        selectedDesigns.clear()
+
+                        currentLevel = "Category"
+                        currentCategory = selectedCategories.firstOrNull()
+                        currentProduct = null
+                        currentDesign = null
+                    }
+
+                    "Product" -> {
+                        // ✅ Reset designs every time Product changes
+                        selectedDesigns.clear()
+
+                        currentLevel = "Product"
+                        currentProduct = selectedProducts.firstOrNull()
+                        currentDesign = null
+                    }
+
+                    "Design" -> {
+                        currentLevel = "Design"
+                        currentDesign = selectedDesigns.firstOrNull()
+                    }
                 }
+
+                // ✅ Always refresh after any change
                 bulkViewModel.setFilteredItems(scopeItems)
                 bulkViewModel.resetScanResults()
-                showDialog = false
             }
+
         )
     }
+
+
 
     if (showMenu) {
         Box(
@@ -577,15 +617,24 @@ fun SummaryRow(currentLevel: String, items: List<BulkItem>, selectedMenu: String
                 .background(Color(0xFF3B363E))
                 .padding(vertical = 4.dp)
         ) {
-            TableHeaderCell("Total", colCategoryWidth)
-            TableHeaderCell(if (currentLevel == "DesignItems") "" else "$totalQty", colQtyWidth)
-            TableHeaderCell(
-                if (currentLevel == "DesignItems") "" else formatMatchedUpTo3(totalGwtBD),
-                colWeightWidth
-            )
-            TableHeaderCell("$totalMatchedQty", colMatchedQtyWidth)
-            TableHeaderCell(formatMatchedUpTo3(totalMatchedWtBD), colMatchedWtWidth)
-            TableHeaderCell("", colStatusWidth)
+            if (currentLevel == "DesignItems") {
+                TableHeaderCell("Total", colDesignNameWidth)
+                TableHeaderCell("$totalQty", colRfidWidth)
+                TableHeaderCell("$totalMatchedQty", colItemCodeWidth)
+                TableHeaderCell(formatMatchedUpTo3(totalMatchedWtBD), colGWtWidth)
+                TableHeaderCell("", colStatusIconWidth)
+            } else {
+                TableHeaderCell("Total", colCategoryWidth)
+                TableHeaderCell(if (currentLevel == "DesignItems") "" else "$totalQty", colQtyWidth)
+                TableHeaderCell(
+                    if (currentLevel == "DesignItems") "" else formatMatchedUpTo3(totalGwtBD),
+                    colWeightWidth
+                )
+                TableHeaderCell("$totalMatchedQty", colMatchedQtyWidth)
+                TableHeaderCell(formatMatchedUpTo3(totalMatchedWtBD), colMatchedWtWidth)
+                TableHeaderCell("", colStatusWidth)
+            }
+
         }
     }
 }
@@ -716,72 +765,85 @@ fun VerticalMenu(onMenuClick: (MenuItem) -> Unit) {
         }
     }
 }
-
 @Composable
 fun FilterSelectionDialog(
     title: String,
     items: List<String>,
     selectedItems: SnapshotStateList<String>,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    onSelectionChanged: () -> Unit // 👈 new
 ) {
-    AlertDialog(onDismissRequest = onDismiss, title = {
-        Text(
-            text = "Select $title",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            fontFamily = poppins
-        )
-    }, text = {
-        Column {
-            LazyColumn(
-                modifier = Modifier
-                    .heightIn(max = 280.dp)
-                    .fillMaxWidth()
-                    .padding(vertical = 2.dp)
-            ) {
-                items(items) { item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                if (selectedItems.contains(item)) selectedItems.remove(item) else selectedItems.add(
-                                    item
-                                )
-                            }
-                            .padding(vertical = 10.dp, horizontal = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = selectedItems.contains(item),
-                            onCheckedChange = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(
-                            text = item,
-                            fontSize = 11.sp,
-                            color = Color.DarkGray,
-                            fontFamily = poppins,
-                            maxLines = 1
-                        )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Select $title",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = poppins
+            )
+        },
+        text = {
+            Column {
+                LazyColumn(
+                    modifier = Modifier
+                        .heightIn(max = 280.dp)
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp)
+                ) {
+                    items(items) { item ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (selectedItems.contains(item)) {
+                                        selectedItems.remove(item)
+                                    } else {
+                                        selectedItems.add(item)
+                                    }
+                                    onSelectionChanged() // 👈 fire immediately
+                                }
+                                .padding(vertical = 10.dp, horizontal = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = selectedItems.contains(item),
+                                onCheckedChange = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = item,
+                                fontSize = 11.sp,
+                                color = Color.DarkGray,
+                                fontFamily = poppins,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
-            }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                GradientButton(text = "Cancel", onClick = onDismiss)
-                Spacer(modifier = Modifier.width(12.dp))
-                GradientButton(text = "OK", onClick = onConfirm)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    GradientButton(text = "Cancel", onClick = onDismiss)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    GradientButton(text = "OK", onClick = {
+                        onConfirm()
+                        onDismiss()
+                    })
+                }
             }
-        }
-    }, confirmButton = {}, dismissButton = {})
+        },
+        confirmButton = {},
+        dismissButton = {}
+    )
 }
+
 
 data class MenuItem(val title: String, val iconRes: Int)
 
