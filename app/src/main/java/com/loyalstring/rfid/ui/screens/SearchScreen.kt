@@ -150,6 +150,7 @@ fun SearchScreen(
                     searchViewModel.stopSearch()
                     firstPress = false
                 }
+
             )
         }
     ) { innerPadding ->

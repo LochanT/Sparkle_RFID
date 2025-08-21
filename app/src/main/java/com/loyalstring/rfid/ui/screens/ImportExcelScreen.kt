@@ -100,7 +100,6 @@ fun ImportExcelScreen(
         "sku",
         "vendor",
         "boxName"
-
     )
 
 
@@ -113,7 +112,7 @@ fun ImportExcelScreen(
             showOverlay = false
             showProgress = false
 
-            if (importProgress.failedFields.isEmpty()) {
+            if ((importProgress.failedFields.isEmpty()) && (importProgress.importedFields !=0)) {
                 dialogMessage = "✅ Import successful: ${importProgress.importedFields} fields"
                 isError = false
             } else {

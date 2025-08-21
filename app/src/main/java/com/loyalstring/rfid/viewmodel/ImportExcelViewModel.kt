@@ -106,14 +106,31 @@ class ImportExcelViewModel @Inject constructor(
                         val rfid = getStringFromRow(
                             row,
                             rawHeaderIndexMap,
-                            normalizedFieldMapping["rfid"]
+                           "rfid"
                         )
 
                         var epcVal = getStringFromRow(
                             row,
                             rawHeaderIndexMap,
-                            normalizedFieldMapping["epc"]
+                           "epc"
                         ).trim()
+
+                        var productName = getStringFromRow(
+                            row,
+                            rawHeaderIndexMap,
+                            "productname"
+                        )
+                        var itemCode = getStringFromRow(
+                            row,
+                            rawHeaderIndexMap,
+                            "itemcode"
+                        )
+                       var  category = getStringFromRow(
+                            row,
+                            rawHeaderIndexMap,
+                            "category"
+                        )
+
 
 // If EPC is missing → fetch using itemCode
                         if (epcVal.isBlank()) {
@@ -127,85 +144,73 @@ class ImportExcelViewModel @Inject constructor(
 
                         try {
                             val item = BulkItem(
-                                productName = getStringFromRow(
-                                    row,
-                                    rawHeaderIndexMap,
-                                    normalizedFieldMapping["productname"]
-                                ),
-                                itemCode = getStringFromRow(
-                                    row,
-                                    rawHeaderIndexMap,
-                                    normalizedFieldMapping["itemcode"]
-                                ),
+                                productName =productName,
+                                itemCode = itemCode,
                                 rfid = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["rfid"]
+                                  "rfid"
                                 ),
                                 netWeight = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["netweight"]
+                                    "netweight"
                                 ),
-                                category = getStringFromRow(
-                                    row,
-                                    rawHeaderIndexMap,
-                                    normalizedFieldMapping["category"]
-                                ),
+                                category =category,
                                 purity = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["purity"]
+                                    "purity"
                                 ),
                                 design = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["design"]
+                                    "design"
                                 ),
                                 grossWeight = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["grossweight"]
+                                    "grossweight"
                                 ),
                                 stoneWeight = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["stoneweight"]
+                                    "stoneweight"
                                 ),
                                 makingPerGram = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["makingpergram"]
+                                    "makingpergram"
                                 ),
                                 makingPercent = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["makingpercent"]
+                                    "makingpercent"
                                 ),
                                 fixMaking = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["fixmaking"]
+                                    "fixmaking"
                                 ),
                                 fixWastage = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["fixwastage"]
+                                    "fixwastage"
                                 ),
                                 stoneAmount = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["stoneamount"]
+                                    "stoneamount"
                                 ),
                                 counterName = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["countername"]
+                                    "countername"
                                 ),
                                 branchName = getStringFromRow(
                                     row,
                                     rawHeaderIndexMap,
-                                    normalizedFieldMapping["branchname"]
+                                    "branchname"
                                 ),
                                 id = 0,
                                 dustWeight = "",
@@ -295,8 +300,33 @@ class ImportExcelViewModel @Inject constructor(
     }
 
 
+    val headerAliases = mapOf(
+        "rfid" to listOf("rfid", "rfid code", "rfid number","barcode","barcode number"),
+        "itemcode" to listOf("itemcode","item code", "code", "product code"),
+        "grossweight" to listOf("gross wt", "gross weight"),
+        "netweight" to listOf("net wt", "net weight"),
+        "category" to listOf("category name", "category"),
+        "productname" to listOf("productname","product name", "product"),
+        "dustweight" to listOf("dustweight","diamond wt", "diamond weight"),
+        "countername" to listOf("counter", "counter name"),
+        "branchname" to listOf("branch", "branch name"),
+        "design" to listOf("design name", "design"),
+        "purity" to listOf("purity name", "purity","stamp"),
+        "makingpergram" to listOf("makingpergram", "makingper"),
+        "makingpercent" to listOf("making percent", "making %","making per"),
+        "fixmaking" to listOf("fixmaking", "fixedmaking","fix","fixed"),
+        "fixwastage" to listOf("fixwastage", "wastage","fixedwastage"),
+        "stoneamount" to listOf("stoneamount","stone", "stone amt","stone amount"),
+        "dustamount" to listOf("dustamount", "diamond amt","diamond amount"),
+        "sku" to listOf("sku"),
+        "vendor" to listOf("vendor"),
+        "boxname" to listOf("box","box name","boxName"),
 
-    private fun getStringFromRow(
+        // add more as needed
+    )
+
+
+  /*  private fun getStringFromRow(
         row: Row,
         headerIndexMap: Map<String, Int>,
         columnName: String?
@@ -307,7 +337,24 @@ class ImportExcelViewModel @Inject constructor(
         } catch (e: Exception) {
           ""
         }
+    }*/
+
+    private fun getStringFromRow(
+        row: Row,
+        headerIndexMap: Map<String, Int>,
+        columnName: String?
+    ): String {
+        if (columnName == null) return ""
+
+        // Always lowercase aliases for comparison
+        val aliases = headerAliases[columnName.lowercase()]?.map { it.lowercase() }
+            ?: listOf(columnName.lowercase())
+
+        val index = aliases.firstNotNullOfOrNull { headerIndexMap[it] }
+
+        return if (index != null) getCellValue(row.getCell(index)).trim() else ""
     }
+
 
     fun getCellValue(cell: Cell?): String {
         return when (cell?.cellType) {

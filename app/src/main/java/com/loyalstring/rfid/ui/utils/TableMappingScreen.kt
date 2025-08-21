@@ -309,6 +309,7 @@ fun TableMappingScreen(
     )
 }
 
+
 // REMOVE the old stub that shadowed Material's ExposedDropdownMenu
 // (It caused build errors and prevented the Material component from being used.)
 // @Composable
