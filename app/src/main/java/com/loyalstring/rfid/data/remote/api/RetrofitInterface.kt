@@ -29,6 +29,7 @@ import com.loyalstring.rfid.data.remote.data.DeleteOrderResponse
 import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
 import com.loyalstring.rfid.data.remote.data.ProductDeleteResponse
 import com.loyalstring.rfid.data.model.stockTransfer.StockTransferResponse
+import com.loyalstring.rfid.data.remote.data.EditDataRequest
 import com.loyalstring.rfid.data.remote.data.StockTransferRequest
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.MultipartBody
@@ -172,7 +173,7 @@ interface RetrofitInterface {
     /* update single stock*/
     @POST("api/ProductMaster/UpdateLabeledStock")
     suspend fun updateStock(
-        @Body payload: List<InsertProductRequest>
+        @Body payload: List<EditDataRequest>
     ): Response<List<PurityModel>>
 
 

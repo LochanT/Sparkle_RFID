@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -46,6 +47,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
@@ -63,6 +65,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.nativeKeyCode
@@ -80,12 +83,14 @@ import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.loyalstring.rfid.MainActivity
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.addSingleItem.InsertProductRequest
 import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.model.login.Employee
+import com.loyalstring.rfid.data.reader.ScanKeyListener
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
@@ -172,6 +177,13 @@ fun AddProductScreen(
     fieldValues["SKU"].orEmpty()
     rememberCoroutineScope()
 
+    var isScanning by remember { mutableStateOf(false) }
+    //var showSuccessDialog by remember { mutableStateOf(false) }
+
+    var selectedPower by remember { mutableStateOf(10) }
+    val activity = LocalContext.current as MainActivity
+
+
 
 
 
@@ -212,7 +224,8 @@ fun AddProductScreen(
     fun updateField(label: String, value: String) {
         fieldValues[label] = value
         if (label == "Gross Weight" || label == "Stone Weight" || label == "Diamond Weight") {
-            val gross = fieldValues["Gross Weight"]?.toDoubleOrNull() ?: 0.0
+            val gross = fieldValues["" +
+                    "Gross Weight"]?.toDoubleOrNull() ?: 0.0
             val stone = fieldValues["Stone Weight"]?.toDoubleOrNull() ?: 0.0
             val diamond = fieldValues["Diamond Weight"]?.toDoubleOrNull() ?: 0.0
             val net = gross - stone - diamond
@@ -221,6 +234,34 @@ fun AddProductScreen(
     }
 
     val isCategoryDisabled = fieldValues["SKU"].isNullOrEmpty().not()
+
+    DisposableEffect(Unit) {
+        val listener = object : ScanKeyListener {
+            override fun onBarcodeKeyPressed() {
+
+
+                bulkViewModel.startBarcodeScanning(context)
+            }
+
+            override fun onRfidKeyPressed() {
+                if (isScanning) {
+                    bulkViewModel.stopScanning()
+                    isScanning = false
+                } else {
+                    bulkViewModel.startSingleScan(20) { tag ->
+                        tag.epc?.let { updateField("EPC", it) }
+                    }
+                    isScanning = true
+                }
+            }
+        }
+        activity.registerScanKeyListener(listener)
+
+        onDispose {
+            activity.unregisterScanKeyListener()
+        }
+    }
+
 
 
     LaunchedEffect(Unit) {
@@ -499,7 +540,7 @@ fun AddProductScreen(
                             Log.d("AddProductScreen", "isStockAdded" + isStockAdded)
                             if (isStockAdded) {
                                 ToastUtils.showToast(context, "Stock Added Successfully!")
-                                bulkViewModel.syncItems()
+                                bulkViewModel.syncItems(context)
 
                             }else
                             {
@@ -556,7 +597,8 @@ fun AddProductScreen(
                     updateField("Stone Amount", "")
                     updateField("Diamond Amount", "")
                     updateField("Stone Weight", "")
-                }
+                },
+                isScanning = isScanning
             )
         }
     ) { innerPadding ->
@@ -648,7 +690,8 @@ fun ScanBottomBar(
     onList: () -> Unit,
     onScan: () -> Unit,
     onGscan: () -> Unit,
-    onReset: () -> Unit
+    onReset: () -> Unit,
+    isScanning: Boolean
 ) {
 
     // We use a Box to allow the center button to overlap/elevate
@@ -685,7 +728,7 @@ fun ScanBottomBar(
                 }
             }
             Spacer(modifier = Modifier.width(64.dp)) // space for center button
-            TextButton(onClick = onGscan) {
+       /*     TextButton(onClick = onGscan) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         painter = painterResource(R.drawable.ic_gscan),
@@ -695,7 +738,37 @@ fun ScanBottomBar(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Gscan", color = Color.DarkGray, fontSize = 12.sp, fontFamily = poppins)
                 }
+            }*/
+            TextButton(onClick = onGscan) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (isScanning) {
+                        // Use vector icon when scanning
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Stop Scan",
+                            tint = Color.DarkGray
+                        )
+                    } else {
+                        // Use painterResource when not scanning
+                        Icon(
+                            painter = painterResource(R.drawable.ic_gscan),
+                            contentDescription = "Start Scan",
+                            tint = Color.DarkGray
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Text(
+                        text = if (isScanning) "Stop" else "Scan",
+                        color = if (isScanning) Color.DarkGray else Color.DarkGray,
+                        fontSize = 12.sp,
+                        fontFamily = poppins
+                    )
+                }
             }
+
+
             TextButton(onClick = onReset) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(

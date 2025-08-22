@@ -24,10 +24,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -52,6 +50,7 @@ fun SearchScreen(
     navController: NavHostController,
 ) {
     val searchViewModel: SearchViewModel = hiltViewModel()
+    var isScanning by remember { mutableStateOf(false) }
 
 
     val unmatchedItems = remember {
@@ -131,8 +130,9 @@ fun SearchScreen(
                 onScan = { },
                 onGscan = {
 
-                    if (!firstPress) {
+                    if (!firstPress && !isScanning) {
                         firstPress = true
+                        isScanning=true
                         searchViewModel.startSearch(unmatchedItems)
 
                         // 🔊 Start sound here
@@ -140,6 +140,7 @@ fun SearchScreen(
                     } else {
                         searchViewModel.stopSearch()
                         firstPress = false
+                        isScanning=false
 
                         // 🔇 Stop sound here
                         // searchViewModel.stopScanSound()
@@ -149,7 +150,10 @@ fun SearchScreen(
                     searchQuery = ""
                     searchViewModel.stopSearch()
                     firstPress = false
-                }
+                    isScanning=false
+
+                },
+                isScanning = isScanning
 
             )
         }

@@ -16,7 +16,7 @@ import javax.inject.Inject
 
 class BulkRepositoryImpl @Inject constructor(
     private val apiService: RetrofitInterface,
-    private val bulkItemDao: BulkItemDao,
+    override val bulkItemDao: BulkItemDao,
     private val epcDao: EpcDao
 ) : BulkRepository {
 

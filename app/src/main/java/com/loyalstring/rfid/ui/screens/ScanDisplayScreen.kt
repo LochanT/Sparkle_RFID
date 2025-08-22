@@ -120,6 +120,56 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
         }
     }
 
+   // val rfidItems by bulkViewModel.rfidList.collectAsState()
+    //val rfidItems by bulkViewModel.rfidList.collectAsState(initial = emptyList())
+    val rfidItems by bulkViewModel.rfidList.collectAsState()
+    var showRfidDialog by remember { mutableStateOf(false) }
+
+
+  /*  LaunchedEffect(rfidItems) {
+        if (rfidItems.isEmpty()) {
+            showRfidDialog = true
+        }
+    }*/
+
+    if (showRfidDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showRfidDialog = false
+                navController.popBackStack()
+            },
+            confirmButton = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    GradientButton(
+                        text = "OK",
+                        onClick = {
+                            showRfidDialog = false
+                            navController.popBackStack()
+                        }
+                    )
+                }
+            },
+            title = {
+                Text(
+                    "Missing Data",
+                    fontFamily = poppins,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Text(
+                    "RFID sheet not uploaded. Please contact administrator.",
+                    fontFamily = poppins,
+                    fontSize = 14.sp
+                )
+            }
+        )
+    }
+
+
     val allItems by productListViewModel.productList.collectAsState(initial = emptyList())
 
     val filteredItems = remember(allItems, filterTypeName, filterValue) {
@@ -371,7 +421,8 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         currentCategory = null
                         currentProduct = null
                         currentDesign = null
-                    }
+                    },
+                    isScanning = isScanning
 
                 )
             }

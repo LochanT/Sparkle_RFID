@@ -57,9 +57,11 @@ import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.BackGroundLinerGradient
 import com.loyalstring.rfid.ui.utils.BackgroundGradient
+import com.loyalstring.rfid.ui.utils.NetworkUtils
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.LoginViewModel
+import com.rscja.deviceapi.RFIDWithUHFUART
 
 @Composable
 fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltViewModel()) {
@@ -75,6 +77,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltVi
     val isLoading = loginResponse is Resource.Loading
     val errorMessage = (loginResponse as? Resource.Error)?.message
     val loginSuccess = loginResponse is Resource.Success
+
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
@@ -176,6 +179,10 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltVi
                                 "Please enter username and password",
                                 Toast.LENGTH_SHORT
                             ).show()
+                            return@clickable
+                        }
+                        if (!NetworkUtils.isNetworkAvailable(context)) {
+                            Toast.makeText(context, "Please Check Your Internet Connection", Toast.LENGTH_SHORT).show()
                             return@clickable
                         }
 

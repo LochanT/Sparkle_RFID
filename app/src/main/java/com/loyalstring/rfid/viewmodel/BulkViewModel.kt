@@ -1,10 +1,13 @@
 package com.loyalstring.rfid.viewmodel
 
 import ScannedDataToService
+import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.media.MediaScannerConnection
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
@@ -17,6 +20,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.loyalstring.rfid.data.local.dao.BulkItemDao
 import com.loyalstring.rfid.data.local.entity.BulkItem
+import com.loyalstring.rfid.data.local.entity.EpcDto
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.ScannedItem
 import com.loyalstring.rfid.data.model.login.Employee
@@ -153,6 +157,18 @@ class BulkViewModel @Inject constructor(
 
     private val _exhibitions = MutableStateFlow<List<String>>(emptyList())
     val exhibitions: StateFlow<List<String>> = _exhibitions
+
+    private var syncedRFIDMap: Map<String, String>? = null
+
+
+
+    // ✅ function to update value at a specific index
+   fun updateRfidForIndex(index: Int, newValue: String) {
+        _rfidMap.value = _rfidMap.value.toMutableMap().apply {
+            this[index] = newValue
+        }
+    }
+
 
 
     fun preloadFilters(allItems: List<BulkItem>) {
@@ -876,7 +892,8 @@ class BulkViewModel @Inject constructor(
         }
     }
 
-    fun syncItems() {
+    @SuppressLint("MissingPermission")
+    fun syncItems(context: Context) {
         viewModelScope.launch {
             try {
                 Log.d("Sync", "syncItems called")
@@ -887,43 +904,189 @@ class BulkViewModel @Inject constructor(
                 val clientCode = employee?.clientCode ?: return@launch
                 val request = ClientCodeRequest(clientCode)
 
+                // 🌐 Check internet before calling API
+                if (!isNetworkAvailable(context)) {
+                    _syncProgress.value = 0f
+                    _syncStatusText.value = "No internet connection."
+                    _toastMessage.emit("Sync failed: No internet connection.")
+                    Log.e("Sync", "No internet connection.")
+
+                    delay(2000) // keep error visible
+                    _isLoading.value = false
+                    return@launch
+                }
+
                 _syncStatusText.value = "Fetching data..."
                 val response = bulkRepository.syncBulkItemsFromServer(request)
+
                 val bulkItems = response
-                    .filter { it.status == "ApiActive" || it.status == "Active" && !it.rfidCode.isNullOrBlank()  }
+                    .filter { (it.status == "ApiActive" || it.status == "Active") && !it.rfidCode.isNullOrBlank() }
                     .map { it.toBulkItem() }
+
+                // 🛑 Handle empty list
+                if (bulkItems.isEmpty()) {
+                    _syncProgress.value = 0f
+                    _syncStatusText.value = "No data found to sync."
+                    _toastMessage.emit("No data found to sync.")
+                    Log.w("Sync", "Server returned empty list")
+
+                    delay(2000) // show message before hiding loader
+                    _isLoading.value = false
+                    return@launch
+                }
 
                 val total = bulkItems.size
                 bulkRepository.clearAllItems()
-
                 _scannedFilteredItems.value = bulkItems
 
+                var insertedCount = 0
 
                 bulkItems.forEachIndexed { index, item ->
-                    val result = bulkRepository.insertSingleItem(item)
-                    Log.d("Insert", "Inserted item with EPC ${item.epc}, result = $result")
+                    try {
+
+                        val updatedItem = if (item.epc.isNullOrEmpty()) {
+                            item.copy(epc = syncAndMapRow(item.rfid.orEmpty()))
+                        } else {
+                            item
+                        }
+                        bulkRepository.insertSingleItem(updatedItem)
+                      //  bulkRepository.insertSingleItem(item)
+                        insertedCount++ // success
+                        Log.d("Insert", "Inserted item with EPC ${updatedItem.epc}")
+                    } catch (e: Exception) {
+                        Log.e("Insert", "Failed to insert item with EPC ${item.epc}", e)
+                    }
+
                     _syncProgress.value = (index + 1f) / total
                     _syncStatusText.value = "Syncing... ${index + 1} of $total"
                     delay(100)
                 }
 
-                Log.d("ToastEmit", "Emitting toast")
-                _toastMessage.emit("Synced $total items successfully!")
-                _syncStatusText.value = "Sync completed successfully!"
-
-
+                if (insertedCount > 0) {
+                    val failedCount = total - insertedCount
+                    val message = if (failedCount > 0) {
+                        "Synced  completed$insertedCount items, $failedCount failed."
+                    } else {
+                        "Synced completed $insertedCount items  successfully!"
+                    }
+                    _toastMessage.emit(message)
+                    _syncStatusText.value = message
+                } else {
+                    _toastMessage.emit("Sync failed: no items were imported.")
+                    _syncStatusText.value = "No items imported."
+                }
 
             } catch (e: Exception) {
+                _syncProgress.value = 0f
                 _syncStatusText.value = "Sync failed: ${e.localizedMessage}"
-                Log.d("ToastEmit", "Emitting toast")
                 _toastMessage.emit("Sync failed: ${e.localizedMessage}")
-                Log.e("Sync", "Error: ${e.localizedMessage}")
-
-            }finally {
+                Log.e("Sync", "Error: ${e.localizedMessage}", e)
+            } finally {
                 _isLoading.value = false
             }
         }
     }
+
+    fun syncAndMapRow(itemCode: String): String {
+        return syncedRFIDMap?.get(itemCode) ?: ""
+    }
+
+    val rfidList: StateFlow<List<EpcDto>> =
+        bulkRepository.getAllRFIDTags()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    suspend fun syncRFIDDataIfNeeded(context: Context) {
+        if (syncedRFIDMap != null) return
+
+        val employee = userPreferences.getEmployee(Employee::class.java)
+        val clientCode = employee?.clientCode ?: return
+
+        val response = bulkRepository.syncRFIDItemsFromServer(ClientCodeRequest(clientCode))
+
+     /*   if (response.isNullOrEmpty()) {
+            // ❌ No RFID data found
+            android.widget.Toast.makeText(
+                context,
+                "RFID sheet is not uploaded. Please upload it first.",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            return
+        }*/
+
+        // ✅ Save in DB
+        bulkRepository.insertRFIDTags(response)
+
+        // ✅ Build RFID → EPC map
+        syncedRFIDMap = response.associateBy(
+            { it.BarcodeNumber.orEmpty().trim().uppercase() },
+            { it.TidValue.orEmpty().trim().uppercase() }
+        )
+    }
+
+
+
+    // 📡 Utility function to check network availability
+    fun isNetworkAvailable(context: Context): Boolean {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = cm.activeNetwork ?: return false
+        val capabilities = cm.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+
+
+
+    /*   fun syncItems() {
+           viewModelScope.launch {
+               try {
+                   Log.d("Sync", "syncItems called")
+                   _isLoading.value = true
+                   _syncProgress.value = 0f
+                   _syncStatusText.value = "Starting sync..."
+
+                   val clientCode = employee?.clientCode ?: return@launch
+                   val request = ClientCodeRequest(clientCode)
+
+                   _syncStatusText.value = "Fetching data..."
+                   val response = bulkRepository.syncBulkItemsFromServer(request)
+                   val bulkItems = response
+                       .filter { it.status == "ApiActive" || it.status == "Active" && !it.rfidCode.isNullOrBlank()  }
+                       .map { it.toBulkItem() }
+
+                   val total = bulkItems.size
+                   bulkRepository.clearAllItems()
+
+                   _scannedFilteredItems.value = bulkItems
+
+
+                   bulkItems.forEachIndexed { index, item ->
+                       val result = bulkRepository.insertSingleItem(item)
+                       Log.d("Insert", "Inserted item with EPC ${item.epc}, result = $result")
+                       _syncProgress.value = (index + 1f) / total
+                       _syncStatusText.value = "Syncing... ${index + 1} of $total"
+                       delay(100)
+                   }
+
+                   Log.d("ToastEmit", "Emitting toast")
+                   _toastMessage.emit("Synced $total items successfully!")
+                   _syncStatusText.value = "Sync completed successfully!"
+
+
+
+               } catch (e: Exception) {
+                   _syncStatusText.value = "Sync failed: ${e.localizedMessage}"
+                   Log.d("ToastEmit", "Emitting toast")
+                   _toastMessage.emit("Sync failed: ${e.localizedMessage}")
+                   Log.e("Sync", "Error: ${e.localizedMessage}")
+
+               }finally {
+                   _isLoading.value = false
+               }
+           }
+       }*/
+
+
+
 
 
     fun setRfidForAllTags(scanned: String) {

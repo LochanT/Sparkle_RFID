@@ -127,7 +127,7 @@ fun InventoryMenuScreen(
                                     if (counters.isEmpty()) {
                                         ToastUtils.showToast(
                                             context,
-                                            "No counters available in local data"
+                                            "No counters available"
                                         )
                                     } else {
                                         dialogTitle = "Select Counter"
@@ -154,7 +154,7 @@ fun InventoryMenuScreen(
                                     if (branches.isEmpty()) {
                                         ToastUtils.showToast(
                                             context,
-                                            "No branches available in local data"
+                                            "No branches available"
                                         )
                                     } else {
                                         dialogTitle = "Select Branch"
@@ -181,7 +181,7 @@ fun InventoryMenuScreen(
                                     if (boxes.isEmpty()) {
                                         ToastUtils.showToast(
                                             context,
-                                            "No boxes available in local data"
+                                            "No boxes available"
                                         )
                                     } else {
                                         dialogTitle = "Select Box"
@@ -207,7 +207,7 @@ fun InventoryMenuScreen(
                                     if (exhibitions.isEmpty()) {
                                         ToastUtils.showToast(
                                             context,
-                                            "No exhibitions available in local data"
+                                            "No exhibitions branch available"
                                         )
                                     } else {
                                         dialogTitle = "Select Exhibition"

@@ -96,6 +96,7 @@ fun ProductManagementScreen(
 
 
     val scanTrigger by viewModel.scanTrigger.collectAsState()
+    var isScanning by remember { mutableStateOf(false) }
     val bulkItemFieldNames = listOf(
         "itemCode",
         "rfid",
@@ -147,6 +148,8 @@ fun ProductManagementScreen(
 
 
 
+
+
     LaunchedEffect(Unit) {
         // delay(300)
         Log.d("toastMessage", "toastMessage toast")
@@ -181,7 +184,7 @@ fun ProductManagementScreen(
    // val syncStatus by viewModel.syncStatusText.collectAsStateWithLifecycle(initialValue = null)
 
     LaunchedEffect(syncStatus) {
-        if (syncStatus.contains("completed", ignoreCase = true) == true) {
+        if (syncStatus.contains("synced", ignoreCase = true) == true) {
             showSuccessDialog = true
             viewModel.clearSyncStatus() // no more error now
         }
@@ -221,7 +224,8 @@ fun ProductManagementScreen(
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
                 onScan = { /* TODO */ },
                 onGscan = { /* TODO */ },
-                onReset = { /* TODO */ }
+                onReset = { /* TODO */ },
+                isScanning = isScanning
             )
         }
 
@@ -281,7 +285,7 @@ fun ProductManagementScreen(
 
                             when (selectedItem.label) {
                                 "Click to\nSync Data" -> {
-                                    viewModel.syncItems()
+                                    viewModel.syncItems(context)
                                 }
 
                                 "Export\nExcel" -> {

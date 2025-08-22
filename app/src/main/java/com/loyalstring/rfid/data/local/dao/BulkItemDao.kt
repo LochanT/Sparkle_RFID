@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.remote.data.IdNamePair
 import kotlinx.coroutines.flow.Flow
@@ -53,5 +54,11 @@ interface BulkItemDao {
 
     @Query("UPDATE bulk_items SET imageUrl = :newImageUrl WHERE itemCode = :itemCode")
     suspend fun updateImageUrl(itemCode: String, newImageUrl: String)
+
+    @Update
+    suspend fun updateBulkItem(item: BulkItem)
+
+    @Query("SELECT * FROM bulk_items WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Int): BulkItem?
 
 }
