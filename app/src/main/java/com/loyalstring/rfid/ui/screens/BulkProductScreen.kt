@@ -93,6 +93,9 @@ fun BulkProductScreen(
 
     var selectedPower by remember { mutableStateOf(10) }
     val scanTrigger by viewModel.scanTrigger.collectAsState()
+    val rfidValue =  remember { mutableStateOf("") }
+
+
 
     val allScannedTags by viewModel.allScannedTags
     val existingTags by viewModel.existingItems
@@ -201,27 +204,27 @@ fun BulkProductScreen(
                     }
                 },
                 onGscan = {
-                   /* if (!firstPress) {
-                        firstPress = true
-                        viewModel.toggleScanning(selectedPower)
 
-                        // 🔊 Start sound here
-
-                    } else {
+                    if (isScanning) {
                         viewModel.stopScanning()
-                        firstPress = false
+                        isScanning = false
+                    } else {
+                        viewModel.startScanning(selectedPower)
+                        isScanning = true
 
-                        // 🔇 Stop sound here
 
-                    }*/
-                    viewModel.toggleScanning(selectedPower)
+                    }
+
+                   // viewModel.toggleScanning(selectedPower)
 
                 },
                 onReset = {
                     firstPress = false
                     viewModel.resetProductScanResults()
                     viewModel.stopBarcodeScanner()
-                }
+                },
+                isScanning = isScanning
+
             )
         }
     ) { innerPadding ->
@@ -377,12 +380,15 @@ fun BulkProductScreen(
                             }
 
 // Item Code
-                            Box(
+                          Box(
                                 modifier = Modifier
                                     .width(150.dp)
                                     .height(36.dp),
                                 contentAlignment = Alignment.Center
                             ) {
+                              val rfid = rfidMap[index]
+                              val isScanned = rfid != null
+                              val displayText = rfid ?: ""
                                 BasicTextField(
                                     value = itemCodes.value,
                                     onValueChange = { itemCodes.value = it },
@@ -406,7 +412,7 @@ fun BulkProductScreen(
                             }
 
 // RFID Text
-                            Box(
+                         /*   Box(
                                 modifier = Modifier
                                     .width(150.dp)
                                     .height(36.dp),
@@ -430,7 +436,42 @@ fun BulkProductScreen(
                                     textDecoration = style,
                                     fontFamily = poppins
                                 )
-                            }
+                            }*/
+
+
+
+                            val rowValue = rfidMap[index] ?: ""
+
+                            BasicTextField(
+                                value = rowValue,
+                                onValueChange = { newValue ->
+                                    viewModel.updateRfidForIndex(index, newValue) // ✅ update that row in VM
+                                },
+                                singleLine = true,
+                                textStyle = LocalTextStyle.current.copy(
+                                    fontSize = 11.sp,
+                                    color = Color.DarkGray,
+                                    fontFamily = poppins
+                                ),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 4.dp)
+                                    .clickable {
+                                        clickedIndex = index
+                                        viewModel.startBarcodeScanning(context) // scanner will call updateRfidForIndex
+                                    },
+                                decorationBox = { innerTextField ->
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        innerTextField()
+                                    }
+                                }
+                            )
+
+
+
 
                         }
 

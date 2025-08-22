@@ -32,7 +32,7 @@ data class BulkItem(
     val stoneAmount: String?,
     val dustAmount: String?,
     val sku: String?,
-    val epc: String?,
+    var epc: String?,
     val vendor: String?,
     val tid: String?,
     val box: String?,

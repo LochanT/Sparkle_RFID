@@ -218,6 +218,7 @@ fun OrderScreenContent(
 // ViewModels
     val orderViewModel: OrderViewModel = hiltViewModel()
     val singleProductViewModel: SingleProductViewModel = hiltViewModel()
+    var isScanning by remember { mutableStateOf(false) }
 
 // Basic state fields for totals, calculations, item selections
     var selectedItem by remember { mutableStateOf<ItemCodeResponse?>(null) }
@@ -1213,7 +1214,8 @@ fun OrderScreenContent(
                     orderViewModel.clearOrderItems()
 
 
-                }
+                },
+                isScanning = isScanning
             )
         }
     ) { paddingValues ->

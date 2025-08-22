@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -64,6 +65,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.nativeKeyCode
@@ -596,7 +598,8 @@ fun AddProductScreen(
                     updateField("Stone Amount", "")
                     updateField("Diamond Amount", "")
                     updateField("Stone Weight", "")
-                }
+                },
+                isScanning = isScanning
             )
         }
     ) { innerPadding ->
@@ -688,7 +691,8 @@ fun ScanBottomBar(
     onList: () -> Unit,
     onScan: () -> Unit,
     onGscan: () -> Unit,
-    onReset: () -> Unit
+    onReset: () -> Unit,
+    isScanning: Boolean
 ) {
 
     // We use a Box to allow the center button to overlap/elevate
@@ -725,7 +729,7 @@ fun ScanBottomBar(
                 }
             }
             Spacer(modifier = Modifier.width(64.dp)) // space for center button
-            TextButton(onClick = onGscan) {
+       /*     TextButton(onClick = onGscan) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         painter = painterResource(R.drawable.ic_gscan),
@@ -735,7 +739,37 @@ fun ScanBottomBar(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Gscan", color = Color.DarkGray, fontSize = 12.sp, fontFamily = poppins)
                 }
+            }*/
+            TextButton(onClick = onGscan) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (isScanning) {
+                        // Use vector icon when scanning
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Stop Scan",
+                            tint = Color.DarkGray
+                        )
+                    } else {
+                        // Use painterResource when not scanning
+                        Icon(
+                            painter = painterResource(R.drawable.ic_gscan),
+                            contentDescription = "Start Scan",
+                            tint = Color.DarkGray
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Text(
+                        text = if (isScanning) "Stop" else "Scan",
+                        color = if (isScanning) Color.DarkGray else Color.DarkGray,
+                        fontSize = 12.sp,
+                        fontFamily = poppins
+                    )
+                }
             }
+
+
             TextButton(onClick = onReset) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(

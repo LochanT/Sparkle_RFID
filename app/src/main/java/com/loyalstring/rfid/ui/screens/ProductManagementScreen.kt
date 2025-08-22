@@ -95,6 +95,7 @@ fun ProductManagementScreen(
     val syncStatus by viewModel.syncStatusText.collectAsStateWithLifecycle(initialValue = "")
 
     val scanTrigger by viewModel.scanTrigger.collectAsState()
+    var isScanning by remember { mutableStateOf(false) }
     val bulkItemFieldNames = listOf(
         "itemCode",
         "rfid",
@@ -142,6 +143,8 @@ fun ProductManagementScreen(
     }
 
     var showSuccessDialog by remember { mutableStateOf(false) }
+
+
 
 
 
@@ -219,7 +222,8 @@ fun ProductManagementScreen(
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
                 onScan = { /* TODO */ },
                 onGscan = { /* TODO */ },
-                onReset = { /* TODO */ }
+                onReset = { /* TODO */ },
+                isScanning = isScanning
             )
         }
 

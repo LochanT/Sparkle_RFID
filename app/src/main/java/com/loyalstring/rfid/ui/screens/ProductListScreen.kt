@@ -35,7 +35,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -93,6 +92,7 @@ fun ProductListScreen(
     onBack: () -> Unit,
     navController: NavHostController
 ) {
+    var isScanning by remember { mutableStateOf(false) }
     val viewModel: ProductListViewModel = hiltViewModel()
     val singleproductViewModel: SingleProductViewModel = hiltViewModel()
     val searchQuery = remember { mutableStateOf("") }
@@ -141,7 +141,8 @@ fun ProductListScreen(
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
                 onScan = { /* Scan logic */ },
                 onGscan = { /* Gscan logic */ },
-                onReset = { /* Reset logic */ }
+                onReset = { /* Reset logic */ },
+                isScanning = isScanning
             )
         }
     ) { innerPadding ->

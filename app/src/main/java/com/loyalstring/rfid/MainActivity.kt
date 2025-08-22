@@ -43,6 +43,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -112,6 +113,7 @@ class MainActivity : ComponentActivity() {
         }
 
 
+
 //        val nfcAdapter = NfcAdapter.getDefaultAdapter(this)
 //        nfcAdapter?.disableReaderMode(this)
     }
@@ -170,6 +172,7 @@ private fun SetupNavigation(
     context: Context,
     userPreferences: UserPreferences,
     orderViewModel1: OrderViewModel,
+    viewModel: BulkViewModel = hiltViewModel()
 ) {
     /*    lateinit var networkMonitor: NetworkMonitor
         //val orderViewModel: OrderViewModel by viewModels()
@@ -178,6 +181,10 @@ private fun SetupNavigation(
             orderViewModel1.syncDataWhenOnline()
         }
         networkMonitor.startMonitoring()*/
+
+    LaunchedEffect(Unit) {
+        viewModel.syncRFIDDataIfNeeded(context)
+    }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var selectedItemIndex by rememberSaveable {

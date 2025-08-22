@@ -167,20 +167,36 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
                     }
                 },
                 onGscan = {
-                    if (!firstPress) {
+                    /*if (!firstPress && !isScanning) {
                         firstPress = true
+                        isScanning = true
                         viewModel.startScanning(selectedPower = selectedCount)
                         //   viewModel.startBarcodeScanning()
                     } else {
                         viewModel.stopScanning()
+                        isScanning = false
                         //     viewModel.startBarcodeScanning()
+                    }*/
+                    if (isScanning) {
+                        viewModel.stopScanning()
+                        isScanning = false
+                    } else {
+                        viewModel.startScanning(selectedPower)
+                        isScanning = true
+
+
                     }
                 },
+
                 onReset = {
                     firstPress = false
+                    isScanning=false
                     viewModel.resetScanResults()
                     viewModel.stopBarcodeScanner()
-                }
+                    viewModel.resetProductScanResults()
+
+                },
+                isScanning = isScanning
             )
         }
     ) { innerPadding ->
