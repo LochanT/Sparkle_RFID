@@ -74,7 +74,6 @@ fun BulkProductScreen(
     val context = LocalContext.current
     // Observe barcode and tag data
     val tags by viewModel.scannedTags.collectAsState()
-    val items by viewModel.scannedItems.collectAsState()
     val rfidMap by viewModel.rfidMap.collectAsState()
     val itemCodes = remember { mutableStateOf("") }
     // Dropdown options
@@ -92,7 +91,6 @@ fun BulkProductScreen(
     var clickedIndex by remember { mutableStateOf<Int?>(null) }
 
     var selectedPower by remember { mutableStateOf(10) }
-    val scanTrigger by viewModel.scanTrigger.collectAsState()
 
     val allScannedTags by viewModel.allScannedTags
     val existingTags by viewModel.existingItems
@@ -139,7 +137,7 @@ fun BulkProductScreen(
             GradientTopBar(
                 title = "Add Bulk Products",
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
                         Icon(
                             Icons.AutoMirrored.Default.ArrowBack,
                             contentDescription = "Back",

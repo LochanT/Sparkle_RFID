@@ -126,6 +126,8 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation ("androidx.fragment:fragment-ktx:1.8.2")
+    implementation("com.opencsv:opencsv:5.9")
+
 
     //LiveData
     implementation(libs.androidx.lifecycle.livedata.ktx)// or latest

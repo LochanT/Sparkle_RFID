@@ -88,7 +88,7 @@ fun InventoryMenuScreen(
             GradientTopBar(
                 title = "Inventory",
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -254,7 +254,7 @@ fun MenuButton(title: String, icon: Int, onClick: () -> Unit) {
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp),
+            .height(80.dp),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
     ) {
         Row(
@@ -265,13 +265,13 @@ fun MenuButton(title: String, icon: Int, onClick: () -> Unit) {
                 contentDescription = title,
                 tint = Color.White,
                 modifier = Modifier
-                    .size(35.dp)
+                    .size(75.dp)
                     .padding(end = 16.dp)
             )
             Text(
                 text = title,
                 color = Color.White,
-                fontSize = 18.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Medium,
                 fontFamily = poppins
             )

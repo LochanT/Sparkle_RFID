@@ -47,6 +47,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.navigation.Screens
+import com.loyalstring.rfid.ui.utils.BackgroundGradient
 import com.loyalstring.rfid.ui.utils.FilePickerDialog
 import com.loyalstring.rfid.ui.utils.MappingDialogWrapper
 import com.loyalstring.rfid.ui.utils.poppins
@@ -61,7 +62,7 @@ fun ImportExcelScreen(
     val context: Context = LocalContext.current
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    rememberCoroutineScope()
 
     var excelColumns by remember { mutableStateOf(listOf<String>()) }
     var showMappingDialog by remember { mutableStateOf(false) }
@@ -74,7 +75,6 @@ fun ImportExcelScreen(
     val isImportDone by viewModel.isImportDone.collectAsState()
     val importProgress by viewModel.importProgress.collectAsState()
     val isDone by viewModel.isImportDone.collectAsState()
-    var showSuccessDialog by remember { mutableStateOf(false) }
     var dialogMessage by remember { mutableStateOf<String?>(null) }
     var isError by remember { mutableStateOf(false) }
 
@@ -286,7 +286,8 @@ fun ImportResultDialog(
                         .align(Alignment.TopEnd)
                         .padding(0.dp)
                         .size(20.dp)
-                        .clickable { onDismiss()
+                        .clickable {
+                            onDismiss()
                             navController.navigate(Screens.ProductManagementScreen.route) {
                                 popUpTo(Screens.ImportExcelScreen.route) { inclusive = true }
                             }
@@ -318,20 +319,14 @@ fun ImportResultDialog(
                             .fillMaxWidth()
                             .height(40.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    if (isError)
-                                        listOf(Color(0xFFE82E5A), Color(0xFF8B1A1A))
-                                    else
-                                        listOf(Color(0xFF3053F0), Color(0xFFE82E5A))
-                                )
-                            )
-                            .clickable { onDismiss()
+                            .background(BackgroundGradient)
+                            .clickable {
+                                onDismiss()
                                 navController.navigate(Screens.ProductManagementScreen.route) {
                                     popUpTo(Screens.ImportExcelScreen.route) { inclusive = true }
                                 }
 
-                  },
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(

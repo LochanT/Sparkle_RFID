@@ -155,7 +155,6 @@ fun AddProductScreen(
 
     val scanTrigger by bulkViewModel.scanTrigger.collectAsState()
     val items by bulkViewModel.scannedItems.collectAsState()
-    var scannedBarcode by remember { mutableStateOf("") }
 
     val showDialog = remember { mutableStateOf(false) }
     val imageUrl = remember { mutableStateOf("") }
@@ -170,8 +169,8 @@ fun AddProductScreen(
     val designName = fieldValues["Design"].orEmpty()
     val purityName = fieldValues["Purity"].orEmpty()
     val vendorName = fieldValues["Vendor"].orEmpty()
-    val skuName = fieldValues["SKU"].orEmpty()
-    val scope = rememberCoroutineScope()
+    fieldValues["SKU"].orEmpty()
+    rememberCoroutineScope()
 
 
 
@@ -362,7 +361,7 @@ fun AddProductScreen(
                 title = "Add Single Product",
 
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
                         Icon(
                             Icons.AutoMirrored.Default.ArrowBack,
                             contentDescription = "Back",
@@ -386,7 +385,7 @@ fun AddProductScreen(
                              formFields.firstOrNull { it.label == label }?.value.orEmpty()*/
                         fun get(label: String) = fieldValues[label].orEmpty()
 
-                        val itemCode = get("Item Code")
+                        get("Item Code")
                         val rfidCode = get("RFID Code")
                         val epc = get("EPC")
                         val gWt = get("Gross Weight")
@@ -398,7 +397,7 @@ fun AddProductScreen(
                         val fMaking = get("Fix Making")
                         val fWastage = get("Fix Wastage")
                         val stAmt = get("Stone Amount")
-                        val dAmt = get("Diamond Amount")
+                        get("Diamond Amount")
 
                         val categoryId =
                             categoryList?.find { it.CategoryName == categoryName }?.Id ?: 0

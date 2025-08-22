@@ -27,14 +27,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentEnforcement
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -194,27 +198,40 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
         scannedFiltered
     ) {
         derivedStateOf {
-            val baseList = filteredItems.filter { item ->
-                (selectedCategoriesKey.isEmpty() || selectedCategoriesKey.contains(item.category.orEmpty())) &&
-                        (selectedProductsKey.isEmpty() || selectedProductsKey.contains(item.productName.orEmpty())) &&
-                        (selectedDesignsKey.isEmpty() || selectedDesignsKey.contains(item.design.orEmpty())) &&
-                        when (currentLevel) {
-                            "Category" -> true
-                            "Product" -> item.category == currentCategory
-                            "Design" -> item.category == currentCategory && item.productName == currentProduct
-                            "DesignItems" -> item.category == currentCategory && item.productName == currentProduct && item.design == currentDesign
-                            else -> true
-                        }
+            // 1. Start with filter selections
+            var baseList = filteredItems.filter { item ->
+                (selectedCategoriesKey.isEmpty() || item.category in selectedCategoriesKey) &&
+                        (selectedProductsKey.isEmpty() || item.productName in selectedProductsKey) &&
+                        (selectedDesignsKey.isEmpty() || item.design in selectedDesignsKey)
             }
+
+            // 2. Apply drill-down scope separately
+            baseList = when (currentLevel) {
+                "Category" -> baseList
+                "Product" -> baseList.filter { it.category == currentCategory }
+                "Design" -> baseList.filter {
+                    it.category == currentCategory && it.productName == currentProduct
+                }
+
+                "DesignItems" -> baseList.filter {
+                    it.category == currentCategory &&
+                            it.productName == currentProduct &&
+                            it.design == currentDesign
+                }
+
+                else -> baseList
+            }
+
+            // 3. Overlay scanned status
             val scanMap = scannedFiltered.associateBy { it.epc?.trim()?.uppercase() }
             baseList.map { original ->
                 val key = original.epc?.trim()?.uppercase()
-                scanMap[key]?.let { scanned ->
-                    original.copy(scannedStatus = scanned.scannedStatus)
-                } ?: original.copy(scannedStatus = "Unmatched")
+                scanMap[key]?.let { scanned -> original.copy(scannedStatus = scanned.scannedStatus) }
+                    ?: original.copy(scannedStatus = "Unmatched")
             }
         }
     }
+
 
 
     val displayItems = remember(scopeItems, selectedMenu) {
@@ -478,35 +495,38 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
             onSelectionChanged = {
                 when (filterType) {
                     "Category" -> {
-                        // ✅ Reset lower filters every time Category changes
+                        // Reset lower filters
                         selectedProducts.clear()
                         selectedDesigns.clear()
 
-                        currentLevel = "Category"
+                        // Drill down directly to Products
                         currentCategory = selectedCategories.firstOrNull()
                         currentProduct = null
                         currentDesign = null
+                        currentLevel = if (currentCategory != null) "Product" else "Category"
                     }
 
                     "Product" -> {
-                        // ✅ Reset designs every time Product changes
+                        // Reset lower filters
                         selectedDesigns.clear()
 
-                        currentLevel = "Product"
+                        // Drill down directly to Designs
                         currentProduct = selectedProducts.firstOrNull()
                         currentDesign = null
+                        currentLevel = if (currentProduct != null) "Design" else "Product"
                     }
 
                     "Design" -> {
-                        currentLevel = "Design"
+                        // Drill down directly to Design Items
                         currentDesign = selectedDesigns.firstOrNull()
+                        currentLevel = if (currentDesign != null) "DesignItems" else "Design"
                     }
                 }
 
-                // ✅ Always refresh after any change
                 bulkViewModel.setFilteredItems(scopeItems)
                 bulkViewModel.resetScanResults()
             }
+
 
         )
     }
@@ -765,6 +785,8 @@ fun VerticalMenu(onMenuClick: (MenuItem) -> Unit) {
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterSelectionDialog(
     title: String,
@@ -788,11 +810,12 @@ fun FilterSelectionDialog(
             Column {
                 LazyColumn(
                     modifier = Modifier
-                        .heightIn(max = 280.dp)
+                        .heightIn(max = 120.dp)
                         .fillMaxWidth()
                         .padding(vertical = 2.dp)
                 ) {
                     items(items) { item ->
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -802,17 +825,26 @@ fun FilterSelectionDialog(
                                     } else {
                                         selectedItems.add(item)
                                     }
-                                    onSelectionChanged() // 👈 fire immediately
+                                    onSelectionChanged()
                                 }
-                                .padding(vertical = 10.dp, horizontal = 2.dp),
+                                .padding(vertical = 6.dp, horizontal = 2.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Checkbox(
-                                checked = selectedItems.contains(item),
-                                onCheckedChange = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(5.dp))
+                            CompositionLocalProvider(
+                                LocalMinimumInteractiveComponentEnforcement provides false
+                            ) {
+                                Checkbox(
+                                    checked = selectedItems.contains(item),
+                                    onCheckedChange = null,
+                                    modifier = Modifier.size(10.dp), // ✅ make it smaller
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = Color(0xFF3053F0),
+                                        uncheckedColor = Color.Gray
+                                    )
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = item,
                                 fontSize = 11.sp,
@@ -821,6 +853,7 @@ fun FilterSelectionDialog(
                                 maxLines = 1
                             )
                         }
+
                     }
                 }
 
@@ -830,7 +863,7 @@ fun FilterSelectionDialog(
                         .padding(top = 8.dp),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    GradientButton(text = "Cancel", onClick = onDismiss)
+                    GradientButton(text = "CANCEL", onClick = onDismiss)
                     Spacer(modifier = Modifier.width(12.dp))
                     GradientButton(text = "OK", onClick = {
                         onConfirm()

@@ -91,8 +91,9 @@ fun ProductManagementScreen(
     var showMappingDialog by remember { mutableStateOf(false) }
     var showProgress by remember { mutableStateOf(false) }
     var showOverlay by remember { mutableStateOf(false) }
-    val backStackEntry = remember(navController) { navController.currentBackStackEntry!! }
+    remember(navController) { navController.currentBackStackEntry!! }
     val syncStatus by viewModel.syncStatusText.collectAsStateWithLifecycle(initialValue = "")
+
 
     val scanTrigger by viewModel.scanTrigger.collectAsState()
     val bulkItemFieldNames = listOf(
@@ -140,6 +141,7 @@ fun ProductManagementScreen(
             viewModel.clearScanTrigger()
         }
     }
+
 
     var showSuccessDialog by remember { mutableStateOf(false) }
 
@@ -356,24 +358,35 @@ fun ProductManagementScreen(
         }
     }
     if (showMappingDialog) {
-        showProgress = false
         MappingDialogWrapper(
             excelColumns = excelColumns,
             bulkItemFields = bulkItemFieldNames,
             onDismiss = {
                 showMappingDialog = false
+                importViewModel.resetImportState()
                 navController.navigate(Screens.ProductManagementScreen.route)
             },
             fileSelected = true,
             onImport = { mapping ->
                 showOverlay = true
-                importViewModel.importMappedData(context, mapping)
+                showProgress = true
+                if (isSheetProcessed) {
+                    // ✅ Call your Google Sheet importer
+                    val sheetId = UserPreferences.getInstance(context).getSheetUrl()
+                    val sheetUrl =
+                        "https://docs.google.com/spreadsheets/d/$sheetId/export?format=csv"
+                    importViewModel.importMappedDataFromSheet(sheetUrl, mapping)
+                } else {
+                    // ✅ Normal Excel importer
+                    importViewModel.importMappedData(context, mapping)
+                }
                 showMappingDialog = false
-
             },
-            isFromSheet = true
+            isFromSheet = isSheetProcessed
         )
     }
+
+
 }
 
 @Composable
