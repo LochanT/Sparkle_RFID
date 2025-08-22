@@ -1,5 +1,6 @@
 package com.loyalstring.rfid.repository
 
+import com.loyalstring.rfid.data.local.dao.BulkItemDao
 import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.local.entity.EpcDto
 import com.loyalstring.rfid.data.model.ClientCodeRequest
@@ -7,6 +8,7 @@ import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import kotlinx.coroutines.flow.Flow
 
 interface BulkRepository {
+     val bulkItemDao: BulkItemDao
     suspend fun insertBulkItems(items: List<BulkItem>)
     suspend fun insertRFIDTags(items: List<EpcDto>)
     fun getAllBulkItems(): Flow<List<BulkItem>>
@@ -25,4 +27,15 @@ interface BulkRepository {
     suspend fun getCounterIdFromName(name: String): Int?
     suspend fun getBoxIdFromName(name: String): Int?
     suspend fun getPacketIdFromName(name: String): Int?
+
+    suspend fun updateBulkItem(item: BulkItem) {
+        val existing = bulkItemDao.getById(item.id)
+        if (existing == null) {
+           // bulkItemDao.insertBulkItem(List<BulkItem>)
+        } else {
+            bulkItemDao.updateBulkItem(item)
+        }
+    }
+
+
 }

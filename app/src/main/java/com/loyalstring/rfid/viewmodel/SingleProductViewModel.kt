@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.addSingleItem.BoxModel
 import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
@@ -25,6 +26,7 @@ import com.loyalstring.rfid.data.model.addSingleItem.SKUModel
 import com.loyalstring.rfid.data.model.addSingleItem.VendorModel
 import com.loyalstring.rfid.data.reader.BarcodeReader
 import com.loyalstring.rfid.data.reader.RFIDReaderManager
+import com.loyalstring.rfid.data.remote.data.EditDataRequest
 import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.BulkRepository
@@ -39,6 +41,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import  com.loyalstring.rfid.data.remote.data.ProductDeleteResponse
+import kotlinx.coroutines.Dispatchers
 
 @HiltViewModel
 class SingleProductViewModel @Inject constructor(
@@ -400,17 +403,88 @@ class SingleProductViewModel @Inject constructor(
             }
             ok
         }
-
-    suspend fun updateLabelledStock(request: InsertProductRequest): Boolean =
-        withContext(kotlinx.coroutines.Dispatchers.IO) {
-            val result = repository.updateLabelledStock(request) // suspend repo call that returns Result<*>
+    suspend fun updateLabelledStock(request: List<EditDataRequest>): Boolean =
+        withContext(Dispatchers.IO) {
+            val result = repository.updateLabelledStock(request) // Result<List<PurityModel>>
             val ok = result.isSuccess
+
             if (ok) {
-                // side effects are fine here
-                bulkRepository.syncBulkItemsFromServer(ClientCodeRequest(request.ClientCode))
+                val clientCode = request.firstOrNull()?.ClientCode ?: ""
+                bulkRepository.syncBulkItemsFromServer(ClientCodeRequest(clientCode))
+                request.forEach { editRequest ->
+                    val bulkItem = editRequest.toBulkItem()
+                    bulkRepository.updateBulkItem(bulkItem)
+                }
+
             }
+
             ok
         }
+
+    fun EditDataRequest.toBulkItem(): BulkItem {
+        return BulkItem(
+            id = this.Id,  // matches PrimaryKey (if API Id = local DB Id)
+
+            productName   = this.ProductTitle,
+            itemCode      = this.ItemCode,
+            rfid          = this.RFIDCode,
+            grossWeight   = this.GrossWt,
+            stoneWeight   = this.StoneWeight,
+            dustWeight    = this.OtherWeight,
+            netWeight     = this.NetWt,
+
+            category      = this.CategoryName,
+            design        = this.DesignName,
+            purity        = this.PurityName,
+
+            makingPerGram = this.MakingPerGram,
+            makingPercent = this.MakingPercentage,
+            fixMaking     = this.MakingFixedAmt,
+            fixWastage    = this.MakingFixedWastage,
+
+            stoneAmount   = this.TotalStoneAmount,
+            dustAmount    = this.TotalDiamondAmount,
+
+            sku           = this.CollectionNameSKU,
+            epc           = this.epc,
+            vendor        = this.FirmName,
+            tid           = this.TIDNumber,
+            box           = this.BoxName,
+            designCode    = this.DesignId?.toString(),
+            productCode   = this.ProductCode,
+            imageUrl      = this.Images,
+
+            totalQty      = this.Quantity?.toInt() ?: 0,
+            pcs           = this.TotalCount,
+            matchedPcs    = 0,
+            totalGwt      = this.TotalWeight,
+            matchGwt      =0.00,
+            totalStoneWt  = this.TotalStoneWeight?.toDoubleOrNull(),
+            matchStoneWt  = this.StoneWeight?.toDoubleOrNull(),
+            totalNetWt    = this.NetWt?.toDoubleOrNull() ?: 0.0,
+            matchNetWt    = 0.00,
+            unmatchedQty  = 0,
+            matchedQty    = 0,
+            unmatchedGrossWt = 0.00,
+            mrp           = this.MRP?.toDoubleOrNull() ?: 0.0,
+
+            counterName   = this.Counter,
+            counterId     = 0,
+            boxId         = this.BoxId,
+            boxName       = this.BoxName,
+            branchId      = this.BranchId,
+            branchName    = this.BranchName,
+            packetId      = this.PacketId,
+            packetName    = this.PacketName,
+            scannedStatus = this.Status,
+            categoryId    = this.CategoryId!!,
+            productId     = this.ProductId,
+            branchType    = this.BranchType,
+            designId      = this.DesignId
+        )
+    }
+
+
 
     @Entity
     data class UploadedImage(

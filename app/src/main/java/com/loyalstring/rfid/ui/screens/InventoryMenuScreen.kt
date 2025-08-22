@@ -207,7 +207,7 @@ fun InventoryMenuScreen(
                                     if (exhibitions.isEmpty()) {
                                         ToastUtils.showToast(
                                             context,
-                                            "No exhibitions available in local data"
+                                            "No exhibitions branch available"
                                         )
                                     } else {
                                         dialogTitle = "Select Exhibition"

@@ -30,7 +30,7 @@ fun AlllabelResponse.LabelItem.toBulkItem(): BulkItem {
         sku = this.sku ?: "",
         vendor = this.vendorName ?: "",
         tid = this.tidNumber ?: "",
-        id = 0,
+        id = this.id?:0,
         epc = this.tidNumber, // or wherever epc is coming from
 
         box = "",
