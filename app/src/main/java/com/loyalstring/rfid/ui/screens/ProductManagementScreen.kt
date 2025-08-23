@@ -285,7 +285,7 @@ fun ProductManagementScreen(
 
                             when (selectedItem.label) {
                                 "Click to\nSync Data" -> {
-                                    viewModel.syncItems(context)
+                                    viewModel.syncItems()
                                 }
 
                                 "Export\nExcel" -> {

@@ -1,7 +1,6 @@
 package com.loyalstring.rfid.viewmodel
 
 import ScannedDataToService
-import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -310,7 +309,7 @@ class BulkViewModel @Inject constructor(
     fun startScanningInventory(selectedPower: Int) {
         if (!success || _isScanning.value) return
         scanJob?.cancel()
-        scannedEpcList.clear()
+        // scannedEpcList.clear()
         _isScanning.value = true
 
         readerManager.startInventoryTag(selectedPower)
@@ -892,8 +891,7 @@ class BulkViewModel @Inject constructor(
         }
     }
 
-    @SuppressLint("MissingPermission")
-    fun syncItems(context: Context) {
+    fun syncItems() {
         viewModelScope.launch {
             try {
                 Log.d("Sync", "syncItems called")
@@ -904,83 +902,31 @@ class BulkViewModel @Inject constructor(
                 val clientCode = employee?.clientCode ?: return@launch
                 val request = ClientCodeRequest(clientCode)
 
-                // 🌐 Check internet before calling API
-                if (!isNetworkAvailable(context)) {
-                    _syncProgress.value = 0f
-                    _syncStatusText.value = "No internet connection."
-                    _toastMessage.emit("Sync failed: No internet connection.")
-                    Log.e("Sync", "No internet connection.")
-
-                    delay(2000) // keep error visible
-                    _isLoading.value = false
-                    return@launch
-                }
-
                 _syncStatusText.value = "Fetching data..."
                 val response = bulkRepository.syncBulkItemsFromServer(request)
-
                 val bulkItems = response
-                    .filter { (it.status == "ApiActive" || it.status == "Active") && !it.rfidCode.isNullOrBlank() }
+                    .filter { it.status == "ApiActive" || it.status == "Active" }
                     .map { it.toBulkItem() }
-
-                // 🛑 Handle empty list
-                if (bulkItems.isEmpty()) {
-                    _syncProgress.value = 0f
-                    _syncStatusText.value = "No data found to sync."
-                    _toastMessage.emit("No data found to sync.")
-                    Log.w("Sync", "Server returned empty list")
-
-                    delay(2000) // show message before hiding loader
-                    _isLoading.value = false
-                    return@launch
-                }
 
                 val total = bulkItems.size
                 bulkRepository.clearAllItems()
-                _scannedFilteredItems.value = bulkItems
-
-                var insertedCount = 0
 
                 bulkItems.forEachIndexed { index, item ->
-                    try {
-
-                        val updatedItem = if (item.epc.isNullOrEmpty()) {
-                            item.copy(epc = syncAndMapRow(item.rfid.orEmpty()))
-                        } else {
-                            item
-                        }
-                        bulkRepository.insertSingleItem(updatedItem)
-                      //  bulkRepository.insertSingleItem(item)
-                        insertedCount++ // success
-                        Log.d("Insert", "Inserted item with EPC ${updatedItem.epc}")
-                    } catch (e: Exception) {
-                        Log.e("Insert", "Failed to insert item with EPC ${item.epc}", e)
-                    }
-
+                    val result = bulkRepository.insertSingleItem(item)
+                    Log.d("Insert", "Inserted item with EPC ${item.epc}, result = $result")
                     _syncProgress.value = (index + 1f) / total
                     _syncStatusText.value = "Syncing... ${index + 1} of $total"
                     delay(100)
                 }
-
-                if (insertedCount > 0) {
-                    val failedCount = total - insertedCount
-                    val message = if (failedCount > 0) {
-                        "Synced  completed$insertedCount items, $failedCount failed."
-                    } else {
-                        "Synced completed $insertedCount items  successfully!"
-                    }
-                    _toastMessage.emit(message)
-                    _syncStatusText.value = message
-                } else {
-                    _toastMessage.emit("Sync failed: no items were imported.")
-                    _syncStatusText.value = "No items imported."
-                }
+                Log.d("ToastEmit", "Emitting toast")
+                _toastMessage.emit("Synced $total items successfully!")
+                _syncStatusText.value = "Sync completed successfully!"
 
             } catch (e: Exception) {
-                _syncProgress.value = 0f
                 _syncStatusText.value = "Sync failed: ${e.localizedMessage}"
+                Log.d("ToastEmit", "Emitting toast")
                 _toastMessage.emit("Sync failed: ${e.localizedMessage}")
-                Log.e("Sync", "Error: ${e.localizedMessage}", e)
+                Log.e("Sync", "Error: ${e.localizedMessage}")
             } finally {
                 _isLoading.value = false
             }

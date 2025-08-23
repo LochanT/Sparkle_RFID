@@ -65,7 +65,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.nativeKeyCode
@@ -180,7 +179,6 @@ fun AddProductScreen(
     var isScanning by remember { mutableStateOf(false) }
     //var showSuccessDialog by remember { mutableStateOf(false) }
 
-    var selectedPower by remember { mutableStateOf(10) }
     val activity = LocalContext.current as MainActivity
 
 
@@ -540,7 +538,7 @@ fun AddProductScreen(
                             Log.d("AddProductScreen", "isStockAdded" + isStockAdded)
                             if (isStockAdded) {
                                 ToastUtils.showToast(context, "Stock Added Successfully!")
-                                bulkViewModel.syncItems(context)
+                                bulkViewModel.syncItems()
 
                             }else
                             {
@@ -760,7 +758,7 @@ fun ScanBottomBar(
                     Spacer(modifier = Modifier.width(4.dp))
 
                     Text(
-                        text = if (isScanning) "Stop" else "Scan",
+                        text = if (isScanning) "Stop" else "GScan",
                         color = if (isScanning) Color.DarkGray else Color.DarkGray,
                         fontSize = 12.sp,
                         fontFamily = poppins

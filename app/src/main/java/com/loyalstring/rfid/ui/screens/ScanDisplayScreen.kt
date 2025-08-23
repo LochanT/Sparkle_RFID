@@ -122,7 +122,6 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
 
    // val rfidItems by bulkViewModel.rfidList.collectAsState()
     //val rfidItems by bulkViewModel.rfidList.collectAsState(initial = emptyList())
-    val rfidItems by bulkViewModel.rfidList.collectAsState()
     var showRfidDialog by remember { mutableStateOf(false) }
 
 
@@ -309,7 +308,7 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
             override fun onRfidKeyPressed() {
                 if (!isScanning) {
                     isScanning = true
-                    bulkViewModel.resetScanResults()
+                    // bulkViewModel.resetScanResults()
                     bulkViewModel.setFilteredItems(scopeItems)   // ✅
                     bulkViewModel.startScanningInventory(selectedPower)
                 } else {
@@ -397,7 +396,7 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                     onGscan = {
                         if (!isScanning) {
                             isScanning = true
-                            bulkViewModel.resetScanResults()
+                            // bulkViewModel.resetScanResults()
                             bulkViewModel.setFilteredItems(scopeItems)   // ✅ only current scope
                             bulkViewModel.startScanningInventory(selectedPower)
                         } else {
