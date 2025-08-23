@@ -33,12 +33,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.loyalstring.rfid.MainActivity
 import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.local.entity.SearchItem
+import com.loyalstring.rfid.data.reader.ScanKeyListener
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.poppins
@@ -51,6 +54,7 @@ fun SearchScreen(
 ) {
     val searchViewModel: SearchViewModel = hiltViewModel()
     var isScanning by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
 
 
     val unmatchedItems = remember {
@@ -64,6 +68,7 @@ fun SearchScreen(
 
 
     var searchQuery by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
 
     val allItems = remember(searchViewModel.searchItems, unmatchedItems) {
@@ -101,7 +106,26 @@ fun SearchScreen(
     }
 */
     DisposableEffect(Unit) {
-        onDispose { searchViewModel.stopSearch() }
+        val listener = object : ScanKeyListener {
+            override fun onBarcodeKeyPressed() {
+                //viewModel.startBarcodeScanning(context)
+            }
+
+            override fun onRfidKeyPressed() {
+                if (isScanning) {
+                    searchViewModel.stopSearch()
+                    isScanning = false
+                } else {
+                    searchViewModel.startSearch(unmatchedItems)
+                    isScanning = true
+                }
+            }
+        }
+        activity.registerScanKeyListener(listener)
+
+        onDispose {
+            activity.unregisterScanKeyListener()
+        }
     }
 
     Scaffold(
@@ -130,7 +154,7 @@ fun SearchScreen(
                 onScan = { },
                 onGscan = {
 
-                    if (!firstPress && !isScanning) {
+                    if (!isScanning) {
                         firstPress = true
                         isScanning=true
                         searchViewModel.startSearch(unmatchedItems)
