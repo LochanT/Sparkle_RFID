@@ -1,7 +1,9 @@
 package com.loyalstring.rfid
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -164,6 +166,8 @@ class MainActivity : ComponentActivity() {
 
 }
 
+
+
 @RequiresApi(Build.VERSION_CODES.R)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
@@ -196,6 +200,12 @@ private fun SetupNavigation(
     val currentRoute = navBackStackEntry?.destination?.route
     val orderViewModel: OrderViewModel = hiltViewModel()
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
+
+    fun Context.findActivity(): Activity? = when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
 
    /* LaunchedEffect(Unit) {
         employee?.clientCode?.let {

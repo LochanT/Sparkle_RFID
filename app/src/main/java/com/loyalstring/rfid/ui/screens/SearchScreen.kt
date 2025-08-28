@@ -1,5 +1,8 @@
 package com.loyalstring.rfid.ui.screens
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +31,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +41,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.MainActivity
 import com.loyalstring.rfid.data.local.entity.BulkItem
@@ -54,7 +61,8 @@ fun SearchScreen(
 ) {
     val searchViewModel: SearchViewModel = hiltViewModel()
     var isScanning by remember { mutableStateOf(false) }
-    val activity = LocalContext.current as MainActivity
+    //val activity = LocalContext.current as MainActivity
+    var firstPress by remember { mutableStateOf(false) }
 
 
     val unmatchedItems = remember {
@@ -101,32 +109,59 @@ fun SearchScreen(
         }
     }
 
-  /*  LaunchedEffect(unmatchedItems) {
-        searchViewModel.startSearch(unmatchedItems)
-    }
-*/
-    DisposableEffect(Unit) {
+    val activity = context.findActivity() as? MainActivity
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+
+    DisposableEffect(lifecycleOwner, activity) {
         val listener = object : ScanKeyListener {
             override fun onBarcodeKeyPressed() {
-                //viewModel.startBarcodeScanning(context)
+                // optional
             }
 
             override fun onRfidKeyPressed() {
                 if (isScanning) {
                     searchViewModel.stopSearch()
                     isScanning = false
+                    Log.d("@@", "RFID STOPPED from key")
                 } else {
                     searchViewModel.startSearch(unmatchedItems)
                     isScanning = true
+                    Log.d("@@", "RFID STARTED from key")
                 }
             }
         }
-        activity.registerScanKeyListener(listener)
+
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    activity?.registerScanKeyListener(listener)
+                }
+                Lifecycle.Event.ON_PAUSE -> {
+                    activity?.unregisterScanKeyListener()
+                    // optional: force stop when leaving screen
+                    if (isScanning) {
+                        searchViewModel.stopSearch()
+                        isScanning = false
+                    }
+                }
+                else -> {}
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
 
         onDispose {
-            activity.unregisterScanKeyListener()
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            activity?.unregisterScanKeyListener()
+            if (isScanning) {
+                searchViewModel.stopSearch()
+                isScanning = false
+            }
         }
     }
+
+
 
     Scaffold(
         topBar = {
@@ -147,7 +182,7 @@ fun SearchScreen(
             )
         },
         bottomBar = {
-            var firstPress by remember { mutableStateOf(false) }
+
             ScanBottomBar(
                 onSave = { },
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
@@ -269,6 +304,12 @@ fun SearchScreen(
             }
         }
     }
+}
+
+fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 fun getColorByPercentage(percent: Int): Color {

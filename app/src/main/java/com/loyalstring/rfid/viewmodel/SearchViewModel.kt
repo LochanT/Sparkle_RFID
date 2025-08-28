@@ -37,6 +37,8 @@ class SearchViewModel @Inject constructor(
     private var lastSoundId: Int? = null
 
 
+
+
     fun startSearch(unmatchedItems: List<BulkItem>) {
         _searchItems.clear()
         _searchItems.addAll(unmatchedItems.map {
@@ -55,7 +57,7 @@ class SearchViewModel @Inject constructor(
     }
 
     fun startTagScanning() {
-        readerManager.startInventoryTag(30)
+        readerManager.startInventoryTag(30,"search")
 
         scanJob?.cancel()
         scanJob = viewModelScope.launch(Dispatchers.IO) {
@@ -76,24 +78,44 @@ class SearchViewModel @Inject constructor(
                         else -> -1
                     }
 
-                    if (id != -1) {
-                        lastSoundId = id
-                        withContext(Dispatchers.Main) {
-                            Log.d("@@","@@ sound")
-                            readerManager.playSound(id)
-                        }
-                    }
 
                     // Update UI list
-                    val index = _searchItems.indexOfFirst { it.epc == epc }
+
+                    val index = _searchItems.indexOfFirst { it.epc.trim().uppercase() == epc }
+
                     if (index != -1) {
                         withContext(Dispatchers.Main) {
                             _searchItems[index] = _searchItems[index].copy(
                                 rssi = rssi,
                                 proximityPercent = proximity
                             )
+
+                            // ✅ Play sound only when EPC is actually in search list
+                            if (id != -1) {
+                                // stop previous sound first (avoid overlapping)
+                                lastSoundId?.let { readerManager.stopSound(it) }
+                                lastSoundId = id
+                                readerManager.playSound(id)
+                            }
                         }
+
+                    } else {
+                        // 🚫 Not in search list → skip sound
+                        Log.d("@@", "Scanned EPC $epc not in unmatched list, skipping sound")
                     }
+
+
+                    /*
+                                        // Update UI list
+                                        val index = _searchItems.indexOfFirst { it.epc == epc }
+                                        if (index != -1) {
+                                            withContext(Dispatchers.Main) {
+                                                _searchItems[index] = _searchItems[index].copy(
+                                                    rssi = rssi,
+                                                    proximityPercent = proximity
+                                                )
+                                            }
+                                        }*/
                 } else {
                     delay(100)
                 }
