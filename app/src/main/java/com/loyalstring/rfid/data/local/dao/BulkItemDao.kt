@@ -61,4 +61,10 @@ interface BulkItemDao {
     @Query("SELECT * FROM bulk_items WHERE id = :id LIMIT 1")
     suspend fun getById(id: Int): BulkItem?
 
+    @Query("UPDATE bulk_items SET scannedStatus = :status WHERE UPPER(TRIM(epc)) = :epc")
+    suspend fun updateScannedStatus(epc: String, status: String)
+
+    @Query("UPDATE bulk_items SET scannedStatus = ''")
+    suspend fun resetAllScannedStatus()
+
 }

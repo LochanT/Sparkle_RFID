@@ -107,6 +107,14 @@ class BulkRepositoryImpl @Inject constructor(
         }
     }
 
+    suspend fun updateScannedStatus(epc: String, status: String) {
+        bulkItemDao.updateScannedStatus(epc, status)
+    }
+
+    // ✅ Reset all statuses
+    suspend fun resetAllScannedStatus() {
+        bulkItemDao.resetAllScannedStatus()
+    }
     override suspend fun syncRFIDItemsFromServer(request: ClientCodeRequest): List<EpcDto> {
 
         val jsonObject = JsonObject().apply {

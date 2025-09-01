@@ -758,7 +758,7 @@ fun ScanBottomBar(
                     Spacer(modifier = Modifier.width(4.dp))
 
                     Text(
-                        text = if (isScanning) "Stop" else "GScan",
+                        text = if (isScanning) "Stop" else "Gscan",
                         color = if (isScanning) Color.DarkGray else Color.DarkGray,
                         fontSize = 12.sp,
                         fontFamily = poppins
