@@ -184,7 +184,7 @@ fun ProductManagementScreen(
    // val syncStatus by viewModel.syncStatusText.collectAsStateWithLifecycle(initialValue = null)
 
     LaunchedEffect(syncStatus) {
-        if (syncStatus.contains("synced", ignoreCase = true) == true) {
+        if (syncStatus.contains("completed", ignoreCase = true) == true) {
             showSuccessDialog = true
             viewModel.clearSyncStatus() // no more error now
         }

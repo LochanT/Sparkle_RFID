@@ -40,6 +40,8 @@ class ImportExcelViewModel @Inject constructor(
         ImportProgress(0, 0, emptyList())
     )
     val importProgress: StateFlow<ImportProgress> = _importProgress
+    private val _syncStatusText = MutableStateFlow("")
+    val syncStatusText: StateFlow<String> = _syncStatusText
 
     private val _isImportDone = MutableStateFlow(false)
     val isImportDone: StateFlow<Boolean> = _isImportDone
@@ -242,6 +244,8 @@ class ImportExcelViewModel @Inject constructor(
                     }
 
                     _importProgress.value = ImportProgress(total, imported, failed.toList())
+
+                    _syncStatusText.value = "Sync completed successfully!"
                 }
 
                 bulkRepository.clearAllItems()

@@ -51,9 +51,9 @@ class RFIDReaderManager @Inject constructor(
         return _reader?.readTagFromBuffer()
     }
 
-    fun startInventoryTag(selectedPower: Int, search: String): Boolean {
+    fun startInventoryTag(selectedPower: Int, search: Boolean): Boolean {
         _reader?.setPower(selectedPower)
-        if(!search.equals("search")) {
+        if(!search) {
             soundPlayer.startLoopingSound()
         }
         val started = _reader?.startInventoryTag() ?: false

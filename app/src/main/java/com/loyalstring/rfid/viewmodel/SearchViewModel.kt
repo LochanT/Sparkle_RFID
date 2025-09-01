@@ -57,7 +57,7 @@ class SearchViewModel @Inject constructor(
     }
 
     fun startTagScanning() {
-        readerManager.startInventoryTag(30,"search")
+        readerManager.startInventoryTag(30,true)
 
         scanJob?.cancel()
         scanJob = viewModelScope.launch(Dispatchers.IO) {

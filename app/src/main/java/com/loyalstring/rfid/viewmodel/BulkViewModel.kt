@@ -273,7 +273,7 @@ class BulkViewModel @Inject constructor(
     fun startSingleScan(selectedPower: Int, onTagFound: (UHFTAGInfo) -> Unit) {
         if (!success) return
 
-        readerManager.startInventoryTag(selectedPower, "bulk")
+        readerManager.startInventoryTag(selectedPower, false)
 
         // Cancel any ongoing scan job first
         scanJob?.cancel()
@@ -312,7 +312,7 @@ class BulkViewModel @Inject constructor(
         // scannedEpcList.clear()
         _isScanning.value = true
 
-        readerManager.startInventoryTag(selectedPower, "bulk")
+        readerManager.startInventoryTag(selectedPower,false)
         readerManager.playSound(1)
 
         scanJob = viewModelScope.launch(Dispatchers.IO) {
@@ -380,10 +380,20 @@ class BulkViewModel @Inject constructor(
         Log.d("SCAN_RESULT", "Matched: ${matched.size}, Unmatched: ${unmatched.size}")
     }
 
+    fun pauseScanning() {
+        readerManager.stopInventory()
+        readerManager.stopSound(1)
+        _isScanning.value = false
+        scanJob?.cancel()
+        scanJob = null
+
+        // ❌ DO NOT clear scannedEpcList or recompute here
+    }
+
 
     fun startScanning(selectedPower: Int) {
         if (success) {
-            readerManager.startInventoryTag(selectedPower, "bulk")
+            readerManager.startInventoryTag(selectedPower, false)
             readerManager.playSound(1, 0)
             scanJob?.cancel()
             if (scanJob?.isActive == true) return
