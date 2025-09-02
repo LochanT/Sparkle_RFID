@@ -1,7 +1,9 @@
 package com.loyalstring.rfid.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,9 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -39,6 +43,7 @@ import androidx.navigation.NavHostController
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
+import com.loyalstring.rfid.ui.utils.BackgroundGradient
 import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
@@ -130,7 +135,7 @@ fun InventoryMenuScreen(
                                             "No counters available"
                                         )
                                     } else {
-                                        dialogTitle = "Select Counter"
+                                        dialogTitle = "Counter"
                                         dialogItems = counters
                                         onItemSelected = { selected ->
                                             navController.currentBackStackEntry
@@ -157,7 +162,7 @@ fun InventoryMenuScreen(
                                             "No branches available"
                                         )
                                     } else {
-                                        dialogTitle = "Select Branch"
+                                        dialogTitle = "Branch"
                                         dialogItems = branches
                                         onItemSelected = { selected ->
                                             navController.currentBackStackEntry
@@ -184,7 +189,7 @@ fun InventoryMenuScreen(
                                             "No boxes available"
                                         )
                                     } else {
-                                        dialogTitle = "Select Box"
+                                        dialogTitle = "Box"
                                         dialogItems = boxes
                                         onItemSelected = { selected ->
                                             navController.currentBackStackEntry
@@ -210,7 +215,7 @@ fun InventoryMenuScreen(
                                             "No exhibitions branch available"
                                         )
                                     } else {
-                                        dialogTitle = "Select Exhibition"
+                                        dialogTitle = "Exhibition"
                                         dialogItems = exhibitions
                                         onItemSelected = { selected ->
                                             navController.currentBackStackEntry
@@ -278,64 +283,94 @@ fun MenuButton(title: String, icon: Int, onClick: () -> Unit) {
         }
     }
 }
-
 @Composable
 fun SelectionDialog(
     title: String,
     items: List<String>,
     onDismiss: () -> Unit,
-    onSelect: (String) -> Unit,
-    onAddClick: (() -> Unit)? = null
+    onSelect: (String) -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {},
-        dismissButton = {},
-        text = {
-            Column(
+    var expanded by remember { mutableStateOf(false) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .background(Color.White, shape = RoundedCornerShape(16.dp))
+                .padding(12.dp)
+        ) {
+            // ✅ Close button at very top-right
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_close),
+                        contentDescription = "Close",
+                        tint = Color.Gray
+                    )
+                }
+            }
+
+            // Header Row (Select + Plus)
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp)
+                    .background(Color(0xFFF5F3F3), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Header Row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Select $title",
-                        fontFamily = poppins,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
-                    )
-                    Row {
-                        if (onAddClick != null) {
-                            IconButton(onClick = onAddClick) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.vector_add),
-                                    contentDescription = "Add $title",
-                                    tint = Color.White
-                                )
-                            }
-                        }
-                    }
-                }
+                Text(
+                    text = "Select $title",
+                    fontFamily = poppins,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                    color = Color(0xFF3B363E)
+                )
 
-                // List of items
+                // + button
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .background(
+                            BackgroundGradient,
+                            shape = CircleShape
+                        )
+                        .clickable { expanded = !expanded },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.vector_add),
+                        contentDescription = "Expand",
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+
+            // Expandable list
+            if (expanded) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+//                        .padding(top = 8.dp)
+                        .background(Color(0xFFF5F3F3), RoundedCornerShape(12.dp))
                 ) {
                     items.forEach { item ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onSelect(item) }
-                                .padding(vertical = 12.dp, horizontal = 8.dp)
+                                .clickable {
+                                    onSelect(item)
+                                    expanded = false
+                                }
+                                .padding(vertical = 12.dp, horizontal = 16.dp)
                         ) {
                             Text(
                                 text = item,
@@ -347,9 +382,11 @@ fun SelectionDialog(
                     }
                 }
             }
-        },
-        containerColor = Color.White,
-        shape = MaterialTheme.shapes.medium
-    )
+        }
+    }
 }
+
+
+
+
 

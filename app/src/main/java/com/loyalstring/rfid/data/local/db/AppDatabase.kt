@@ -148,7 +148,7 @@ abstract class AppDatabase : RoomDatabase() {
         fun getDatabase(context: Context): AppDatabase =
 
             INSTANCE ?: synchronized(this) {
-                //    context.deleteDatabase("app_db")
+                //  context.deleteDatabase("app_db")
                 Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,

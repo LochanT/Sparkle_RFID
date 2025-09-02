@@ -61,8 +61,6 @@ import com.loyalstring.rfid.ui.utils.BackgroundGradient
 import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 
 @SuppressLint("RestrictedApi")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,6 +73,7 @@ fun BulkProductScreen(
     val context = LocalContext.current
     // Observe barcode and tag data
     val tags by viewModel.scannedTags.collectAsState()
+    val rfidMap by viewModel.rfidMap.collectAsState()
     val itemCodes = remember { mutableStateOf("") }
     // Dropdown options
     val categories by viewModel.categories.collectAsState()
@@ -88,12 +87,10 @@ fun BulkProductScreen(
     var showAddDialogFor by remember { mutableStateOf<String?>(null) }
     var firstPress by remember { mutableStateOf(false) }
 
+    var clickedIndex by remember { mutableStateOf<Int?>(null) }
+
     var selectedPower by remember { mutableStateOf(10) }
     remember { mutableStateOf("") }
-
-    val _rfidMap = MutableStateFlow<Map<Int, String>>(emptyMap())
-    val rfidMap: StateFlow<Map<Int, String>> = _rfidMap
-
 
 
 
@@ -109,6 +106,8 @@ fun BulkProductScreen(
     DisposableEffect(Unit) {
         val listener = object : ScanKeyListener {
             override fun onBarcodeKeyPressed() {
+
+
                 viewModel.startBarcodeScanning(context)
             }
 
@@ -213,7 +212,7 @@ fun BulkProductScreen(
 
                     }
 
-                   // viewModel.toggleScanning(selectedPower)
+                    // viewModel.toggleScanning(selectedPower)
 
                 },
                 onReset = {
@@ -378,13 +377,15 @@ fun BulkProductScreen(
                             }
 
 // Item Code
-                          Box(
+                            Box(
                                 modifier = Modifier
                                     .width(150.dp)
                                     .height(36.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-
+                                val rfid = rfidMap[index]
+                                rfid != null
+                                rfid ?: ""
                                 BasicTextField(
                                     value = itemCodes.value,
                                     onValueChange = { itemCodes.value = it },
@@ -408,39 +409,42 @@ fun BulkProductScreen(
                             }
 
 // RFID Text
-                         /*   Box(
-                                modifier = Modifier
-                                    .width(150.dp)
-                                    .height(36.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                val rfid = rfidMap[index]
-                                val isScanned = rfid != null
-                                val displayText = rfid ?: "scan here"
-                                val textColor = if (!isScanned) Color.Blue else Color.DarkGray
-                                val style =
-                                    if (!isScanned) TextDecoration.Underline else TextDecoration.None
-                                Text(
+                            /*   Box(
+                                   modifier = Modifier
+                                       .width(150.dp)
+                                       .height(36.dp),
+                                   contentAlignment = Alignment.Center
+                               ) {
+                                   val rfid = rfidMap[index]
+                                   val isScanned = rfid != null
+                                   val displayText = rfid ?: "scan here"
+                                   val textColor = if (!isScanned) Color.Blue else Color.DarkGray
+                                   val style =
+                                       if (!isScanned) TextDecoration.Underline else TextDecoration.None
+                                   Text(
 
-                                    text = displayText,
-                                    modifier = Modifier.clickable {
-                                        clickedIndex = index
-                                        viewModel.startBarcodeScanning(context)
-                                    },
-                                    fontSize = 11.sp,
-                                    color = textColor,
-                                    textDecoration = style,
-                                    fontFamily = poppins
-                                )
-                            }*/
-// RFID Text Field
-                            val rfid = rfidMap.value[index] ?: ""
+                                       text = displayText,
+                                       modifier = Modifier.clickable {
+                                           clickedIndex = index
+                                           viewModel.startBarcodeScanning(context)
+                                       },
+                                       fontSize = 11.sp,
+                                       color = textColor,
+                                       textDecoration = style,
+                                       fontFamily = poppins
+                                   )
+                               }*/
+
+
+                            val rowValue = rfidMap[index] ?: ""
 
                             BasicTextField(
-                                value = rfid,
+                                value = rowValue,
                                 onValueChange = { newValue ->
-                                    // update rfidMap in ViewModel for this index
-                                    viewModel.updateRfidForIndex(index, newValue)
+                                    viewModel.updateRfidForIndex(
+                                        index,
+                                        newValue
+                                    ) // ✅ update that row in VM
                                 },
                                 singleLine = true,
                                 textStyle = LocalTextStyle.current.copy(
@@ -448,11 +452,16 @@ fun BulkProductScreen(
                                     color = Color.DarkGray,
                                     fontFamily = poppins
                                 ),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 4.dp)
+                                    .clickable {
+                                        clickedIndex = index
+                                        viewModel.startBarcodeScanning(context) // scanner will call updateRfidForIndex
+                                    },
                                 decorationBox = { innerTextField ->
                                     Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(horizontal = 4.dp),
+                                        modifier = Modifier.fillMaxSize(),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         innerTextField()
@@ -507,14 +516,7 @@ fun BulkProductScreen(
                 )
             }
         }
-        fun updateRfidAt(index: Int, newValue: String) {
-            val currentMap = rfidMap.value.toMutableMap()
-            currentMap[index] = newValue
-            _rfidMap.value = currentMap
-        }
     }
-
-
 }
 
 
