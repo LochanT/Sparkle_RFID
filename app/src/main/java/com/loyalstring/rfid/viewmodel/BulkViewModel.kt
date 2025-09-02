@@ -134,8 +134,12 @@ class BulkViewModel @Inject constructor(
     private val _matchedItems = mutableStateListOf<BulkItem>()
     val matchedItems: List<BulkItem> get() = _matchedItems
 
-    private val _unmatchedItems = mutableStateListOf<BulkItem>()
-    val unmatchedItems: List<BulkItem> get() = _unmatchedItems
+    private val _unmatchedItems = mutableStateListOf<BulkItem>() // real unmatched items
+    val unmatchedItems: List<BulkItem> = _unmatchedItems
+
+    // 👇 NEW: what the UI uses to render
+    private val _visibleUnmatchedItems = mutableStateListOf<BulkItem>()
+    val visibleUnmatchedItems: List<BulkItem> = _visibleUnmatchedItems
 
     private val _scannedFilteredItems = mutableStateOf<List<BulkItem>>(emptyList())
     val scannedFilteredItems: State<List<BulkItem>> = _scannedFilteredItems
@@ -209,8 +213,17 @@ class BulkViewModel @Inject constructor(
     private val _filteredItems = mutableStateListOf<BulkItem>()
     val filteredItems: List<BulkItem> get() = _filteredItems
 
-    // private val _allItems = mutableStateListOf<BulkItem>()
-    // val allItems: List<BulkItem> get() = _allItems
+    private val _stickyUnmatchedIds = mutableStateListOf<String>()
+    val stickyUnmatchedIds: List<String> get() = _stickyUnmatchedIds
+
+    fun rememberUnmatched(items: List<BulkItem>) {
+        val ids = items.mapNotNull { it.epc?.trim()?.uppercase() }
+        _stickyUnmatchedIds.addAll(ids.filterNot { _stickyUnmatchedIds.contains(it) })
+    }
+
+    fun clearStickyUnmatched() {
+        _stickyUnmatchedIds.clear()
+    }
 
 
     init {
@@ -268,7 +281,10 @@ class BulkViewModel @Inject constructor(
         _searchItems.clear()
         _searchItems.addAll(items.filter { it.scannedStatus == "Unmatched" })
     }
-
+    fun showUnmatchedTab() {
+        _visibleUnmatchedItems.clear()
+        _visibleUnmatchedItems.addAll(_unmatchedItems) // only real unmatched
+    }
 
     fun startSingleScan(selectedPower: Int, onTagFound: (UHFTAGInfo) -> Unit) {
         if (!success) return
@@ -347,7 +363,10 @@ class BulkViewModel @Inject constructor(
         }
     }
 
-    fun computeScanResults(filteredItems: List<BulkItem>) {
+    fun computeScanResults(
+        filteredItems: List<BulkItem>,
+        stayVisibleInUnmatched: Boolean = false
+    ) {
         val matched = mutableListOf<BulkItem>()
         val unmatched = mutableListOf<BulkItem>()
         val scannedEpcSet = scannedEpcList.map { it.trim().uppercase() }.toSet()
@@ -358,9 +377,14 @@ class BulkViewModel @Inject constructor(
                 dbEpc != null && scannedEpcSet.contains(dbEpc) -> {
                     val updatedItem = item.copy(scannedStatus = "Matched")
                     matched.add(updatedItem)
+
+                    // ✅ keep in unmatched temporarily if flag is set
+                    if (stayVisibleInUnmatched) {
+                        unmatched.add(updatedItem)
+                    }
+
                     updatedItem
                 }
-
                 else -> {
                     val updatedItem = item.copy(scannedStatus = "Unmatched")
                     unmatched.add(updatedItem)
@@ -376,9 +400,8 @@ class BulkViewModel @Inject constructor(
         _unmatchedItems.addAll(unmatched)
 
         _scannedFilteredItems.value = updatedFiltered
-
-        Log.d("SCAN_RESULT", "Matched: ${matched.size}, Unmatched: ${unmatched.size}")
     }
+
 
     fun pauseScanning() {
         readerManager.stopInventory()

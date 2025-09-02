@@ -96,9 +96,9 @@ class ImportExcelViewModel @Inject constructor(
                         rawHeaderIndexMap[name] = cell.columnIndex
                     }
 
-                    val normalizedFieldMapping = fieldMapping.entries.associate {
-                        it.value.trim().lowercase() to it.key.trim().lowercase()
-                    }
+                    val normalizedFieldMapping = fieldMapping
+                        .mapKeys { it.key.trim().lowercase() }
+                        .mapValues { it.value.trim().lowercase() }
 
                     val items = mutableListOf<BulkItem>()
                     total = sheet.lastRowNum
@@ -361,9 +361,17 @@ class ImportExcelViewModel @Inject constructor(
             ),
             dustWeight = "",
             dustAmount = "",
-            sku = "",
+            sku = getStringFromRow(
+                row,
+                rawHeaderIndexMap,
+                normalizedFieldMapping["sku"]
+            ),
             epc = epcVal,
-            vendor = "",
+            vendor = getStringFromRow(
+                row,
+                rawHeaderIndexMap,
+                normalizedFieldMapping["vendor"]
+            ),
             tid = epcVal,
             box = "",
             designCode = "",
@@ -425,14 +433,15 @@ class ImportExcelViewModel @Inject constructor(
             else -> ""
         }
     }
-
     private fun getStringFromRow(
         row: org.apache.poi.ss.usermodel.Row,
         headerIndexMap: Map<String, Int>,
         columnName: String?
     ): String {
-        if (columnName == null) return ""
+        if (columnName.isNullOrBlank()) return ""
         val index = headerIndexMap[columnName.lowercase()] ?: return ""
-        return getCellValue(row.getCell(index))
+        val cell = row.getCell(index) ?: return ""
+        return getCellValue(cell).trim()
     }
+
 }
