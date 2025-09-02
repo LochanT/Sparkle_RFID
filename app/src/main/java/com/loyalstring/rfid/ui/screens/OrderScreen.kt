@@ -74,6 +74,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -123,7 +124,9 @@ import java.net.URL
 fun OrderScreen(
     onBack: () -> Unit,
     navController: NavHostController,
-    userPreferences: UserPreferences
+    userPreferences: UserPreferences,
+    orderViewModel: OrderViewModel,
+    singleProductViewModel: SingleProductViewModel
 ) {
 
     val context = LocalContext.current
@@ -131,25 +134,10 @@ fun OrderScreen(
         remember { UserPreferences.getInstance(context).getEmployee(Employee::class.java) }
 
     val bulkViewModel: BulkViewModel = hiltViewModel()
-    val orderViewModel: OrderViewModel = hiltViewModel()
-    val singleProductViewModel: SingleProductViewModel = hiltViewModel()
-    var selectedPower by remember { mutableStateOf(10) }
-
+    var selectedPower by remember { mutableStateOf(30) }
     var selectedCustomer by remember { mutableStateOf<EmployeeList?>(null) }
-
     val itemCodeList by orderViewModel.itemCodeResponse.collectAsState()
     val customerSuggestions by orderViewModel.empListFlow.collectAsState(UiState.Loading)
-
-    // Fetch data on first composition
-    LaunchedEffect(Unit) {
-        employee?.clientCode?.let { clientCode ->
-            orderViewModel.getAllEmpList(clientCode)
-            orderViewModel.getAllItemCodeList(ClientCodeRequest(clientCode))
-            singleProductViewModel.getAllBranches(ClientCodeRequest(clientCode))
-            singleProductViewModel.getAllPurity(ClientCodeRequest(clientCode))
-            singleProductViewModel.getAllSKU(ClientCodeRequest(clientCode))
-        }
-    }
 
     LaunchedEffect(customerSuggestions) {
         if (customerSuggestions is UiState.Success) {
@@ -190,6 +178,8 @@ fun OrderScreen(
                 selectedCustomer = selectedCustomer,
                 onCustomerSelected = { selectedCustomer = it },
                 selectedPower,
+                orderViewModel=orderViewModel,
+                singleProductViewModel=singleProductViewModel
 
             )
         }
@@ -204,7 +194,9 @@ fun OrderScreenContent(
     bulkViewModel: BulkViewModel,
     selectedCustomer: EmployeeList?,
     onCustomerSelected: (EmployeeList) -> Unit,
-    selectedPower: Int
+    selectedPower: Int,
+    singleProductViewModel: SingleProductViewModel,
+    orderViewModel: OrderViewModel
 ) {
     val context = LocalContext.current
     val isOnline = remember {
@@ -216,8 +208,7 @@ fun OrderScreenContent(
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
 
 // ViewModels
-    val orderViewModel: OrderViewModel = hiltViewModel()
-    val singleProductViewModel: SingleProductViewModel = hiltViewModel()
+
     var isScanning by remember { mutableStateOf(false) }
 
 // Basic state fields for totals, calculations, item selections
@@ -302,7 +293,7 @@ fun OrderScreenContent(
         }
     }*/
 
-    val filteredCustomers = remember(customerName, customerSuggestions) {
+   /* val filteredCustomers = remember(customerName, customerSuggestions) {
         when (customerSuggestions) {
             is UiState.Success<*> -> {
                 val items = (customerSuggestions as UiState.Success<Any?>).data as List<EmployeeList>
@@ -310,6 +301,24 @@ fun OrderScreenContent(
                     val fullName = "${it.FirstName} ${it.LastName}".trim().lowercase()
                     fullName.contains(customerName.trim().lowercase())
                 }.take(20) // ✅ LIMIT to 20
+            }
+            else -> emptyList()
+        }
+    }
+*/
+
+    val filteredCustomers by derivedStateOf {
+        when (customerSuggestions) {
+            is UiState.Success<*> -> {
+                val items = (customerSuggestions as UiState.Success<Any?>).data as List<EmployeeList>
+                if (customerName.isBlank()) {
+                    items.take(20) // show first 20 when no input
+                } else {
+                    items.filter {
+                        val fullName = "${it.FirstName} ${it.LastName}".trim().lowercase()
+                        fullName.contains(customerName.trim().lowercase())
+                    }.take(20)
+                }
             }
             else -> emptyList()
         }
@@ -416,6 +425,9 @@ fun OrderScreenContent(
     LaunchedEffect(addEmpResponse) {
         if (addEmpResponse != null) {
             Toast.makeText(context, "Customer added successfully", Toast.LENGTH_SHORT).show()
+            orderViewModel.getAllEmpList(employee?.clientCode ?: "")
+            // ✅ Clear search so new customer shows in list
+            customerName = ""
         }
     }
 
@@ -1199,19 +1211,27 @@ fun OrderScreenContent(
                 },
                 onGscan = {
                  //   resetScan(bulkViewModel,firstPress)
-                    if (!firstPress) {
-                        firstPress = true
-                        bulkViewModel.startScanning(selectedPower)
-
+                    if (isScanning && firstPress) {
+                        firstPress = false
+                        bulkViewModel.stopScanning()
+                        isScanning = false
                     } else {
-                        bulkViewModel.stopScanning() // Stop scanning after the first press
+                        bulkViewModel.startScanning(selectedPower)
+                        isScanning = true
+                        firstPress = true
+
+
                     }
+
                 },
                 onReset = {
 
                    // bulkViewModel.resetData()
                     bulkViewModel.stopBarcodeScanner()
                     orderViewModel.clearOrderItems()
+                    customerName = ""
+                    itemCode = TextFieldValue("")
+                    isScanning=false
 
 
                 },
@@ -1575,21 +1595,6 @@ fun OrderScreenContent(
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-
-                            /*  dropdownInput(
-                                  country,
-                                  { country = it },
-                                  "Country",
-                                  countryOptions,
-                                  expandedCountry,
-                                  { expandedCountry = it })
-                              dropdownInput(
-                                  state,
-                                  { state = it },
-                                  "State",
-                                  stateOptions,
-                                  expandedState,
-                                  { expandedState = it })*/
                             dropdownInput(
                                 city,
                                 { city = it },
@@ -1706,6 +1711,7 @@ fun OrderScreenContent(
                                             )
                                             orderViewModel.addEmployee(request)
                                             showAddCustomerDialog = false
+
                                         }
                                     }
                                 },
@@ -1990,7 +1996,7 @@ fun mapItemCodeToOrderItem(item: ItemCodeResponse): OrderItem {
         makingPerGram = item.MakingPerGram ?: ""
     )
 }
-
+/*
 @Composable
 fun OrderItemTableScreen(
     productList: List<OrderItem>,
@@ -2039,13 +2045,13 @@ fun OrderItemTableScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     listOf(
-                        "Product Name" to 160.dp,
+                        "Product Name" to 120.dp,
                         "Item Code" to 80.dp,
-                        "Qty" to 80.dp,
-                        "Gr. Wt" to 80.dp,
-                        "N. Wt" to 80.dp,
-                        "F+W Wt" to 80.dp,
-                        "S.Amt" to 80.dp,
+                        //"Qty" to 80.dp,
+                        "Gr. Wt" to 70.dp,
+                        "N. Wt" to 70.dp,
+                        "F+W Wt" to 70.dp,
+                        "S.Amt" to 70.dp,
                         "Item.Amt" to 80.dp,
                         "RFID Code" to 80.dp
                     ).forEach { (label, width) ->
@@ -2249,13 +2255,13 @@ fun OrderItemTableScreen(
                     listOf(
 
 
-                        "Total" to 160.dp,
+                        "Total" to 120.dp,
                         "$totalQty" to 80.dp,
-                        "$totalItemQty" to 80.dp,
-                        String.format("%.3f", totalGrWt) to 80.dp,
-                        String.format("%.3f", totalNetWt) to 80.dp,
-                        "$totalFinmePlusWt" to 80.dp,
-                        "$totalStoneAmt" to 80.dp,
+                        //"$totalItemQty" to 80.dp,
+                        String.format("%.3f", totalGrWt) to 70.dp,
+                        String.format("%.3f", totalNetWt) to 70.dp,
+                        "$totalFinmePlusWt" to 70.dp,
+                        "$totalStoneAmt" to 70.dp,
                         "$totalItemAmt" to 80.dp,
                         "" to 80.dp
                     ).forEach { (text, width) ->
@@ -2277,7 +2283,289 @@ fun OrderItemTableScreen(
     }
 
 
+}*/
+@Composable
+fun OrderItemTableScreen(
+    productList: List<OrderItem>,
+    selectedItem: ItemCodeResponse?,
+    onItemSelected: (ItemCodeResponse) -> Unit,
+    showEditOrderDialog: Boolean,
+    onEditOrderClicked: (OrderItem) -> Unit,
+    employee: Employee?,
+    orderViewModel: OrderViewModel,
+    refreshKey: Int,
+    orderSelectedItem: OrderItem?,
+    onOrderSelectedItemChange: (OrderItem) -> Unit
+) {
+    val horizontalScrollState = rememberScrollState()
+    val verticalScrollState = rememberLazyListState()
+    val selectedIndex = remember { mutableStateOf(-1) }
+
+    // Shared column definitions
+    val columnDefinitions = listOf(
+        "Product Name" to 140.dp,   // keep product wider
+        "Item Code" to 80.dp,
+        "Gr. Wt" to 70.dp,
+        "N. Wt" to 70.dp,
+        "F+W Wt" to 70.dp,
+        "S.Amt" to 70.dp,
+        "Item.Amt" to 80.dp,
+        "RFID Code" to 100.dp
+    )
+
+    LaunchedEffect(Unit) {
+        orderViewModel.getAllOrderItemsFromRoom()
+    }
+
+    // Totals
+    val totalGrWt = productList.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }
+    val totalNetWt = productList.sumOf { it.nWt?.toDoubleOrNull() ?: 0.0 }
+    val totalStoneAmt = productList.sumOf { it.stoneAmt?.toDoubleOrNull() ?: 0.0 }
+    val totalItemAmt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
+    val totalQty = productList.size
+    val totalFinePlusWt = productList.sumOf { it.finePlusWt?.toDoubleOrNull() ?: 0.0 }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        Row(
+            modifier = Modifier
+                .horizontalScroll(horizontalScrollState)
+                .fillMaxWidth()
+        ) {
+            Column {
+                // ✅ Header Row
+                Row(
+                    modifier = Modifier
+                        .background(Color.DarkGray)
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    columnDefinitions.forEach { (label, width) ->
+                        Box(
+                            modifier = Modifier.width(width),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                fontFamily = poppins
+                            )
+                        }
+                    }
+                }
+
+                // ✅ Data Rows
+                LazyColumn(
+                    state = verticalScrollState,
+                    modifier = Modifier.height(240.dp)
+                ) {
+                    itemsIndexed(productList) { index, item ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(35.dp)
+                                .clickable {
+                                    onEditOrderClicked(item)
+                                    onOrderSelectedItemChange(item)
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            columnDefinitions.forEachIndexed { colIndex, (_, width) ->
+                                Box(
+                                    modifier = Modifier.width(width),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    when (colIndex) {
+                                        // Product Name column has radio + text
+                                        0 -> Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = selectedIndex.value == index,
+                                                onClick = {
+                                                    selectedIndex.value = index
+                                                    onItemSelected(
+                                                        ItemCodeResponse(
+                                                            Id = 0,
+                                                            SKUId = item.skuId,
+                                                            ProductTitle = item.productName,
+                                                            ClipWeight = "",
+                                                            ClipQuantity = "",
+                                                            ItemCode = item.itemCode,
+                                                            HSNCode = "",
+                                                            Description = "",
+                                                            ProductCode = item.productCode,
+                                                            MetalName = "",
+                                                            CategoryId = item.categoryId.toString(),
+                                                            ProductId = item.productId,
+                                                            DesignId = item.designid,
+                                                            PurityId = item.purityid,
+                                                            Colour = item.typeOfColor,
+                                                            Size = item.size,
+                                                            WeightCategory = "",
+                                                            GrossWt = item.grWt ?: "",
+                                                            NetWt = item.nWt ?: "",
+                                                            CollectionName = "",
+                                                            OccassionName = "",
+                                                            Gender = "",
+                                                            MakingFixedAmt = item.itemAmt ?: "",
+                                                            MakingPerGram = item.makingPerGram,
+                                                            MakingFixedWastage = item.makingFixedWastage,
+                                                            MakingPercentage = item.makingPercentage,
+                                                            TotalStoneWeight = item.stoneWt,
+                                                            TotalStoneAmount = item.stoneAmt ?: "",
+                                                            TotalStonePieces = "",
+                                                            TotalDiamondWeight = "",
+                                                            TotalDiamondPieces = "",
+                                                            TotalDiamondAmount = "",
+                                                            Featured = "",
+                                                            Pieces = "",
+                                                            HallmarkAmount = "",
+                                                            HUIDCode = "",
+                                                            MRP = "",
+                                                            VendorId = 0,
+                                                            VendorName = "",
+                                                            FirmName = "",
+                                                            BoxId = 0,
+                                                            TIDNumber = item.tid,
+                                                            RFIDCode = item.rfidCode,
+                                                            FinePercent = item.finePlusWt ?: "",
+                                                            WastagePercent = item.wastage,
+                                                            Images = "",
+                                                            BlackBeads = "",
+                                                            Height = "",
+                                                            Width = "",
+                                                            OrderedItemId = "",
+                                                            CuttingGrossWt = "",
+                                                            CuttingNetWt = "",
+                                                            MetalRate = "",
+                                                            LotNumber = "",
+                                                            DeptId = 0,
+                                                            PurchaseCost = "",
+                                                            Margin = "",
+                                                            BranchName = item.branchName,
+                                                            BoxName = "",
+                                                            EstimatedDays = "",
+                                                            OfferPrice = "",
+                                                            Rating = "",
+                                                            SKU = item.sku,
+                                                            Ranking = "",
+                                                            CompanyId = item.companyId,
+                                                            CounterId = item.counterId,
+                                                            BranchId = item.branchId.toIntOrNull() ?: 0,
+                                                            EmployeeId = 0,
+                                                            Status = "",
+                                                            ClientCode = employee?.clientCode,
+                                                            UpdatedFrom = "",
+                                                            count = 0,
+                                                            MetalId = 0,
+                                                            WarehouseId = 0,
+                                                            CreatedOn = "",
+                                                            LastUpdated = "",
+                                                            TaxId = 0,
+                                                            TaxPercentage = "",
+                                                            OtherWeight = "",
+                                                            PouchWeight = "",
+                                                            CategoryName = item.categoryName,
+                                                            PurityName = item.purity,
+                                                            TodaysRate = item.todaysRate,
+                                                            ProductName = item.productName,
+                                                            DesignName = item.designName,
+                                                            DiamondSize = "",
+                                                            DiamondWeight = "",
+                                                            DiamondPurchaseRate = "",
+                                                            DiamondSellRate = "",
+                                                            DiamondClarity = "",
+                                                            DiamondColour = "",
+                                                            DiamondShape = "",
+                                                            DiamondCut = "",
+                                                            DiamondSettingType = "",
+                                                            DiamondCertificate = "",
+                                                            DiamondPieces = "",
+                                                            DiamondPurchaseAmount = "",
+                                                            DiamondSellAmount = "",
+                                                            DiamondDescription = "",
+                                                            TagWeight = "",
+                                                            FindingWeight = "",
+                                                            LanyardWeight = "",
+                                                            PacketId = 0,
+                                                            PacketName = "",
+                                                            CollectionId = 0,
+                                                            CollectionNameSKU = "",
+                                                            PackingWeight = 0,
+                                                            TotalWeight = 0.0,
+                                                            Stones = emptyList(),
+                                                            Diamonds = emptyList()
+                                                        )
+                                                    )
+                                                }
+                                            )
+                                            Spacer(Modifier.width(4.dp))
+                                            Text(
+                                                item.productName,
+                                                fontSize = 13.sp,
+                                                color = Color.Black,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+
+                                        // Other columns map directly
+                                        1 -> Text(item.itemCode, fontSize = 13.sp)
+                                        2 -> Text(item.grWt ?: "", fontSize = 13.sp)
+                                        3 -> Text(item.nWt ?: "", fontSize = 13.sp)
+                                        4 -> Text(item.finePlusWt ?: "", fontSize = 13.sp)
+                                        5 -> Text(item.stoneAmt ?: "", fontSize = 13.sp)
+                                        6 -> Text(item.itemAmt ?: "", fontSize = 13.sp)
+                                        7 -> Text(item.rfidCode ?: "", fontSize = 13.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ✅ Total Row
+                Row(
+                    modifier = Modifier
+                        .background(Color.DarkGray)
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    listOf(
+                        "Total" to columnDefinitions[0].second,
+                        "$totalQty" to columnDefinitions[1].second,
+                        String.format("%.3f", totalGrWt) to columnDefinitions[2].second,
+                        String.format("%.3f", totalNetWt) to columnDefinitions[3].second,
+                        "$totalFinePlusWt" to columnDefinitions[4].second,
+                        "$totalStoneAmt" to columnDefinitions[5].second,
+                        "$totalItemAmt" to columnDefinitions[6].second,
+                        "" to columnDefinitions[7].second
+                    ).forEach { (text, width) ->
+                        Box(
+                            modifier = Modifier.width(width),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = text,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontFamily = poppins
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
+
 
 
 
@@ -2822,142 +3110,6 @@ fun ItemCodeInputRow(
 }
 
 
-/*@Composable
-fun CustomerNameInput(
-    customerName: String,
-    onCustomerNameChange: (String) -> Unit,
-    onClear: () -> Unit,
-    onAddCustomerClick: () -> Unit,
-    filteredCustomers: List<EmployeeList>,
-    isLoading: Boolean,
-    onCustomerSelected: (EmployeeList) -> Unit,
-    modifier: Modifier = Modifier,
-    coroutineScope: CoroutineScope,
-    fetchSuggestions: suspend () -> Unit,
-    expanded: Boolean,
-) {
-    var expanded by remember { mutableStateOf(expanded) }
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(40.dp)
-            .padding(horizontal = 10.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .height(35.dp)
-                .gradientBorderBox() // custom modifier
-                .padding(horizontal = 8.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                BasicTextField(
-                    value = customerName,
-                    onValueChange = {
-                        onCustomerNameChange(it)
-                        expanded = it.length >= 1
-
-                        if (it.length >= 1) {
-                            coroutineScope.launch {
-                              //  delay(100)
-                                fetchSuggestions()
-                                expanded = true
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    textStyle = TextStyle(fontSize = 14.sp, color = Color.Black),
-                    decorationBox = { innerTextField ->
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            if (customerName.isEmpty()) {
-                                Text("Customer Name", fontSize = 13.sp, color = Color.Gray)
-                            }
-                            innerTextField()
-                        }
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-
-                IconButton(
-                    onClick = {
-                        if (customerName.isEmpty()) onAddCustomerClick()
-                        else onClear()
-                    },
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    if (customerName.isEmpty()) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.vector_add),
-                            contentDescription = "Add",
-                            modifier = Modifier.size(20.dp),
-                            tint = Color.Unspecified
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Clear",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-
-            }
-
-            // Dropdown Suggestions
-            DropdownMenu(
-                expanded = expanded && (filteredCustomers.isNotEmpty() || isLoading),
-                onDismissRequest = { expanded = expanded },
-
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .offset(y = 4.dp)
-                    .padding(horizontal = 16.dp)
-            ) {
-                when {
-                    isLoading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color.White)
-                                .padding(8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp
-                            )
-                        }
-                    }
-
-                    filteredCustomers.isNotEmpty() -> {
-                        filteredCustomers.forEach { customer ->
-                            DropdownMenuItem(
-                                onClick = {
-                                    onCustomerSelected(customer)
-                                    expanded = false
-                                }
-                            ) {
-                                Text(text = customer.FirstName.toString())
-                            }
-                        }
-                    }
-                }
-            }
-
-
-        }
-
-
-
-    }
-}*/
 @Composable
 fun CustomerNameInput(
     customerName: String,
@@ -2967,146 +3119,108 @@ fun CustomerNameInput(
     filteredCustomers: List<EmployeeList>,
     isLoading: Boolean,
     onCustomerSelected: (EmployeeList) -> Unit,
-    modifier: Modifier = Modifier,
     coroutineScope: CoroutineScope,
-    fetchSuggestions: suspend () -> Unit,
-    expanded: Boolean,
+    fetchSuggestions: () -> Unit,
+    expanded: Boolean
 ) {
-    var localExpanded by remember { mutableStateOf(expanded) }
-    var debounceJob by remember { mutableStateOf<Job?>(null) }
+    var expandedState by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 10.dp, end = 10.dp, top = 3.dp, bottom = 3.dp)
+    ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(40.dp)
-                .padding(horizontal = 10.dp)
+                .gradientBorderBox()
+                .padding(1.dp) // border thickness
+                .background(Color.White, RoundedCornerShape(8.dp))
+                .padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .height(35.dp)
-                    .weight(1f)
-                    .gradientBorderBox()
-                    .padding(horizontal = 8.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    BasicTextField(
-                        value = customerName,
-                        onValueChange = {
-                            onCustomerNameChange(it)
-                            debounceJob?.cancel()
-                            if (it.length >= 1) {
-                                debounceJob = coroutineScope.launch {
-                                    delay(300)
-                                    // ✅ REMOVE fetchSuggestions if not needed
-                                    try {
-                                        fetchSuggestions()
-                                        localExpanded = true
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                        // You can show a Toast/snackbar or log it
-                                    }
-                                }
-                            } else {
-                                localExpanded = false
-                            }
-                        },
-                        singleLine = true,
-                        textStyle = TextStyle(fontSize = 14.sp, color = Color.Black),
-                        decorationBox = { innerTextField ->
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                if (customerName.isEmpty()) {
-                                    Text("Customer Name", fontSize = 13.sp, color = Color.Gray)
-                                }
-                                innerTextField()
-                            }
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    IconButton(
-                        onClick = {
-                            if (customerName.isEmpty()) {
-                                onAddCustomerClick()
-                            } else {
-                                onClear()
-                                localExpanded = false
-                            }
-                        },
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        if (customerName.isEmpty()) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.vector_add),
-                                contentDescription = "Add",
-                                modifier = Modifier.size(20.dp),
-                                tint = Color.Unspecified
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Clear",
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+            // Input field
+            BasicTextField(
+                value = customerName,
+                onValueChange = {
+                    onCustomerNameChange(it)
+                    expandedState = true
+                },
+                singleLine = true,
+                textStyle = TextStyle(fontSize = 15.sp, color = Color.Black),
+                decorationBox = { innerTextField ->
+                    if (customerName.isEmpty()) {
+                        Text("Enter customer name", color = Color.Gray, fontSize = 13.sp)
                     }
+                    innerTextField()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 6.dp) // compact padding
+            )
+
+            // Right-side icon: + when empty, × when text entered
+            if (customerName.isEmpty()) {
+                IconButton(onClick = { onAddCustomerClick() },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .padding(end = 2.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.vector_add),
+                        contentDescription = "Add",
+                        modifier = Modifier.size(20.dp),
+                        tint = Color.Unspecified
+                    )
+                }
+            } else {
+                IconButton(onClick = {
+                    onClear()
+                    expandedState = false
+                },  modifier = Modifier
+                    .size(36.dp)
+                    .padding(end = 2.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear",
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }
 
-        // ✅ Custom dropdown — do NOT use DropdownMenuItem outside DropdownMenu
-        if (localExpanded && (filteredCustomers.isNotEmpty() || isLoading)) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(horizontal = 16.dp)
-                    .border(1.dp, Color.LightGray, RoundedCornerShape(4.dp))
-            ) {
-                if (isLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                        )
-                    }
-                } else if (filteredCustomers.isNotEmpty()) {
-                    filteredCustomers.take(10).forEach { customer ->
-                        val fullName = "${customer.FirstName.orEmpty()} ${customer.LastName.orEmpty()}".trim()
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onCustomerSelected(customer)
-                                    onCustomerNameChange(fullName)
-                                    localExpanded = false
-                                }
-                                .padding(vertical = 8.dp, horizontal = 12.dp)
-                        ) {
-                            Text(text = fullName)
-                        }
-                    }
-                } else {
-                    Row(modifier = Modifier.padding(12.dp)) {
-                        Text("No customer found")
+        // Dropdown anchored below
+        DropdownMenu(
+            expanded = expandedState && filteredCustomers.isNotEmpty(),
+            onDismissRequest = { expandedState = false },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 200.dp) // reduced height
+        ) {
+            if (isLoading) {
+                DropdownMenuItem(onClick = {}) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Loading...", fontSize = 13.sp)
+                }
+            } else {
+                filteredCustomers.forEach { customer ->
+                    DropdownMenuItem(onClick = {
+                        onCustomerSelected(customer)
+                        expandedState = false
+                    }) {
+                        Text("${customer.FirstName} ${customer.LastName}")
                     }
                 }
             }
         }
     }
 }
+
+
+
 
 
 

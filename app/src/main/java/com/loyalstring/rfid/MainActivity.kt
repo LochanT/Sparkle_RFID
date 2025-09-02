@@ -70,6 +70,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.reader.ScanKeyListener
 import com.loyalstring.rfid.navigation.AppNavigation
@@ -82,6 +83,7 @@ import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.OrderViewModel
+import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -178,6 +180,17 @@ private fun SetupNavigation(
     orderViewModel1: OrderViewModel,
     viewModel: BulkViewModel = hiltViewModel()
 ) {
+    val singleProductViewModel: SingleProductViewModel = hiltViewModel()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    var selectedItemIndex by rememberSaveable {
+        mutableIntStateOf(-1)
+    }
+    val scope = rememberCoroutineScope()
+    var navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
     /*    lateinit var networkMonitor: NetworkMonitor
         //val orderViewModel: OrderViewModel by viewModels()
         Log.d("@@","Start11")
@@ -190,16 +203,17 @@ private fun SetupNavigation(
         viewModel.syncRFIDDataIfNeeded(context)
     }
 
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    var selectedItemIndex by rememberSaveable {
-        mutableIntStateOf(-1)
+    LaunchedEffect(employee?.clientCode) {
+        employee?.clientCode?.let { clientCode ->
+            orderViewModel1.getAllEmpList(clientCode)
+            orderViewModel1.getAllItemCodeList(ClientCodeRequest(clientCode))
+            singleProductViewModel.getAllBranches(ClientCodeRequest(clientCode))
+            singleProductViewModel.getAllPurity(ClientCodeRequest(clientCode))
+            singleProductViewModel.getAllSKU(ClientCodeRequest(clientCode))
+        }
     }
-    val scope = rememberCoroutineScope()
-    var navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-    val orderViewModel: OrderViewModel = hiltViewModel()
-    val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
+
+
 
     fun Context.findActivity(): Activity? = when (this) {
         is Activity -> this
@@ -212,7 +226,7 @@ private fun SetupNavigation(
             orderViewModel.getAllEmpList(ClientCodeRequest(it))
         }
     }*/
-    val customerSuggestions  by orderViewModel.empListFlow.collectAsState()
+    val customerSuggestions  by orderViewModel1.empListFlow.collectAsState()
     Log.d("@@","@@"+customerSuggestions)
 
     ModalNavigationDrawer(
@@ -371,7 +385,7 @@ private fun SetupNavigation(
             },
             content = { innerPadding ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    AppNavigation(navController, drawerState, scope, context, userPreferences)
+                    AppNavigation(navController, drawerState, scope, context, userPreferences,orderViewModel1,singleProductViewModel)
                 }
 
 

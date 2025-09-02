@@ -34,6 +34,8 @@ import com.loyalstring.rfid.ui.screens.SettingsScreen
 import com.loyalstring.rfid.ui.screens.SplashScreen
 import com.loyalstring.rfid.ui.screens.StockTransferScreen
 import com.loyalstring.rfid.ui.utils.UserPreferences
+import com.loyalstring.rfid.viewmodel.OrderViewModel
+import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import kotlinx.coroutines.CoroutineScope
 
 
@@ -46,6 +48,8 @@ fun AppNavigation(
     scope: CoroutineScope,
     context: Context,
     userPreferences: UserPreferences,
+    orderViewModel1: OrderViewModel,
+    singleProductViewModel: SingleProductViewModel,
 ) {
     NavHost(navController = navController, startDestination = Screens.SplashScreen.route) {
 
@@ -151,7 +155,10 @@ fun AppNavigation(
             OrderScreen(
                 onBack = { navController.popBackStack() },
                 navController,
-                userPreferences
+                userPreferences,
+                orderViewModel1,
+                singleProductViewModel
+
             )
         }
 
