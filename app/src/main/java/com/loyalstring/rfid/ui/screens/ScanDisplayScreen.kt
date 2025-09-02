@@ -344,7 +344,6 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
         bottomBar = {
             Column {
                 SummaryRow(currentLevel, displayItems, selectedMenu)
-                // keep your original ScanBottomBar usage
                 ScanBottomBar(
                     onSave = { /* save */ },
                     onList = { showMenu = true },
@@ -352,7 +351,8 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                     onGscan = {
                         if (!isScanning) {
                             isScanning = true
-                            bulkViewModel.setFilteredItems(scopeItems)
+                            // bulkViewModel.resetScanResults()
+                            bulkViewModel.setFilteredItems(scopeItems)   // ✅ only current scope
                             bulkViewModel.startScanningInventory(selectedPower)
                         } else {
                             isScanning = false
@@ -362,11 +362,14 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                     onReset = {
                         bulkViewModel.stopScanningAndCompute()
                         isScanning = false
+
                         selectedCategories.clear()
                         selectedProducts.clear()
                         selectedDesigns.clear()
-                        bulkViewModel.setFilteredItems(allItems)
+
+                        bulkViewModel.setFilteredItems(allItems) // ✅ reset to full DB
                         bulkViewModel.resetScanResults()
+
                         selectedMenu = MENU_ALL
                         currentLevel = "Category"
                         currentCategory = null
@@ -374,6 +377,7 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         currentDesign = null
                     },
                     isScanning = isScanning
+
                 )
             }
         }
