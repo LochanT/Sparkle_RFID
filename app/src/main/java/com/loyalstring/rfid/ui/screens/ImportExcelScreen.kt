@@ -83,7 +83,7 @@ fun ImportExcelScreen(
         "rfid",
         "grossWeight",
         "stoneWeight",
-        "dustWeight",
+        "diamondWeight",
         "netWeight",
         "counterName",
         "category",
@@ -96,7 +96,7 @@ fun ImportExcelScreen(
         "fixMaking",
         "fixWastage",
         "stoneAmount",
-        "dustAmount",
+        "diamondAmount",
         "sku",
         "vendor",
         "boxName"

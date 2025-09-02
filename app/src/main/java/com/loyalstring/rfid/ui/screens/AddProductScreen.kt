@@ -424,7 +424,7 @@ fun AddProductScreen(
                              formFields.firstOrNull { it.label == label }?.value.orEmpty()*/
                         fun get(label: String) = fieldValues[label].orEmpty()
 
-                        get("Item Code")
+                        val itemCode = get("Item Code")
                         val rfidCode = get("RFID Code")
                         val epc = get("EPC")
                         val gWt = get("Gross Weight")
@@ -436,7 +436,7 @@ fun AddProductScreen(
                         val fMaking = get("Fix Making")
                         val fWastage = get("Fix Wastage")
                         val stAmt = get("Stone Amount")
-                        get("Diamond Amount")
+                        val dAmt = get("Diamond Amount")
 
                         val categoryId =
                             categoryList?.find { it.CategoryName == categoryName }?.Id ?: 0
@@ -463,7 +463,7 @@ fun AddProductScreen(
                             TotalWeight = 0.0,
                             PackingWeight = 0.0,
                             GrossWt = gWt,
-                            TotalStoneWeight = "",
+                            TotalStoneWeight = sWt,
                             NetWt = ntWt,
                             Pieces = "",
                             MakingPercentage = making_perc,
@@ -515,7 +515,7 @@ fun AddProductScreen(
                             BranchName = "",
                             BranchId = sku?.BranchId?.takeIf { it != 0 } ?: savedBranchId,
                             PurityName = "",
-                            TotalStoneAmount = "",
+                            TotalStoneAmount = stAmt,
                             TotalStonePieces = "",
                             ClientCode = (sku?.ClientCode?.takeIf { !it.isNullOrBlank() }
                                 ?: savedClientCode),
@@ -526,7 +526,7 @@ fun AddProductScreen(
                             WarehouseId = 0,
                             TIDNumber = epc,
                             TotalDiamondWeight = dWt,
-                            TotalDiamondAmount = "",
+                            TotalDiamondAmount = dAmt,
                             Status = "Active"
                         )
                         scope.launch {

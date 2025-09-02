@@ -430,7 +430,7 @@ class SingleProductViewModel @Inject constructor(
             rfid          = this.RFIDCode,
             grossWeight   = this.GrossWt,
             stoneWeight   = this.StoneWeight,
-            dustWeight    = this.OtherWeight,
+            diamondWeight    = this.TotalDiamondWeight,
             netWeight     = this.NetWt,
 
             category      = this.CategoryName,
@@ -443,7 +443,7 @@ class SingleProductViewModel @Inject constructor(
             fixWastage    = this.MakingFixedWastage,
 
             stoneAmount   = this.TotalStoneAmount,
-            dustAmount    = this.TotalDiamondAmount,
+            diamondAmount    = this.TotalDiamondAmount,
 
             sku           = this.CollectionNameSKU,
             epc           = this.epc,

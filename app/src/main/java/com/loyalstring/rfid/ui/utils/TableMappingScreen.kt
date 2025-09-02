@@ -126,14 +126,14 @@ fun TableMappingScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (isFromSheet) "Excel Column" else "Sheet Column",
+                        text = "Main Fields",
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1.5f),
 
                         fontSize = 13.sp
                     )
                     Text(
-                        "Table View Fields",
+                        "Select Sheet Fields",
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier
                             .weight(1.8f)

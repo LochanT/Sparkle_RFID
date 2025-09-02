@@ -191,7 +191,7 @@ class ImportExcelViewModel @Inject constructor(
                             rfid = rfid,
                             grossWeight = row[fieldMapping["grossWeight"]],
                             stoneWeight = row[fieldMapping["stoneWeight"]],
-                            dustWeight = row[fieldMapping["dustWeight"]],
+                            diamondWeight = row[fieldMapping["diamondWeight"]],
                             netWeight = row[fieldMapping["netWeight"]],
                             category = row[fieldMapping["category"]],
                             design = row[fieldMapping["design"]],
@@ -201,7 +201,7 @@ class ImportExcelViewModel @Inject constructor(
                             fixMaking = row[fieldMapping["fixMaking"]],
                             fixWastage = row[fieldMapping["fixWastage"]],
                             stoneAmount = row[fieldMapping["stoneAmount"]],
-                            dustAmount = row[fieldMapping["dustAmount"]],
+                            diamondAmount = row[fieldMapping["diamondAmount"]],
                             sku = row[fieldMapping["sku"]],
                             epc = epcVal,
                             vendor = row[fieldMapping["vendor"]],
@@ -359,8 +359,8 @@ class ImportExcelViewModel @Inject constructor(
                 rawHeaderIndexMap,
                 normalizedFieldMapping["branchname"]
             ),
-            dustWeight = "",
-            dustAmount = "",
+            diamondWeight = "",
+            diamondAmount = "",
             sku = getStringFromRow(
                 row,
                 rawHeaderIndexMap,

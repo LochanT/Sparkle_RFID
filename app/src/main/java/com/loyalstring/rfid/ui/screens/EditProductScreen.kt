@@ -179,7 +179,7 @@ fun EditProductScreen(
     var rfid by remember { mutableStateOf(item.rfid.orEmpty()) }
     var gwt by remember { mutableStateOf(item.grossWeight.orEmpty()) }
     var swt by remember { mutableStateOf(item.stoneWeight.orEmpty()) }
-    var dwt by remember { mutableStateOf(item.dustWeight.orEmpty()) }
+    var dwt by remember { mutableStateOf(item.diamondWeight.orEmpty()) }
     var nwt by remember { mutableStateOf(item.netWeight.orEmpty()) }
     var category by remember { mutableStateOf(item.category.orEmpty()) }
     var design by remember { mutableStateOf(item.design.orEmpty()) }
@@ -189,7 +189,7 @@ fun EditProductScreen(
     var fixedmaking by remember { mutableStateOf(item.fixMaking.orEmpty()) }
     var fixedWastage by remember { mutableStateOf(item.fixWastage.orEmpty()) }
     var stoneAmt by remember { mutableStateOf(item.stoneAmount.orEmpty()) }
-    var diamondAmount by remember { mutableStateOf(item.dustAmount.orEmpty()) }
+    var diamondAmount by remember { mutableStateOf(item.diamondAmount.orEmpty()) }
     var sku by remember { mutableStateOf(item.sku.orEmpty()) }
     var epc by remember { mutableStateOf(item.epc.orEmpty()) }
     var vendor by remember { mutableStateOf(item.vendor.orEmpty()) }
@@ -261,9 +261,9 @@ fun EditProductScreen(
                         TotalStoneWeight = item.totalStoneWt.toString(),
                         TotalStoneAmount = item.stoneAmount,
                         TotalStonePieces = "",
-                        TotalDiamondWeight = item.dustWeight,
+                        TotalDiamondWeight = item.diamondWeight,
                         TotalDiamondPieces = "",
-                        TotalDiamondAmount = item.dustAmount,
+                        TotalDiamondAmount = item.diamondAmount,
                         Featured = "",
                         Pieces = "",
                         HallmarkAmount = "",

@@ -2,6 +2,7 @@ package com.loyalstring.rfid.ui.screens
 
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -73,6 +74,8 @@ import java.io.File
 
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
@@ -82,8 +85,10 @@ import androidx.compose.ui.unit.Dp
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
+import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.ui.utils.GradientButton
 import com.loyalstring.rfid.ui.utils.UserPreferences
+import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 
 
@@ -94,6 +99,7 @@ fun ProductListScreen(
 ) {
     var isScanning by remember { mutableStateOf(false) }
     val viewModel: ProductListViewModel = hiltViewModel()
+    val bulkViewModel: BulkViewModel = hiltViewModel()
     val singleproductViewModel: SingleProductViewModel = hiltViewModel()
     val searchQuery = remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
@@ -106,6 +112,22 @@ fun ProductListScreen(
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
     var showConfirmDelete by remember { mutableStateOf(false) }
     val baseUrl = "https://rrgold.loyalstring.co.in/"
+    val deleteResponse by singleproductViewModel.productDeleetResponse.observeAsState()
+
+    LaunchedEffect(deleteResponse) {
+        when (deleteResponse) {
+            is Resource.Success -> {
+                // ✅ Refresh product list after delete
+
+                bulkViewModel.syncItems()
+                Toast.makeText(context, "Item deleted successfully", Toast.LENGTH_SHORT).show()
+            }
+            is Resource.Error -> {
+                // show error message if needed
+            }
+            else -> Unit
+        }
+    }
 
     val allItems by viewModel.productList.collectAsState(initial = emptyList())
     val filteredItems = remember(searchQuery.value, allItems) {
@@ -452,7 +474,7 @@ fun ProductListScreen(
                                     item.rfid to 60.dp,
                                     item.grossWeight to 60.dp,
                                     item.stoneWeight to 60.dp,
-                                    item.dustWeight to 60.dp,
+                                    item.diamondWeight to 60.dp,
                                     item.netWeight to 60.dp,
                                     item.category to 70.dp,
                                     item.design to 60.dp,
@@ -462,7 +484,7 @@ fun ProductListScreen(
                                     item.fixMaking to 80.dp,
                                     item.fixWastage to 80.dp,
                                     item.stoneAmount to 60.dp,
-                                    item.dustAmount to 60.dp,
+                                    item.diamondAmount to 60.dp,
                                     item.sku to 70.dp,
                                     (item.uhfTagInfo?.epc ?: item.epc) to 160.dp,
                                     item.vendor to 80.dp
@@ -702,7 +724,7 @@ fun ItemDetailsDialog(
                 InfoRow("RFID", item.rfid)
                 InfoRow("G.Wt", item.grossWeight)
                 InfoRow("S.Wt", item.stoneWeight)
-                InfoRow("D.Wt", item.dustWeight)
+                InfoRow("D.Wt", item.diamondWeight)
                 InfoRow("N.Wt", item.netWeight)
                 InfoRow("Category", item.category)
                 InfoRow("Design", item.design)

@@ -12,7 +12,7 @@ fun AlllabelResponse.LabelItem.toBulkItem(): BulkItem {
 
         grossWeight = this.grossWt ?: "",
         stoneWeight = this.totalStoneWeight ?: "",
-        dustWeight = "",
+        diamondWeight = this.totalDiamondWeight ?:"",
         netWeight = this.netWt ?: "",
 
         category = this.categoryName ?: "",
@@ -25,7 +25,7 @@ fun AlllabelResponse.LabelItem.toBulkItem(): BulkItem {
         fixWastage = this.makingFixedWastage ?: "",
 
         stoneAmount = this.totalStoneAmount ?: "",
-        dustAmount = "",
+        diamondAmount = this.totalDiamondAmount ?:"",
 
         sku = this.sku ?: "",
         vendor = this.vendorName ?: "",
