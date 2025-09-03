@@ -45,19 +45,29 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -65,31 +75,20 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
-import com.loyalstring.rfid.data.local.entity.BulkItem
-import com.loyalstring.rfid.navigation.GradientTopBar
-import com.loyalstring.rfid.navigation.Screens
-import com.loyalstring.rfid.ui.utils.poppins
-import com.loyalstring.rfid.viewmodel.ProductListViewModel
-import java.io.File
-
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import com.loyalstring.rfid.R
+import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
 import com.loyalstring.rfid.data.remote.resource.Resource
+import com.loyalstring.rfid.navigation.GradientTopBar
+import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.GradientButton
 import com.loyalstring.rfid.ui.utils.UserPreferences
+import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
+import com.loyalstring.rfid.viewmodel.ProductListViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
+import java.io.File
 
 
 @Composable
@@ -504,7 +503,14 @@ fun ProductListScreen(
                                     item.stoneAmount to 60.dp,
                                     item.diamondAmount to 60.dp,
                                     item.sku to 70.dp,
-                                    (item.uhfTagInfo?.epc ?: item.epc) to 160.dp,
+                                    (
+                                            (item.uhfTagInfo?.epc ?: item.epc)?.takeIf {
+                                                !it.contains(
+                                                    "temp",
+                                                    ignoreCase = true
+                                                )
+                                            } ?: ""
+                                            ) to 160.dp,
                                     item.vendor to 80.dp
                                   //  (item.uhfTagInfo?.epc ?: item.epc) to 90.dp
                                 ).forEach { (value, width) ->

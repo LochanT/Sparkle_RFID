@@ -59,6 +59,7 @@ import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.UserPreferences
+import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.OrderViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -448,7 +449,8 @@ fun OrderTableWithPagination(
                             .width(120.dp)
                             .padding(horizontal = 8.dp),
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Color.White,
+                        fontFamily = poppins
                     )
                 }
             }
@@ -459,7 +461,8 @@ fun OrderTableWithPagination(
                     .width(120.dp)
                     .padding(horizontal = 8.dp),
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color.White,
+                fontFamily = poppins
             )
         }
 
@@ -524,7 +527,8 @@ fun OrderTableWithPagination(
                                     modifier = Modifier
                                         .width(120.dp)
                                         .padding(horizontal = 8.dp),
-                                    fontSize = 12.sp
+                                    fontSize = 12.sp,
+                                    fontFamily = poppins
                                 )
                             }
                         }

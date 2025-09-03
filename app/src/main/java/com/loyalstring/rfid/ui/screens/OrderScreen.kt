@@ -1852,7 +1852,7 @@ fun resetScan(model: BulkViewModel, firstPress: Boolean) {
   //  firstPress=false;
 }
 
-@Composable
+/*@Composable
 fun GstRowView(
     gstPercent: Double = 3.0,
     totalAmount: String,
@@ -1938,7 +1938,93 @@ fun GstRowView(
 
     }
 
+}*/
+@Composable
+fun GstRowView(
+    gstPercent: Double = 3.0,
+    totalAmount: String,
+    onTotalAmountChange: (String) -> Unit,
+    isGstChecked: Boolean = false,
+    onGstCheckedChange: (Boolean) -> Unit = {}
+) {
+    val baseAmount = totalAmount.toDoubleOrNull() ?: 0.0
+    val finalAmount = if (isGstChecked) {
+        baseAmount + (baseAmount * gstPercent / 100)
+    } else {
+        baseAmount
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // ✅ GST Box
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .height(35.dp)
+                .background(Color.White, RoundedCornerShape(6.dp))
+                .padding(horizontal = 8.dp)
+        ) {
+            Checkbox(
+                checked = isGstChecked,
+                onCheckedChange = onGstCheckedChange
+            )
+            Text(
+                text = "GST ${gstPercent}%",
+                fontSize = 14.sp,
+                color = Color.Black,
+                fontFamily = poppins
+            )
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // ✅ Total Amount: Label + Box for value
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Total Amount",
+                fontSize = 14.sp,
+                color = Color.Black,
+                modifier = Modifier.padding(end = 8.dp),
+                fontFamily = poppins
+            )
+
+            // Box only around the value
+            Box(
+                modifier = Modifier
+                    .height(35.dp)
+                    .background(Color.White, RoundedCornerShape(6.dp))
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                BasicTextField(
+                    value = "%.2f".format(finalAmount),
+                    onValueChange = { newText ->
+                        if (newText.all { it.isDigit() || it == '.' }) {
+                            onTotalAmountChange(newText)
+                        }
+                    },
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
+                    )
+                )
+            }
+        }
+    }
 }
+
+
+
+
 
 fun mapItemCodeToOrderItem(item: ItemCodeResponse): OrderItem {
     return OrderItem(
@@ -1996,294 +2082,7 @@ fun mapItemCodeToOrderItem(item: ItemCodeResponse): OrderItem {
         makingPerGram = item.MakingPerGram ?: ""
     )
 }
-/*
-@Composable
-fun OrderItemTableScreen(
-    productList: List<OrderItem>,
-    selectedItem: ItemCodeResponse?,
-    onItemSelected: (ItemCodeResponse) -> Unit,
-    showEditOrderDialog: Boolean,
-    onEditOrderClicked: (OrderItem) -> Unit,
-    employee: Employee?,
-    orderViewModel: OrderViewModel,
-    refreshKey: Int,
-    orderSelectedItem: OrderItem?,
-    onOrderSelectedItemChange: (OrderItem) -> Unit
-) {
-    val horizontalScrollState = rememberScrollState()
-    val verticalScrollState = rememberLazyListState()
-    val selectedIndex = remember { mutableStateOf(-1) }
 
-    LaunchedEffect(Unit) {
-        orderViewModel.getAllOrderItemsFromRoom()
-    }
-    val totalGrWt = productList.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }
-    val totalNetWt = productList.sumOf { it.nWt?.toDoubleOrNull() ?: 0.0 }
-    val totalStoneAmt = productList.sumOf { it.stoneAmt?.toDoubleOrNull() ?: 0.0 }
-    val totalItemAmt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
-    val totalQty = productList.size
-    val totalItemQty = productList.sumOf { it.qty.toDoubleOrNull() ?: 0.0 }
-    val totalFinmePlusWt=productList.sumOf { it.finePlusWt?.toDoubleOrNull() ?: 0.0 }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        // ✅ Shared horizontal scroll for all content
-        Row(
-            modifier = Modifier
-                .horizontalScroll(horizontalScrollState)
-                .fillMaxWidth()
-        ) {
-            Column {
-                // ✅ Header Row
-                Row(
-                    modifier = Modifier
-                        .background(Color.DarkGray)
-                        .padding(vertical = 4.dp, horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    listOf(
-                        "Product Name" to 120.dp,
-                        "Item Code" to 80.dp,
-                        //"Qty" to 80.dp,
-                        "Gr. Wt" to 70.dp,
-                        "N. Wt" to 70.dp,
-                        "F+W Wt" to 70.dp,
-                        "S.Amt" to 70.dp,
-                        "Item.Amt" to 80.dp,
-                        "RFID Code" to 80.dp
-                    ).forEach { (label, width) ->
-                        Box(modifier = Modifier.width(width), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = label,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                fontFamily = poppins
-                            )
-                        }
-                    }
-                }
-
-                // ✅ Data Rows in LazyColumn
-                LazyColumn(
-                    state = verticalScrollState,
-                    modifier = Modifier
-                        .height(240.dp)
-                        .fillMaxHeight()
-                ) {
-                    itemsIndexed(productList) { index, item ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(35.dp)
-                                .padding(vertical = 2.dp, horizontal = 8.dp)
-                                .clickable {
-                                    onEditOrderClicked(item)
-                                    onOrderSelectedItemChange(item)
-                                },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Product Name + Radio
-                            Box(
-                                modifier = Modifier.width(160.dp),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    RadioButton(
-                                        selected = selectedIndex.value == index,
-                                        onClick = {
-                                            selectedIndex.value = index
-                                            onItemSelected(
-                                                ItemCodeResponse(
-                                                    Id = 0,
-                                                    SKUId = item.skuId,
-                                                    ProductTitle = item.productName,
-                                                    ClipWeight = "",
-                                                    ClipQuantity = "",
-                                                    ItemCode = item.itemCode,
-                                                    HSNCode = "",
-                                                    Description = "",
-                                                    ProductCode = item.productCode,
-                                                    MetalName = "",
-                                                    CategoryId = item.categoryId.toString(),
-                                                    ProductId = item.productId,
-                                                    DesignId = item.designid,
-                                                    PurityId = item.purityid,
-                                                    Colour = item.typeOfColor,
-                                                    Size = item.size,
-                                                    WeightCategory = "",
-                                                    GrossWt = item.grWt ?: "",
-                                                    NetWt = item.nWt ?: "",
-                                                    CollectionName = "",
-                                                    OccassionName = "",
-                                                    Gender = "",
-                                                    MakingFixedAmt = item.itemAmt ?: "",
-                                                    MakingPerGram = item.makingPerGram,
-                                                    MakingFixedWastage = item.makingFixedWastage,
-                                                    MakingPercentage = item.makingPercentage,
-                                                    TotalStoneWeight = item.stoneWt,
-                                                    TotalStoneAmount = item.stoneAmt ?: "",
-                                                    TotalStonePieces = "",
-                                                    TotalDiamondWeight = "",
-                                                    TotalDiamondPieces = "",
-                                                    TotalDiamondAmount = "",
-                                                    Featured = "",
-                                                    Pieces = "",
-                                                    HallmarkAmount = "",
-                                                    HUIDCode = "",
-                                                    MRP = "",
-                                                    VendorId = 0,
-                                                    VendorName = "",
-                                                    FirmName = "",
-                                                    BoxId = 0,
-                                                    TIDNumber = item.tid,
-                                                    RFIDCode = item.rfidCode,
-                                                    FinePercent = item.finePlusWt ?: "",
-                                                    WastagePercent = item.wastage,
-                                                    Images = "",
-                                                    BlackBeads = "",
-                                                    Height = "",
-                                                    Width = "",
-                                                    OrderedItemId = "",
-                                                    CuttingGrossWt = "",
-                                                    CuttingNetWt = "",
-                                                    MetalRate = "",
-                                                    LotNumber = "",
-                                                    DeptId = 0,
-                                                    PurchaseCost = "",
-                                                    Margin = "",
-                                                    BranchName = item.branchName,
-                                                    BoxName = "",
-                                                    EstimatedDays = "",
-                                                    OfferPrice = "",
-                                                    Rating = "",
-                                                    SKU = item.sku,
-                                                    Ranking = "",
-                                                    CompanyId = item.companyId,
-                                                    CounterId = item.counterId,
-                                                    BranchId = item.branchId.toIntOrNull() ?: 0,
-                                                    EmployeeId = 0,
-                                                    Status = "",
-                                                    ClientCode = employee?.clientCode,
-                                                    UpdatedFrom = "",
-                                                    count = 0,
-                                                    MetalId = 0,
-                                                    WarehouseId = 0,
-                                                    CreatedOn = "",
-                                                    LastUpdated = "",
-                                                    TaxId = 0,
-                                                    TaxPercentage = "",
-                                                    OtherWeight = "",
-                                                    PouchWeight = "",
-                                                    CategoryName = item.categoryName,
-                                                    PurityName = item.purity,
-                                                    TodaysRate = item.todaysRate,
-                                                    ProductName = item.productName,
-                                                    DesignName = item.designName,
-                                                    DiamondSize = "",
-                                                    DiamondWeight = "",
-                                                    DiamondPurchaseRate = "",
-                                                    DiamondSellRate = "",
-                                                    DiamondClarity = "",
-                                                    DiamondColour = "",
-                                                    DiamondShape = "",
-                                                    DiamondCut = "",
-                                                    DiamondSettingType = "",
-                                                    DiamondCertificate = "",
-                                                    DiamondPieces = "",
-                                                    DiamondPurchaseAmount = "",
-                                                    DiamondSellAmount = "",
-                                                    DiamondDescription = "",
-                                                    TagWeight = "",
-                                                    FindingWeight = "",
-                                                    LanyardWeight = "",
-                                                    PacketId = 0,
-                                                    PacketName = "",
-                                                    CollectionId = 0,
-                                                    CollectionNameSKU = "",
-                                                    PackingWeight = 0,
-                                                    TotalWeight = 0.0,
-                                                    Stones = emptyList(),
-                                                    Diamonds = emptyList()
-                                                )
-                                            )
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        item.productName,
-                                        fontSize = 13.sp,
-                                        color = Color.Black
-                                    )
-                                }
-                            }
-
-                            // Rest of the columns
-                            listOf(
-                                item.itemCode,
-                                item.qty,
-                                item.totalWt,
-                                item.nWt,
-                                item.finePlusWt,
-                                item.stoneAmt,
-                                item.itemAmt,
-                                item.rfidCode,
-
-                                ).forEach { value ->
-                                Box(
-                                    modifier = Modifier.width(80.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(value.toString(), fontSize = 13.sp)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // ✅ Total Row
-                Row(
-                    modifier = Modifier
-                        .background(Color.DarkGray)
-                        .padding(vertical = 6.dp, horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    listOf(
-
-
-                        "Total" to 120.dp,
-                        "$totalQty" to 80.dp,
-                        //"$totalItemQty" to 80.dp,
-                        String.format("%.3f", totalGrWt) to 70.dp,
-                        String.format("%.3f", totalNetWt) to 70.dp,
-                        "$totalFinmePlusWt" to 70.dp,
-                        "$totalStoneAmt" to 70.dp,
-                        "$totalItemAmt" to 80.dp,
-                        "" to 80.dp
-                    ).forEach { (text, width) ->
-                        Box(modifier = Modifier.width(width), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = text,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                fontFamily = poppins
-                            )
-                        }
-                    }
-                }
-
-
-            }
-        }
-    }
-
-
-}*/
 @Composable
 fun OrderItemTableScreen(
     productList: List<OrderItem>,
@@ -2511,18 +2310,19 @@ fun OrderItemTableScreen(
                                                 fontSize = 13.sp,
                                                 color = Color.Black,
                                                 maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                overflow = TextOverflow.Ellipsis,
+                                                fontFamily = poppins
                                             )
                                         }
 
                                         // Other columns map directly
-                                        1 -> Text(item.itemCode, fontSize = 13.sp)
-                                        2 -> Text(item.grWt ?: "", fontSize = 13.sp)
-                                        3 -> Text(item.nWt ?: "", fontSize = 13.sp)
-                                        4 -> Text(item.finePlusWt ?: "", fontSize = 13.sp)
-                                        5 -> Text(item.stoneAmt ?: "", fontSize = 13.sp)
-                                        6 -> Text(item.itemAmt ?: "", fontSize = 13.sp)
-                                        7 -> Text(item.rfidCode ?: "", fontSize = 13.sp)
+                                        1 -> Text(item.itemCode, fontSize = 13.sp, fontFamily = poppins)
+                                        2 -> Text(item.grWt ?: "", fontSize = 13.sp, fontFamily = poppins)
+                                        3 -> Text(item.nWt ?: "", fontSize = 13.sp, fontFamily = poppins)
+                                        4 -> Text(item.finePlusWt ?: "", fontSize = 13.sp, fontFamily = poppins)
+                                        5 -> Text(item.stoneAmt ?: "", fontSize = 13.sp, fontFamily = poppins)
+                                        6 -> Text(item.itemAmt ?: "", fontSize = 13.sp, fontFamily = poppins)
+                                        7 -> Text(item.rfidCode ?: "", fontSize = 13.sp, fontFamily = poppins)
                                     }
                                 }
                             }
@@ -2565,317 +2365,6 @@ fun OrderItemTableScreen(
         }
     }
 }
-
-
-
-
-/*@Composable
-fun OrderItemTableScreen(
-    productList: List<OrderItem>,
-    selectedItem: ItemCodeResponse?,
-    onItemSelected: (ItemCodeResponse) -> Unit,
-    showEditOrderDialog: Boolean,
-    onEditOrderClicked: (OrderItem) -> Unit,
-    employee: Employee?,
-    orderViewModel: OrderViewModel,
-    refreshKey: Int,
-    orderSelectedItem: OrderItem?,
-    onOrderSelectedItemChange: (OrderItem) -> Unit // ✅ Add this
-) {
-
-    val scrollState = rememberScrollState()
-    val verticalScrollState = rememberLazyListState()
-    val horizontalScrollState = rememberScrollState()
-    val selectedIndex = remember { mutableStateOf(-1) }
-
-    var totalAMt by remember { mutableStateOf("") }
-    var totalStoneAmt by remember { mutableStateOf("") }
-    var totalStoneWt by remember { mutableStateOf("") }
-    var totalDiamondWt by remember { mutableStateOf("") }
-    var quantity by remember { mutableStateOf("") }
-
-    LaunchedEffect(refreshKey) {
-        // Trigger recomposition if needed
-    }
-
-    LaunchedEffect(Unit) {
-        orderViewModel.getAllOrderItemsFromRoom()
-    }
-
-    val totalGrWt = productList.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }
-    val totalNetWt = productList.sumOf { it.nWt?.toDoubleOrNull() ?: 0.0 }
-    val totalStomeAmt = productList.sumOf { it.stoneAmt?.toDoubleOrNull() ?: 0.0 }
-    val totalItemAmt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
-    val totalQty = productList.size
-
-    totalAMt = totalItemAmt.toString()
-    quantity = totalQty.toString()
-    totalStoneAmt = totalStomeAmt.toString()
-    totalStoneWt = productList.sumOf { it.stoneWt?.toDoubleOrNull() ?: 0.0 }.toString()
-    totalDiamondWt = productList.sumOf { it.dimondWt?.toDoubleOrNull() ?: 0.0 }.toString()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-
-
-            // ✅ Scrollable content with weighted height
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(scrollState)
-            ) {
-                // Header Row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-
-                        .horizontalScroll(scrollState)
-                        .background(Color.DarkGray)
-
-                        .padding(vertical = 4.dp, horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    listOf(
-                        "Product Name" to 160.dp,
-                        "Item Code" to 80.dp,
-                        "Gr. Wt" to 80.dp,
-                        "N. Wt" to 80.dp,
-                        "F+W Wt" to 80.dp,
-                        "S.Amt" to 80.dp,
-                        "Item.Amt" to 80.dp,
-                        "RFID Code" to 80.dp
-                    ).forEach { (label, width) ->
-                        Box(modifier = Modifier.width(width), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = label,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                fontFamily = poppins
-                            )
-                        }
-                    }
-                }
-
-                // Data Rows
-                Box(
-                    modifier = Modifier
-                        .weight(6.5f)
-                        .horizontalScroll(scrollState)
-
-                ) {
-                    LazyColumn(state = verticalScrollState) {
-                        itemsIndexed(productList) { index, item ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(35.dp)
-                                    .padding(vertical = 2.dp, horizontal = 8.dp)
-                                    .clickable {
-                                        onEditOrderClicked(item)
-                                        onOrderSelectedItemChange(item)
-                                    },
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Product Name + Radio Button
-                                Box(
-                                    modifier = Modifier.width(160.dp),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        RadioButton(
-                                            selected = selectedIndex.value == index,
-                                            onClick = {
-                                                selectedIndex.value = index
-                                                onItemSelected(
-                                                    ItemCodeResponse(
-                                                        Id = 0,
-                                                        SKUId = item.skuId,
-                                                        ProductTitle = item.productName,
-                                                        ClipWeight = "",
-                                                        ClipQuantity = "",
-                                                        ItemCode = item.itemCode ?: "",
-                                                        HSNCode = "",
-                                                        Description = "",
-                                                        ProductCode = item.productCode,
-                                                        MetalName = "",
-                                                        CategoryId = item.categoryId,
-                                                        ProductId = item.productId,
-                                                        DesignId = item.designid,
-                                                        PurityId = item.purityid,
-                                                        Colour = item.typeOfColor ?: "",
-                                                        Size = item.size ?: "",
-                                                        WeightCategory = "",
-                                                        GrossWt = item.grWt ?: "",
-                                                        NetWt = item.nWt ?: "",
-                                                        CollectionName = "",
-                                                        OccassionName = "",
-                                                        Gender = "",
-                                                        MakingFixedAmt = item.itemAmt ?: "",
-                                                        MakingPerGram = item.makingPerGram,
-                                                        MakingFixedWastage = item.makingFixedWastage,
-                                                        MakingPercentage = item.makingPercentage,
-                                                        TotalStoneWeight = item.stoneWt,
-                                                        TotalStoneAmount = item.stoneAmt ?: "",
-                                                        TotalStonePieces = "",
-                                                        TotalDiamondWeight = "",
-                                                        TotalDiamondPieces = "",
-                                                        TotalDiamondAmount = "",
-                                                        Featured = "",
-                                                        Pieces = "",
-                                                        HallmarkAmount = "",
-                                                        HUIDCode = "",
-                                                        MRP = "",
-                                                        VendorId = 0,
-                                                        VendorName = "",
-                                                        FirmName = "",
-                                                        BoxId = 0,
-                                                        TIDNumber = item.tid,
-                                                        RFIDCode = item.rfidCode ?: "",
-                                                        FinePercent = item.finePlusWt ?: "",
-                                                        WastagePercent = item.wastage ?: "",
-                                                        Images = "",
-                                                        BlackBeads = "",
-                                                        Height = "",
-                                                        Width = "",
-                                                        OrderedItemId = "",
-                                                        CuttingGrossWt = "",
-                                                        CuttingNetWt = "",
-                                                        MetalRate = "",
-                                                        LotNumber = "",
-                                                        DeptId = 0,
-                                                        PurchaseCost = "",
-                                                        Margin = "",
-                                                        BranchName = item.branchName ?: "",
-                                                        BoxName = "",
-                                                        EstimatedDays = "",
-                                                        OfferPrice = "",
-                                                        Rating = "",
-                                                        SKU = item.sku,
-                                                        Ranking = "",
-                                                        CompanyId = item.companyId,
-                                                        CounterId = item.counterId,
-                                                        BranchId = item.branchId?.toIntOrNull()
-                                                            ?: 0,
-                                                        EmployeeId = 0,
-                                                        Status = "",
-                                                        ClientCode = employee?.clientCode,
-                                                        UpdatedFrom = "",
-                                                        count = 0,
-                                                        MetalId = 0,
-                                                        WarehouseId = 0,
-                                                        CreatedOn = "",
-                                                        LastUpdated = "",
-                                                        TaxId = 0,
-                                                        TaxPercentage = "",
-                                                        OtherWeight = "",
-                                                        PouchWeight = "",
-                                                        CategoryName = item.categoryName,
-                                                        PurityName = item.purity ?: "",
-                                                        TodaysRate = item.todaysRate,
-                                                        ProductName = item.productName ?: "",
-                                                        DesignName = item.designName,
-                                                        DiamondSize = "",
-                                                        DiamondWeight = "",
-                                                        DiamondPurchaseRate = "",
-                                                        DiamondSellRate = "",
-                                                        DiamondClarity = "",
-                                                        DiamondColour = "",
-                                                        DiamondShape = "",
-                                                        DiamondCut = "",
-                                                        DiamondSettingType = "",
-                                                        DiamondCertificate = "",
-                                                        DiamondPieces = "",
-                                                        DiamondPurchaseAmount = "",
-                                                        DiamondSellAmount = "",
-                                                        DiamondDescription = "",
-                                                        TagWeight = "",
-                                                        FindingWeight = "",
-                                                        LanyardWeight = "",
-                                                        PacketId = 0,
-                                                        PacketName = "",
-                                                        CollectionId = 0,
-                                                        CollectionNameSKU = "",
-                                                        PackingWeight = 0,
-                                                        TotalWeight = 0.0,
-                                                        Stones = emptyList(),
-                                                        Diamonds = emptyList()
-                                                    )
-                                                )
-                                                *//* onItemSelected(
-                                                item.toItemCodeResponse(employee)
-                                            )*//*
-                                            }
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            item.productName ?: "-",
-                                            fontSize = 13.sp,
-                                            color = Color.Black
-                                        )
-                                    }
-                                }
-
-                                // Rest of the Columns
-                                listOf(
-                                    item.itemCode,
-                                    item.grWt,
-                                    item.nWt,
-                                    item.finePlusWt,
-                                    item.stoneAmt,
-                                    item.itemAmt,
-                                    item.rfidCode
-                                ).forEach { value ->
-                                    Box(
-                                        modifier = Modifier.width(80.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(value.toString(), fontSize = 13.sp)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Total Row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(scrollState)
-                        .background(Color.DarkGray)
-                        .padding(vertical = 6.dp, horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    listOf(
-                        "Total" to 160.dp,
-                        "$totalQty" to 80.dp,
-                        String.format("%.3f", totalGrWt) to 80.dp,
-                        String.format("%.3f", totalNetWt) to 80.dp,
-                        "" to 80.dp,
-                        "$totalStomeAmt" to 80.dp,
-                        "$totalItemAmt" to 80.dp,
-                        "" to 80.dp
-                    ).forEach { (text, width) ->
-                        Box(modifier = Modifier.width(width), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = text,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                fontFamily = poppins
-                            )
-                        }
-                    }
-                }
-            }
-
-    }
-}*/
-
 
 fun validateBeforeShowingDialog(
     selectedCustomer: EmployeeList?,
@@ -2956,7 +2445,7 @@ fun ItemCodeInputRow(
                             contentAlignment = Alignment.CenterStart
                         ) {
                             if (itemCode.text.isEmpty()) {
-                                Text("Enter RFID / Itemcode", fontSize = 13.sp, color = Color.Gray)
+                                Text("Enter RFID / Itemcode", fontSize = 13.sp, color = Color.Gray,fontFamily = poppins)
                             }
 
                             innerTextField()
@@ -3074,7 +2563,7 @@ fun ItemCodeInputRow(
             contentAlignment = Alignment.Center
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Order Details", fontSize = 13.sp, color = Color.Black)
+                Text("Order Details", fontSize = 13.sp, color = Color.Black,fontFamily = poppins)
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     painter = painterResource(id = R.drawable.vector_add),
@@ -3151,7 +2640,7 @@ fun CustomerNameInput(
                 textStyle = TextStyle(fontSize = 15.sp, color = Color.Black),
                 decorationBox = { innerTextField ->
                     if (customerName.isEmpty()) {
-                        Text("Enter customer name", color = Color.Gray, fontSize = 13.sp)
+                        Text("Enter customer name", color = Color.Gray, fontSize = 13.sp, fontFamily = poppins)
                     }
                     innerTextField()
                 },
