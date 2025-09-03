@@ -51,6 +51,7 @@ import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.ui.utils.GradientButtonIcon
 import com.loyalstring.rfid.ui.utils.UserPreferences
+import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.OrderViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import java.text.SimpleDateFormat
@@ -197,7 +198,8 @@ fun OrderDetailsDialog(
                         Text(
                             text = "Order Details",
                             fontSize = 18.sp,
-                            color = Color.White
+                            color = Color.White,
+                            fontFamily = poppins
                         )
                     }
                 }
@@ -258,7 +260,8 @@ fun OrderDetailsDialog(
                                 .weight(0.4f)
                                 .padding(start = 2.dp),
                             fontSize = 12.sp,
-                            color = Color.Black
+                            color = Color.Black,
+                            fontFamily = poppins
                         )
 
                         Box(
@@ -275,7 +278,8 @@ fun OrderDetailsDialog(
                                     text = "Enter exhibition",
                                     fontSize = 13.sp,
                                     color = Color.Gray,
-                                    modifier = Modifier.padding(start = 4.dp)
+                                    modifier = Modifier.padding(start = 4.dp),
+                                    fontFamily = poppins
                                 )
                             }
 
@@ -305,7 +309,8 @@ fun OrderDetailsDialog(
                                 .weight(0.4f)
                                 .padding(start = 2.dp),
                             fontSize = 12.sp,
-                            color = Color.Black
+                            color = Color.Black,
+                            fontFamily = poppins
                         )
 
                         Box(
@@ -322,7 +327,8 @@ fun OrderDetailsDialog(
                                     text = "Enter remark",
                                     fontSize = 13.sp,
                                     color = Color.Gray,
-                                    modifier = Modifier.padding(start = 4.dp)
+                                    modifier = Modifier.padding(start = 4.dp),
+                                    fontFamily = poppins
                                 )
                             }
 
@@ -380,7 +386,8 @@ fun OrderDetailsDialog(
                                 .weight(0.4f)
                                 .padding(start = 2.dp),
                             fontSize = 12.sp,
-                            color = Color.Black
+                            color = Color.Black,
+                            fontFamily = poppins
                         )
 
                         Box(
@@ -397,7 +404,8 @@ fun OrderDetailsDialog(
                                     text = "Enter size",
                                     fontSize = 13.sp,
                                     color = Color.Gray,
-                                    modifier = Modifier.padding(start = 4.dp)
+                                    modifier = Modifier.padding(start = 4.dp),
+                                    fontFamily = poppins
                                 )
                             }
 
@@ -512,7 +520,8 @@ fun OrderDetailsDialog(
                                 .weight(0.4f)
                                 .padding(start = 2.dp),
                             fontSize = 12.sp,
-                            color = Color.Black
+                            color = Color.Black,
+                            fontFamily = poppins
                         )
 
                         Box(
@@ -529,7 +538,8 @@ fun OrderDetailsDialog(
                                     text = "Enter Fine %",
                                     fontSize = 13.sp,
                                     color = Color.Gray,
-                                    modifier = Modifier.padding(start = 4.dp)
+                                    modifier = Modifier.padding(start = 4.dp),
+                                    fontFamily = poppins
                                 )
                             }
 
@@ -558,7 +568,8 @@ fun OrderDetailsDialog(
                                 .weight(0.4f)
                                 .padding(start = 2.dp),
                             fontSize = 12.sp,
-                            color = Color.Black
+                            color = Color.Black,
+                            fontFamily = poppins
                         )
 
                         Box(
@@ -575,7 +586,8 @@ fun OrderDetailsDialog(
                                     text = "Enter wastage",
                                     fontSize = 13.sp,
                                     color = Color.Gray,
-                                    modifier = Modifier.padding(start = 4.dp)
+                                    modifier = Modifier.padding(start = 4.dp),
+                                    fontFamily = poppins
                                 )
                             }
 
@@ -605,7 +617,8 @@ fun OrderDetailsDialog(
                                 .weight(0.4f)
                                 .padding(start = 2.dp),
                             fontSize = 12.sp,
-                            color = Color.Black
+                            color = Color.Black,
+                            fontFamily = poppins
                         )
 
                         Box(
@@ -640,7 +653,8 @@ fun OrderDetailsDialog(
                                     text = if (orderDate.isEmpty()) "Enter Order Date" else orderDate,
                                     fontSize = 13.sp,
                                     color = if (orderDate.isEmpty()) Color.Gray else Color.Black,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    fontFamily = poppins
                                 )
 
                                 Icon(
@@ -666,7 +680,8 @@ fun OrderDetailsDialog(
                                 .weight(0.4f)
                                 .padding(start = 2.dp),
                             fontSize = 12.sp,
-                            color = Color.Black
+                            color = Color.Black,
+                            fontFamily = poppins
                         )
 
                         Box(
@@ -701,7 +716,8 @@ fun OrderDetailsDialog(
                                     text = if (deliverDate.isEmpty()) "Enter Deliver Date" else orderDate,
                                     fontSize = 13.sp,
                                     color = if (deliverDate.isEmpty()) Color.Gray else Color.Black,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    fontFamily = poppins
                                 )
 
                                 Icon(
@@ -842,21 +858,20 @@ fun <T> DropdownMenuField(
             Text(
                 text = label,
                 modifier = Modifier
-                    .weight(0.4f)
-                    .padding(start = 8.dp),
+                    .weight(0.4f),
                 fontSize = 12.sp,
-                color = labelColor
+                color = labelColor,
+                fontFamily = poppins
             )
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 2.dp, end = 0.dp)
-                    .height(50.dp)
+                    .padding(start = 12.dp, top = 1.dp, end = 2.dp, bottom = 1.dp)
+                    .height(45.dp)  // match EditText height
                     .clickable { onExpandedChange(true) }
-                    .padding(horizontal = 10.dp, vertical = 0.dp)
                     .background(Color.White, RoundedCornerShape(4.dp)),
-                contentAlignment = Alignment.CenterStart
-            ) {
+                contentAlignment = Alignment.CenterStart) {
+
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
@@ -866,7 +881,8 @@ fun <T> DropdownMenuField(
                     Text(
                         text = if (selectedValue.isEmpty()) "Select $label" else selectedValue,
                         style = TextStyle(fontSize = 12.sp, color = Color.Black),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        fontFamily = poppins
                     )
 
                     Icon(
@@ -882,7 +898,7 @@ fun <T> DropdownMenuField(
             ) {
                 options.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(getOptionLabel(option)) },
+                        text = { Text(getOptionLabel(option), fontFamily = poppins) },
                         onClick = {
                             onValueChange(getOptionLabel(option))
                             onExpandedChange(false)
