@@ -67,4 +67,9 @@ interface BulkItemDao {
     @Query("UPDATE bulk_items SET scannedStatus = ''")
     suspend fun resetAllScannedStatus()
 
+
+        @Query("DELETE FROM bulk_items WHERE id = :id")
+        suspend fun deleteById(id: Int): Int   // ✅ rows deleted
+
+
 }

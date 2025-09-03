@@ -103,6 +103,10 @@ class SingleProductViewModel @Inject constructor(
     private val _productDeleteResponse = MutableLiveData<Resource<List<ProductDeleteResponse>>>()
     val productDeleetResponse: LiveData<Resource<List<ProductDeleteResponse>>> = _productDeleteResponse
 
+    private val _deleteResult = MutableStateFlow<Int?>(null)
+    val deleteResult: StateFlow<Int?> = _deleteResult
+
+
 
     /*venodr function*/
     fun getAllVendor(request: ClientCodeRequest) {
@@ -491,4 +495,13 @@ class SingleProductViewModel @Inject constructor(
         @PrimaryKey(autoGenerate = true) val id: Int = 0,
         val uri: String
     )
+
+    fun deleteItem(id: Int) {
+        viewModelScope.launch {
+            val rowsDeleted = bulkRepository.deleteBulkItemById(id)
+            _deleteResult.value = rowsDeleted
+        }
+    }
+
+
 }
