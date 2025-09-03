@@ -112,22 +112,40 @@ fun ProductListScreen(
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
     var showConfirmDelete by remember { mutableStateOf(false) }
     val baseUrl = "https://rrgold.loyalstring.co.in/"
+    var deletingItemId by remember { mutableStateOf<Int?>(null) }
     val deleteResponse by singleproductViewModel.productDeleetResponse.observeAsState()
 
     LaunchedEffect(deleteResponse) {
         when (deleteResponse) {
             is Resource.Success -> {
-                // ✅ Refresh product list after delete
-
-                bulkViewModel.syncItems()
-                Toast.makeText(context, "Item deleted successfully", Toast.LENGTH_SHORT).show()
+                deletingItemId?.let { id ->
+                    singleproductViewModel.deleteItem(id) // ✅ local delete with cached id
+                    Toast.makeText(context, "Item deleted successfully", Toast.LENGTH_SHORT).show()
+                }
+                deletingItemId = null // reset after use
             }
             is Resource.Error -> {
-                // show error message if needed
+                Toast.makeText(context, "Delete failed", Toast.LENGTH_SHORT).show()
             }
             else -> Unit
         }
     }
+    val deleteResult by singleproductViewModel.deleteResult.collectAsState()
+    LaunchedEffect(deleteResult) {
+        when {
+            deleteResult == null -> Unit
+            deleteResult ?: 0 > 0 -> {
+                Toast.makeText(context, "Item deleted successfully", Toast.LENGTH_SHORT).show()
+                showConfirmDelete = false
+                selectedItem = null
+            }
+            else -> {
+                Toast.makeText(context, "Delete failed", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+
 
     val allItems by viewModel.productList.collectAsState(initial = emptyList())
     val filteredItems = remember(searchQuery.value, allItems) {
@@ -549,9 +567,10 @@ fun ProductListScreen(
                 visible = showConfirmDelete,
                 productName = selectedItem?.productName,
                 onConfirm = {
-                    val id = selectedItem?.id ?: 0 // replace with your actual ID property
-                    val clientCode = employee?.clientCode    // or from UserPreferences
+                    val id = selectedItem?.id ?: 0
+                    val clientCode = employee?.clientCode
                     if (id > 0) {
+                        deletingItemId = id // ✅ keep id safe
                         singleproductViewModel.deleetProduct(
                             listOf(
                                 ProductDeleteModelReq(

@@ -37,5 +37,9 @@ interface BulkRepository {
         }
     }
 
+    suspend fun deleteBulkItemById(id: Int): Int {
+        return bulkItemDao.deleteById(id)
+    }
+
 
 }
