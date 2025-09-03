@@ -57,7 +57,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
@@ -129,7 +128,6 @@ fun EditProductScreen(
     }
 
 
-    var compressedImagePath by remember { mutableStateOf<String?>(null) }
     val cameraFile = remember {
         File(
             context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
@@ -140,12 +138,7 @@ fun EditProductScreen(
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) {
-                compressAndSetImage(
-                    cameraFile.toUri(), context, cacheDir, item.itemCode ?: "image"
-                ) { file ->
-                    compressedImagePath = file.absolutePath
-                    localPath = file.absolutePath
-                }
+                localPath = cameraFile.absolutePath
             }
         }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -166,13 +159,14 @@ fun EditProductScreen(
     val galleryLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let {
-                compressAndSetImage(it, context, cacheDir, item.itemCode ?: "image") { file ->
-                    compressedImagePath = file.absolutePath
-                    localPath = file.absolutePath
+                val inputStream = context.contentResolver.openInputStream(it)
+                val file = File(cacheDir, "${item.itemCode ?: "image"}.jpg")
+                inputStream?.use { input ->
+                    file.outputStream().use { output -> input.copyTo(output) }
                 }
+                localPath = file.absolutePath
             }
         }
-
     var productName by remember { mutableStateOf(item.productName.orEmpty()) }
     var categoryId by remember { mutableStateOf(item.categoryId) }
     var itemCode by remember { mutableStateOf(item.itemCode.orEmpty()) }
@@ -504,7 +498,7 @@ fun EditProductScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         showChooser = false
-                        val uri = FileProvider.getUriForFile(
+                        FileProvider.getUriForFile(
                             context,
                             "${context.packageName}.provider",
                             cameraFile
