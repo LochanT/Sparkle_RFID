@@ -31,7 +31,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,7 +49,6 @@ import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.local.entity.SearchItem
 import com.loyalstring.rfid.data.reader.ScanKeyListener
 import com.loyalstring.rfid.navigation.GradientTopBar
-import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.SearchViewModel
 
@@ -64,12 +62,12 @@ fun SearchScreen(
     //val activity = LocalContext.current as MainActivity
     var firstPress by remember { mutableStateOf(false) }
 
+    val unmatchedItems = navController
+        .currentBackStackEntry
+        ?.savedStateHandle
+        ?.get<List<BulkItem>>("unmatchedItems")
+        ?: emptyList()
 
-    val unmatchedItems = remember {
-        navController.previousBackStackEntry
-            ?.savedStateHandle
-            ?.get<List<BulkItem>>("unmatchedItems") ?: emptyList()
-    }
     // Log to verify
     Log.d("UNMATCHED_LIST", "From SavedStateHandle: ${unmatchedItems.size}")
     var showList by remember { mutableStateOf(true) }
@@ -185,7 +183,7 @@ fun SearchScreen(
 
             ScanBottomBar(
                 onSave = { },
-                onList = { navController.navigate(Screens.ProductListScreen.route) },
+                onList = { /*navController.navigate(Screens.ProductListScreen.route) */ },
                 onScan = { },
                 onGscan = {
 

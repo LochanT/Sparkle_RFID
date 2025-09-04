@@ -66,7 +66,6 @@ data class BulkItem(
     val branchType: String?,
     val designId: Int?,
     var isScanned: Boolean = false
-
 ) : Parcelable {
     // ❗ Declare outside constructor, so it's excluded from Parcelable
     @IgnoredOnParcel

@@ -424,7 +424,7 @@ fun AddProductScreen(
                              formFields.firstOrNull { it.label == label }?.value.orEmpty()*/
                         fun get(label: String) = fieldValues[label].orEmpty()
 
-                        val itemCode = get("Item Code")
+                        get("Item Code")
                         val rfidCode = get("RFID Code")
                         val epc = get("EPC")
                         val gWt = get("Gross Weight")
@@ -802,6 +802,144 @@ fun ScanBottomBar(
                     tint = Color.White,
                     modifier = Modifier.size(25.dp)
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Scan",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    fontFamily = poppins
+                )
+            }
+        }
+
+
+    }
+
+
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ScanBottomBarInventory(
+    onSave: () -> Unit,
+    onList: () -> Unit,
+    onScan: () -> Unit,
+    onEmail: () -> Unit,
+    onReset: () -> Unit,
+    isScanning: Boolean
+) {
+
+    // We use a Box to allow the center button to overlap/elevate
+    Box {
+        // 1) The background row of four icons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(70.dp)
+                .background(Color.White), // light gray background
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = onSave) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_save),
+                        tint = Color.DarkGray,
+                        contentDescription = "Save",
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Save", color = Color.DarkGray, fontSize = 12.sp, fontFamily = poppins)
+                }
+            }
+            TextButton(onClick = onList) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_list),
+                        tint = Color.DarkGray,
+                        contentDescription = "List"
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("List", color = Color.DarkGray, fontSize = 12.sp, fontFamily = poppins)
+                }
+            }
+            Spacer(modifier = Modifier.width(64.dp)) // space for center button
+            /*     TextButton(onClick = onGscan) {
+                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                         Icon(
+                             painter = painterResource(R.drawable.ic_gscan),
+                             tint = Color.DarkGray,
+                             contentDescription = "Gscan"
+                         )
+                         Spacer(modifier = Modifier.width(4.dp))
+                         Text("Gscan", color = Color.DarkGray, fontSize = 12.sp, fontFamily = poppins)
+                     }
+                 }*/
+            TextButton(onClick = onEmail) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+                    // Use vector icon when scanning
+                    Icon(
+                        painter = painterResource(R.drawable.ic_email),
+                        contentDescription = "Email",
+                        tint = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    Text(
+                        text = "Email",
+                        color = Color.DarkGray,
+                        fontSize = 12.sp,
+                        fontFamily = poppins
+                    )
+                }
+            }
+
+
+            TextButton(onClick = onReset) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_reset),
+                        tint = Color.DarkGray,
+                        contentDescription = "Reset"
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Reset", color = Color.DarkGray, fontSize = 12.sp, fontFamily = poppins)
+                }
+            }
+        }
+
+
+        // 2) The elevated circular Scan button, centered
+        Box(
+            modifier = Modifier
+                .size(65.dp)
+                .align(Alignment.TopCenter)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color(0xFF5231A7), Color(0xFFD32940))
+                    )
+                )
+                .clickable(onClick = onScan),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (isScanning) {
+                    // Use vector icon when scanning
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Stop Scan",
+                        tint = Color.White
+                    )
+                } else {
+                    // Use painterResource when not scanning
+                    Icon(
+                        painter = painterResource(R.drawable.ic_scan),
+                        contentDescription = "Start Scan",
+                        tint = Color.White
+                    )
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     "Scan",

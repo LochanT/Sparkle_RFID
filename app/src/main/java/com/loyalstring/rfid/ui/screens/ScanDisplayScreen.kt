@@ -107,19 +107,6 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     val bulkViewModel: BulkViewModel = hiltViewModel()
     val context: Context = LocalContext.current
 
-    val filterTypeName = navController.previousBackStackEntry
-        ?.savedStateHandle
-        ?.get<String>("filterType")
-    val filterValue = navController.previousBackStackEntry
-        ?.savedStateHandle
-        ?.get<String>("filterValue")
-
-    LaunchedEffect(filterTypeName, filterValue) {
-        if (!filterTypeName.isNullOrEmpty() && !filterValue.isNullOrEmpty()) {
-            bulkViewModel.setFilteredItemsByType(filterTypeName, filterValue)
-        }
-    }
-
     var showRfidDialog by remember { mutableStateOf(false) }
     if (showRfidDialog) {
         AlertDialog(
@@ -153,8 +140,35 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     }
 
     val allItems by productListViewModel.productList.collectAsState(initial = emptyList())
+    // incoming filter from previous screen (branch/box/counter/exhibition)
+    val filterTypeName = navController.previousBackStackEntry
+        ?.savedStateHandle
+        ?.get<String>("filterType")
+    val filterValue = navController.previousBackStackEntry
+        ?.savedStateHandle
+        ?.get<String>("filterValue")
 
-    val filteredItems = remember(allItems, filterTypeName, filterValue) {
+    LaunchedEffect(filterTypeName, filterValue) {
+        if (!filterTypeName.isNullOrEmpty() && !filterValue.isNullOrEmpty()) {
+            bulkViewModel.setFilteredItemsByType(filterTypeName, filterValue)
+        }
+    }
+
+
+    val navFilteredItems = remember(allItems, filterTypeName, filterValue) {
+        if (filterTypeName.isNullOrEmpty() || filterValue.isNullOrEmpty()) {
+            allItems
+        } else {
+            when (filterTypeName.lowercase()) {
+                "box" -> allItems.filter { it.boxName == filterValue }
+                "counter" -> allItems.filter { it.counterName == filterValue }
+                "branch" -> allItems.filter { it.branchName == filterValue }
+                "exhibition" -> allItems.filter { it.branchType == filterTypeName && it.branchName == filterValue }
+                else -> allItems
+            }
+        }
+    }
+    remember(allItems, filterTypeName, filterValue) {
         if (filterTypeName.isNullOrEmpty() || filterValue.isNullOrEmpty()) {
             allItems
         } else {
@@ -173,26 +187,29 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     val selectedProducts = remember { mutableStateListOf<String>() }
     val selectedDesigns = remember { mutableStateListOf<String>() }
 
-    // stable snapshot keys
+
+// stable snapshot keys
     val selectedCategoriesKey = selectedCategories.toList()
     val selectedProductsKey = selectedProducts.toList()
     val selectedDesignsKey = selectedDesigns.toList()
 
-    // compute available options based on filters
-    val allCategories = remember(filteredItems) {
-        filteredItems.mapNotNull { it.category }.distinct().sorted()
+
+    val allCategories = remember(navFilteredItems) {
+        navFilteredItems.mapNotNull { it.category }.distinct().sorted()
     }
 
-    val allProducts = remember(filteredItems, selectedCategoriesKey) {
-        filteredItems
+
+    val allProducts = remember(navFilteredItems, selectedCategoriesKey) {
+        navFilteredItems
             .filter { selectedCategoriesKey.isEmpty() || it.category in selectedCategoriesKey }
             .mapNotNull { it.productName }
             .distinct()
             .sorted()
     }
 
-    val allDesigns = remember(filteredItems, selectedCategoriesKey, selectedProductsKey) {
-        filteredItems
+
+    val allDesigns = remember(navFilteredItems, selectedCategoriesKey, selectedProductsKey) {
+        navFilteredItems
             .filter { selectedCategoriesKey.isEmpty() || it.category in selectedCategoriesKey }
             .filter { selectedProductsKey.isEmpty() || it.productName in selectedProductsKey }
             .mapNotNull { it.design }
@@ -200,45 +217,49 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
             .sorted()
     }
 
+
     var currentLevel by rememberSaveable { mutableStateOf("Category") }
     var currentCategory by rememberSaveable { mutableStateOf<String?>(null) }
     var currentProduct by rememberSaveable { mutableStateOf<String?>(null) }
     var currentDesign by rememberSaveable { mutableStateOf<String?>(null) }
 
+
     var showMenu by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
     var filterType by remember { mutableStateOf("Category") }
-    var selectedMenu by remember { mutableStateOf(MENU_ALL) }
+    var selectedMenu by rememberSaveable { mutableStateOf("All") }
+
 
     var selectedItem by remember { mutableStateOf<BulkItem?>(null) }
     var showItemDialog by remember { mutableStateOf(false) }
 
+
     var selectedPower by remember { mutableIntStateOf(30) }
     var isScanning by remember { mutableStateOf(false) }
 
-    val scannedFiltered by bulkViewModel.scannedFilteredItems
 
+    val scannedFiltered by bulkViewModel.scannedFilteredItems
     // scopeItems overlay scanned status on filtered base set
     val scopeItems by remember(
-        filteredItems,
+        navFilteredItems,
         selectedCategoriesKey,
         selectedProductsKey,
         selectedDesignsKey,
         scannedFiltered
     ) {
         derivedStateOf {
-            var baseList = filteredItems
-            baseList = baseList.filter { item ->
-                (selectedCategoriesKey.isEmpty() || item.category in selectedCategoriesKey) &&
-                        (selectedProductsKey.isEmpty() || item.productName in selectedProductsKey) &&
-                        (selectedDesignsKey.isEmpty() || item.design in selectedDesignsKey)
-            }
-
             val scanMap = scannedFiltered.associateBy { it.epc?.trim()?.uppercase() }
-            baseList.map { original ->
+            navFilteredItems.mapNotNull { original ->
                 val key = original.epc?.trim()?.uppercase()
-                scanMap[key]?.let { scanned -> original.copy(scannedStatus = scanned.scannedStatus) }
-                    ?: original.copy(scannedStatus = "Unmatched")
+                val withScan = scanMap[key]?.let { scanned ->
+                    original.copy(scannedStatus = scanned.scannedStatus)
+                } ?: original.copy(scannedStatus = "Unmatched")
+                if ((selectedCategoriesKey.isEmpty() || withScan.category in selectedCategoriesKey) &&
+                    (selectedProductsKey.isEmpty() || withScan.productName in selectedProductsKey) &&
+                    (selectedDesignsKey.isEmpty() || withScan.design in selectedDesignsKey)
+                ) {
+                    withScan
+                } else null
             }
         }
     }
@@ -255,10 +276,10 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                 }
                 (unmatchedNow + sticky).distinctBy { it.epc }
             }
-
             else -> scopeItems
         }
     }
+
 
     val allMatched by remember(scopeItems) {
         derivedStateOf { scopeItems.isNotEmpty() && scopeItems.all { it.scannedStatus == "Matched" } }
@@ -344,11 +365,10 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
         bottomBar = {
             Column {
                 SummaryRow(currentLevel, displayItems, selectedMenu)
-                ScanBottomBar(
+                ScanBottomBarInventory(
                     onSave = { /* save */ },
                     onList = { showMenu = true },
-                    onScan = {},
-                    onGscan = {
+                    onScan = {
                         if (!isScanning) {
                             isScanning = true
                             // bulkViewModel.resetScanResults()
@@ -358,6 +378,10 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                             isScanning = false
                             bulkViewModel.stopScanningAndCompute()
                         }
+                    },
+                    onEmail = {
+
+
                     },
                     onReset = {
                         bulkViewModel.stopScanningAndCompute()
@@ -522,33 +546,28 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
             selectedItems = selected,
             onDismiss = { showDialog = false },
             onConfirm = {
-                // After confirming selection, always move to the next level so children are visible
                 when (filterType) {
                     "Category" -> {
-                        // keep multiple categories if chosen; show their products
                         currentLevel = "Product"
                         currentCategory = null
-                        // clear dependent lower-level selections
                         selectedProducts.clear()
                         selectedDesigns.clear()
                     }
-
                     "Product" -> {
-                        // keep multiple products; show their designs
                         currentLevel = "Design"
                         currentProduct = null
                         selectedDesigns.clear()
                     }
                     "Design" -> {
-                        // show all design items for selected designs
                         currentLevel = "DesignItems"
                         currentDesign = null
                     }
                 }
-                bulkViewModel.setFilteredItems(scopeItems)
-                bulkViewModel.resetScanResults()
+
+                // ❌ Don’t reset to allItems, just close dialog
                 showDialog = false
             }
+
         )
     }
 
@@ -575,11 +594,31 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         "UnMatched Items" -> {
                             selectedMenu = MENU_UNMATCHED
                             bulkViewModel.rememberUnmatched(scopeItems.filter { it.scannedStatus == "Unmatched" })
+
+                            // ✅ Always show items when unmatched mode
+                            currentLevel = "DesignItems"
+                            currentCategory = null
+                            currentProduct = null
+                            currentDesign = null
+
+                            selectedCategories.clear()
+                            selectedProducts.clear()
+                            selectedDesigns.clear()
                         }
 
                         "Matched Items" -> {
                             selectedMenu = MENU_MATCHED
                             bulkViewModel.clearStickyUnmatched()
+
+                            // ✅ Always show items when matched mode
+                            currentLevel = "DesignItems"
+                            currentCategory = null
+                            currentProduct = null
+                            currentDesign = null
+
+                            selectedCategories.clear()
+                            selectedProducts.clear()
+                            selectedDesigns.clear()
                         }
 
                         "Unlabelled Items" -> {
@@ -589,15 +628,29 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         "Search" -> {
                             val scanMap =
                                 bulkViewModel.scannedFilteredItems.value.associateBy { it.rfid }
-                            val latestUnmatched =
-                                scopeItems.map { original -> scanMap[original.rfid] ?: original }
+                            val latestUnmatched = scopeItems
+                                .map { original -> scanMap[original.rfid] ?: original }
                                 .filter { it.scannedStatus == "Unmatched" }
-                            navController.currentBackStackEntry?.savedStateHandle?.set(
-                                "unmatchedItems",
-                                latestUnmatched
-                            )
-                            navController.navigate(Screens.SearchScreen.route)
+
+                            // ✅ Navigate to Search and keep Scan screen state intact
+                            navController.navigate(Screens.SearchScreen.route) {
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+
+// ✅ Post data into SearchScreen’s SavedStateHandle
+                            navController.currentBackStackEntry
+                                ?.destination?.route
+                                ?.let { currentRoute ->
+                                    navController.getBackStackEntry(Screens.SearchScreen.route).savedStateHandle
+                                        .set("unmatchedItems", latestUnmatched)
+                                }
+
                         }
+
+
+
+
                     }
                     showMenu = false
                 }
@@ -707,10 +760,15 @@ fun DesignItemRow(item: BulkItem, onClick: (BulkItem) -> Unit) {
         TableCell(item.design ?: "-", colDesignNameWidth)
         TableCell(item.rfid ?: "-", colRfidWidth)
         TableCell(item.itemCode ?: "-", colItemCodeWidth)
-        TableCell(item.grossWeight ?: "-", colGWtWidth)
+
+        // ✅ format weight properly
+        val formattedGwt = formatTo3Decimals(parseWeightToBigDecimal(item.grossWeight))
+        TableCell(formattedGwt, colGWtWidth)
+
         StatusIconCell(item.scannedStatus, colStatusIconWidth)
     }
 }
+
 
 
 /* -----------------------
@@ -815,7 +873,7 @@ fun SummaryRow(currentLevel: String, items: List<BulkItem>, selectedMenu: String
         matchedItems.fold(BigDecimal.ZERO) { acc, it -> acc + parseWeightToBigDecimal(it.grossWeight) }
 
     val unmatchedItems = items.filter { it.scannedStatus == "Unmatched" }
-    val unmatchedQty = unmatchedItems.size
+    unmatchedItems.size
     val unmatchedWtBD =
         unmatchedItems.fold(BigDecimal.ZERO) { acc, it -> acc + parseWeightToBigDecimal(it.grossWeight) }
 
@@ -827,40 +885,33 @@ fun SummaryRow(currentLevel: String, items: List<BulkItem>, selectedMenu: String
     ) {
         when {
             selectedMenu == MENU_UNMATCHED -> {
-                TableHeaderCell("Total", colCategoryWidth)
-                TableHeaderCell("$unmatchedQty", colQtyWidth)
-                TableHeaderCell(formatMatchedUpTo3(unmatchedWtBD), colWeightWidth)
-                TableHeaderCell("", colMatchedQtyWidth)
-                TableHeaderCell("", colMatchedWtWidth)
-                TableHeaderCell("", colStatusWidth)
+                TableHeaderCell("Total", colDesignNameWidth)
+                TableHeaderCell("$totalQty", colRfidWidth)
+                TableHeaderCell("$totalMatchedQty", colItemCodeWidth)
+                TableHeaderCell(formatTo3Decimals(unmatchedWtBD), colGWtWidth)
+                TableHeaderCell("", colStatusIconWidth)
             }
 
             currentLevel == "DesignItems" -> {
                 TableHeaderCell("Total", colDesignNameWidth)
                 TableHeaderCell("$totalQty", colRfidWidth)
                 TableHeaderCell("$totalMatchedQty", colItemCodeWidth)
-                TableHeaderCell(formatMatchedUpTo3(totalMatchedWtBD), colGWtWidth)
+                TableHeaderCell(formatTo3Decimals(totalMatchedWtBD), colGWtWidth)
                 TableHeaderCell("", colStatusIconWidth)
             }
 
             else -> {
                 TableHeaderCell("Total", colCategoryWidth)
                 TableHeaderCell("$totalQty", colQtyWidth)
-                TableHeaderCell(formatMatchedUpTo3(totalGwtBD), colWeightWidth)
+                TableHeaderCell(formatTo3Decimals(totalGwtBD), colWeightWidth)
                 TableHeaderCell("$totalMatchedQty", colMatchedQtyWidth)
-                TableHeaderCell(formatMatchedUpTo3(totalMatchedWtBD), colMatchedWtWidth)
+                TableHeaderCell(formatTo3Decimals(totalMatchedWtBD), colMatchedWtWidth)
                 TableHeaderCell("", colStatusWidth)
             }
         }
     }
 }
 
-/* -----------------------
-   Remaining helpers (unchanged)
-   ----------------------- */
-// TableHeaderCell, TableHeader, TableDataRow, TableCell, StatusIconCell, VerticalMenu, MenuCard,
-// parseWeightToBigDecimal, formatMatchedUpTo3, TableRow data class
-// Paste your existing implementations for these below or keep the ones already in your file.
 
 @Composable
 fun TableHeaderCell(text: String, width: Dp) {
@@ -910,23 +961,30 @@ fun TableDataRow(row: TableRow, currentLevel: String, onRowClick: () -> Unit) {
     val qty = row.items.size
     val matchedItems = row.items.filter { it.scannedStatus == "Matched" }
     val matchedQty = matchedItems.size
-    val grossWeight = row.items.sumOf { it.grossWeight?.toDoubleOrNull() ?: 0.0 }
-    val matchedWeight = matchedItems.sumOf { it.netWeight?.toDoubleOrNull() ?: 0.0 }
+    val grossWeight = row.items
+        .sumOf { it.grossWeight?.toDoubleOrNull() ?: 0.0 }
+        .toBigDecimal()
+
+    val matchedWeight = matchedItems
+        .sumOf { it.grossWeight?.toDoubleOrNull() ?: 0.0 }
+        .toBigDecimal()
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
             .padding(vertical = 4.dp)
-            .clickable { onRowClick() }) {
+            .clickable { onRowClick() }
+    ) {
         TableCell(row.label, colCategoryWidth)
         TableCell("$qty", colQtyWidth)
-        TableCell("%.3f".format(grossWeight), colWeightWidth)
+        TableCell(formatTo3Decimals(grossWeight), colWeightWidth)
         TableCell("$matchedQty", colMatchedQtyWidth)
-        TableCell("%.2f".format(matchedWeight), colMatchedWtWidth)
+        TableCell(formatTo3Decimals(matchedWeight), colMatchedWtWidth)
         val status = row.items.firstOrNull()?.scannedStatus ?: "Unmatched"
         StatusIconCell(status, colStatusWidth)
     }
+
 }
 
 @Composable
@@ -1026,9 +1084,8 @@ fun parseWeightToBigDecimal(weight: String?): BigDecimal {
     }
 }
 
-fun formatMatchedUpTo3(b: BigDecimal): String {
-    val truncated = b.setScale(3, RoundingMode.DOWN)
-    return truncated.stripTrailingZeros().toPlainString()
+fun formatTo3Decimals(b: BigDecimal): String {
+    return b.setScale(3, RoundingMode.HALF_UP).toPlainString()
 }
 
 data class MenuItem(val title: String, val iconRes: Int)
