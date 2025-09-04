@@ -238,11 +238,8 @@ fun OrderDetailsDialogEditAndDisplay(
             tonalElevation = 4.dp
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-
-                    .verticalScroll(rememberScrollState())
-            ) {
+                modifier = Modifier.fillMaxWidth()
+            )  {
                 // Title
                 Box(
                     modifier = Modifier
@@ -277,9 +274,9 @@ fun OrderDetailsDialogEditAndDisplay(
 
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .weight(1f) // take remaining space
+                        .verticalScroll(rememberScrollState())
                         .padding(8.dp)
-                    // .verticalScroll(rememberScrollState())
                 ) {
                     Row(
                         modifier = Modifier
@@ -1588,155 +1585,156 @@ fun OrderDetailsDialogEditAndDisplay(
 
 
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
 
-                        GradientButtonIcon(
-                            text = "Cancel",
-                            onClick = {
-                                println("Form Reset")
-                                onDismiss()
-                                // showAddCustomerDialog = false
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(58.dp) // reduce height here
-                                .padding(start = 8.dp, bottom = 16.dp),
-                            icon = painterResource(id = R.drawable.ic_cancel),
-                            iconDescription = "Check Icon",
-                            fontSize = 12
-                        )
-                        Spacer(modifier = Modifier.width(8.dp)) // Add space between buttons
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
 
-                        val netWt: Double = (selectedItem?.grWt?.toDoubleOrNull()
-                            ?: 0.0) - (selectedItem?.stoneWt?.toDoubleOrNull() ?: 0.0)
+                    GradientButtonIcon(
+                        text = "Cancel",
+                        onClick = {
+                            println("Form Reset")
+                            onDismiss()
+                            // showAddCustomerDialog = false
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(58.dp) // reduce height here
+                            .padding(start = 8.dp, bottom = 16.dp),
+                        icon = painterResource(id = R.drawable.ic_cancel),
+                        iconDescription = "Check Icon",
+                        fontSize = 12
+                    )
+                    Spacer(modifier = Modifier.width(8.dp)) // Add space between buttons
 
-                        val finePercent = selectedItem?.finePer?.toDoubleOrNull() ?: 0.0
-                        val wastagePercent = selectedItem?.wastage?.toDoubleOrNull() ?: 0.0
+                    val netWt: Double = (selectedItem?.grWt?.toDoubleOrNull()
+                        ?: 0.0) - (selectedItem?.stoneWt?.toDoubleOrNull() ?: 0.0)
 
-
-                        val finewt: Double =
-                            ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
-                        val metalAmt: Double = (selectedItem?.nWt?.toDoubleOrNull()
-                            ?: 0.0) * (selectedItem?.todaysRate?.toDoubleOrNull() ?: 0.0)
-
-                        val makingPerGram =
-                            selectedItem?.makingPerGram?.toDoubleOrNull() ?: 0.0
-                        val fixMaking = selectedItem?.makingFixedAmt?.toDoubleOrNull() ?: 0.0
-                        val extraMakingPercent =
-                            selectedItem?.makingPercentage?.toDoubleOrNull() ?: 0.0
-                        val fixWastage = selectedItem?.makingFixedWastage?.toDoubleOrNull() ?: 0.0
-
-                        val makingAmt: Double =
-                            ((makingPerGram / 100.0) * netWt) +
-                                    fixMaking +
-                                    ((extraMakingPercent / 100.0) * netWt) +
-                                    fixWastage
-
-                        val totalStoneAmount =
-                            selectedItem?.stoneAmt?.toDoubleOrNull() ?: 0.0
-                        val diamondAmount =
-                            selectedItem?.diamondAmt?.toDoubleOrNull() ?: 0.0
-                        val safeMetalAmt = metalAmt ?: 0.0
-                        val safeMakingAmt = makingAmt ?: 0.0
-
-                       /* var itemAmt: Double =
-                            totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt*/
-
-                        val inputItemAmt: Double? = null
+                    val finePercent = selectedItem?.finePer?.toDoubleOrNull() ?: 0.0
+                    val wastagePercent = selectedItem?.wastage?.toDoubleOrNull() ?: 0.0
 
 
-                        /*val itemAmt: Double = if ((selectedItem?.itemAmt ?: 0.0) == 0.0) {
-                            val netWtVal = NetWt.toDoubleOrNull() ?: 0.0
-                            val rateVal = ratePerGRam.toDoubleOrNull() ?: 0.0
-                            netWtVal * rateVal
-                        } else {
-                            inputItemAmt ?: 0.0
-                        }
+                    val finewt: Double =
+                        ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
+                    val metalAmt: Double = (selectedItem?.nWt?.toDoubleOrNull()
+                        ?: 0.0) * (selectedItem?.todaysRate?.toDoubleOrNull() ?: 0.0)
+
+                    val makingPerGram =
+                        selectedItem?.makingPerGram?.toDoubleOrNull() ?: 0.0
+                    val fixMaking = selectedItem?.makingFixedAmt?.toDoubleOrNull() ?: 0.0
+                    val extraMakingPercent =
+                        selectedItem?.makingPercentage?.toDoubleOrNull() ?: 0.0
+                    val fixWastage = selectedItem?.makingFixedWastage?.toDoubleOrNull() ?: 0.0
+
+                    val makingAmt: Double =
+                        ((makingPerGram / 100.0) * netWt) +
+                                fixMaking +
+                                ((extraMakingPercent / 100.0) * netWt) +
+                                fixWastage
+
+                    val totalStoneAmount =
+                        selectedItem?.stoneAmt?.toDoubleOrNull() ?: 0.0
+                    val diamondAmount =
+                        selectedItem?.diamondAmt?.toDoubleOrNull() ?: 0.0
+                    val safeMetalAmt = metalAmt ?: 0.0
+                    val safeMakingAmt = makingAmt ?: 0.0
+
+                    /* var itemAmt: Double =
+                         totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt*/
+
+                    val inputItemAmt: Double? = null
+
+
+                    /*val itemAmt: Double = if ((selectedItem?.itemAmt ?: 0.0) == 0.0) {
+                        val netWtVal = NetWt.toDoubleOrNull() ?: 0.0
+                        val rateVal = ratePerGRam.toDoubleOrNull() ?: 0.0
+                        netWtVal * rateVal
+                    } else {
+                        inputItemAmt ?: 0.0
+                    }
 */
 
-                        val fineVal = finePercentage.toDoubleOrNull() ?: 0.0
-                        val wastageVal = wastage.toDoubleOrNull()?: 0.0
-                        val netWtVal =NetWt.toDoubleOrNull() ?: 0.0
+                    val fineVal = finePercentage.toDoubleOrNull() ?: 0.0
+                    val wastageVal = wastage.toDoubleOrNull()?: 0.0
+                    val netWtVal =NetWt.toDoubleOrNull() ?: 0.0
 
-                        val finePlusWt = ((fineVal / 100.0) * netWtVal) + ((wastageVal / 100.0) * netWtVal)
-
-
-
-                        GradientButtonIcon(
-                            text = "OK",
-                            onClick = {
-
-                                val orderItem = OrderItem(
-                                    branchId = selectedItem?.branchId.toString(),
-                                    branchName = branch,
-                                    exhibition = exhibition,
-                                    remark = remark,
-                                    purity = purity,
-                                    size = size,
-                                    length = length,
-                                    typeOfColor = typeOfColors,
-                                    screwType = screwType,
-                                    polishType = polishType,
-                                    finePer = finePercentage,
-                                    wastage = wastage,
-                                    orderDate = orderDate,
-                                    deliverDate = deliverDate,
-                                    productName = productName,
-                                    itemCode = itemCode,
-                                    rfidCode = selectedItem?.rfidCode.toString(),
-                                    itemAmt = itemAmt.toString(),
-                                    grWt = grossWT,
-                                    nWt = NetWt,
-                                    stoneAmt =stoneAmt ,
-                                    finePlusWt = finePlusWt.toString(),
-                                    packingWt = packingWt,
-                                    totalWt = totalWt,
-                                    stoneWt = stoneWt,
-                                    dimondWt = dimondWt,
-                                    sku = sku,
-                                    qty = qty,
-                                    hallmarkAmt = hallMarkAmt,
-                                    mrp = mrp,
-                                    image =selectedItem?.image.toString(),
-                                    netAmt ="",
-                                    diamondAmt =selectedItem?.diamondAmt.toString(),
-                                    categoryId = selectedItem?.categoryId!!,
-                                    categoryName = selectedItem?.categoryName!!,
-                                    productId = selectedItem?.productId!!,
-                                    productCode = selectedItem?.productName!!,
-                                    skuId =selectedItem?.skuId!!,
-                                    designid = selectedItem?.designid!!,
-                                    designName =selectedItem?.designName!!,
-                                    purityid = selectedItem?.purityid!!,
-                                    counterId = selectedItem?.counterId!!,
-                                    counterName ="",
-                                    companyId = 0,
-                                    epc = selectedItem?.epc!!,
-                                    tid = selectedItem?.tid!!,
-                                    todaysRate = ratePerGRam,
-                                    makingPercentage = extraMakingPercent.toString(),
-                                    makingFixedAmt = fixMaking.toString(),
-                                    makingFixedWastage = fixWastage.toString(),
-                                    makingPerGram = makingPerGram.toString()
+                    val finePlusWt = ((fineVal / 100.0) * netWtVal) + ((wastageVal / 100.0) * netWtVal)
 
 
-                                )
-                                orderViewModel.insertOrderItemToRoomORUpdate(orderItem)
-                                onDismiss()
 
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(58.dp) // Adjust height as needed
-                                .padding(end = 8.dp, bottom = 16.dp),
-                            icon = painterResource(id = R.drawable.check_circle),
-                            iconDescription = "Check Icon",
-                            fontSize = 12
-                        )
-                    }
+                    GradientButtonIcon(
+                        text = "OK",
+                        onClick = {
+
+                            val orderItem = OrderItem(
+                                branchId = selectedItem?.branchId.toString(),
+                                branchName = branch,
+                                exhibition = exhibition,
+                                remark = remark,
+                                purity = purity,
+                                size = size,
+                                length = length,
+                                typeOfColor = typeOfColors,
+                                screwType = screwType,
+                                polishType = polishType,
+                                finePer = finePercentage,
+                                wastage = wastage,
+                                orderDate = orderDate,
+                                deliverDate = deliverDate,
+                                productName = productName,
+                                itemCode = itemCode,
+                                rfidCode = selectedItem?.rfidCode.toString(),
+                                itemAmt = itemAmt.toString(),
+                                grWt = grossWT,
+                                nWt = NetWt,
+                                stoneAmt =stoneAmt ,
+                                finePlusWt = finePlusWt.toString(),
+                                packingWt = packingWt,
+                                totalWt = totalWt,
+                                stoneWt = stoneWt,
+                                dimondWt = dimondWt,
+                                sku = sku,
+                                qty = qty,
+                                hallmarkAmt = hallMarkAmt,
+                                mrp = mrp,
+                                image =selectedItem?.image.toString(),
+                                netAmt ="",
+                                diamondAmt =selectedItem?.diamondAmt.toString(),
+                                categoryId = selectedItem?.categoryId!!,
+                                categoryName = selectedItem?.categoryName!!,
+                                productId = selectedItem?.productId!!,
+                                productCode = selectedItem?.productName!!,
+                                skuId =selectedItem?.skuId!!,
+                                designid = selectedItem?.designid!!,
+                                designName =selectedItem?.designName!!,
+                                purityid = selectedItem?.purityid!!,
+                                counterId = selectedItem?.counterId!!,
+                                counterName ="",
+                                companyId = 0,
+                                epc = selectedItem?.epc!!,
+                                tid = selectedItem?.tid!!,
+                                todaysRate = ratePerGRam,
+                                makingPercentage = extraMakingPercent.toString(),
+                                makingFixedAmt = fixMaking.toString(),
+                                makingFixedWastage = fixWastage.toString(),
+                                makingPerGram = makingPerGram.toString()
+
+
+                            )
+                            orderViewModel.insertOrderItemToRoomORUpdate(orderItem)
+                            onDismiss()
+
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(58.dp) // Adjust height as needed
+                            .padding(end = 8.dp, bottom = 16.dp),
+                        icon = painterResource(id = R.drawable.check_circle),
+                        iconDescription = "Check Icon",
+                        fontSize = 12
+                    )
                 }
             }
         }

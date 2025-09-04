@@ -249,6 +249,9 @@ interface OrderItemDao {
     @Query("DELETE FROM customerorderequest WHERE syncStatus = 0")
     suspend fun deleteUnsyncedOrder()
 
+    @Query("DELETE FROM OrderItem")
+    suspend fun clearAll()
+
 
 
 }
