@@ -282,6 +282,7 @@ class SingleProductViewModel @Inject constructor(
                 val response = repository.deleteProduct(request)
                 if (response.isSuccessful && response.body() != null) {
                     _productDeleteResponse.value = Resource.Success((response.body()!!))
+                    bulkRepository.syncBulkItemsFromServer(ClientCodeRequest(request.get(0).ClientCode))
 
                     Log.d("SingleProductViewModel", "Product delete" + response.body())
                 } else {
@@ -503,5 +504,11 @@ class SingleProductViewModel @Inject constructor(
         }
     }
 
+ /*   fun getAllItems() {
+
+                bulkRepository.syncBulkItemsFromServer(ClientCodeRequest(request.ClientCode))
+
+    }
+*/
 
 }

@@ -1,6 +1,7 @@
 package com.loyalstring.rfid.ui.screens
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -49,6 +51,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -108,7 +111,7 @@ fun OrderLisrScreen(
     val visibleData = filteredData.take(visibleItems)
 
     val headerTitles = listOf(
-        "Order No",
+        "O.No",
         "Name",
         "Contact",
         "Product",
@@ -121,9 +124,27 @@ fun OrderLisrScreen(
         "Taxable Amt",
         "Total Amt",
         "Order Date",
-        "Status",
-        "Actions"
+        "Status"
+
     )
+
+    val columnWidths = listOf(
+        50.dp,   // Order No
+        100.dp,  // Customer Name
+        100.dp,  // Contact
+        150.dp,  // Product
+        100.dp,  // Branch
+        60.dp,   // Qty
+        60.dp, // tot wt
+        80.dp,   // G.Wt
+        80.dp,   // N.Wt,
+        90.dp,   //finemetal
+        120.dp,  // Taxable Amt
+        100.dp,  // Total Amt
+        100.dp,  // Order Date
+        100.dp   // Status
+    )
+
 
     Column(modifier = Modifier.fillMaxSize()) {
         GradientTopBar(
@@ -151,6 +172,7 @@ fun OrderLisrScreen(
         OrderTableWithPagination(
             navController = navController,
             headerTitles = headerTitles,
+            columnWidths=columnWidths,
             data = visibleData,
             onLoadMore = {
                 if (visibleItems < filteredData.size) {
@@ -419,15 +441,18 @@ fun OrderTableWithPagination(
 fun OrderTableWithPagination(
     navController: NavHostController,
     headerTitles: List<String>,
+    columnWidths: List<Dp>,
     data: List<CustomOrderResponse>,
     onLoadMore: () -> Unit,
     isLoading: Boolean,
     context: Context,
     employee: Employee?,
     itemCodeList: List<ItemCodeResponse>
+
 ) {
     val sharedScrollState = rememberScrollState()
     val orderViewModel: OrderViewModel = hiltViewModel()
+    var orderToDelete by remember { mutableStateOf<CustomOrderResponse?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Updated header layout: scrollable data + fixed "Actions"
@@ -442,15 +467,17 @@ fun OrderTableWithPagination(
                     .weight(1f)
                     .horizontalScroll(sharedScrollState)
             ) {
-                headerTitles.dropLast(1).forEach {
+                headerTitles.forEachIndexed { index, title ->
                     Text(
-                        text = it,
+                        text = title,
                         modifier = Modifier
-                            .width(120.dp)
-                            .padding(horizontal = 8.dp),
+                            .width(columnWidths[index])
+                            .padding(6.dp),
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        fontFamily = poppins
+                        fontFamily = poppins,
+                        fontSize = 14.sp,
+                        maxLines = 1
                     )
                 }
             }
@@ -459,7 +486,9 @@ fun OrderTableWithPagination(
                 text = "Actions",
                 modifier = Modifier
                     .width(120.dp)
-                    .padding(horizontal = 8.dp),
+                    .padding(start = 20.dp),
+
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 fontFamily = poppins
@@ -473,8 +502,11 @@ fun OrderTableWithPagination(
                 CircularProgressIndicator()
             }
         } else {
+
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(data) { row ->
+
+                    // === Calculations ===
                     val totalWt = row.CustomOrderItem.sumOf {
                         val totalwt = it.TotalWt?.toFloatOrNull() ?: 0f
                         val qty = it.Quantity?.toIntOrNull() ?: 0
@@ -505,54 +537,55 @@ fun OrderTableWithPagination(
                                 .weight(1f)
                                 .horizontalScroll(sharedScrollState)
                         ) {
-                            listOf(
-                                row.OrderNo,
-                                row.Customer?.FirstName,
-                                row.Customer?.Mobile,
+                            val values = listOf(
+                                row.OrderNo ?: "",
+                                row.Customer?.FirstName ?: "",
+                                row.Customer?.Mobile ?: "",
                                 row.CustomOrderItem.joinToString(", ") { it.ProductName ?: "" },
                                 row.CustomOrderItem.joinToString(", ") { it.BranchName ?: "" },
-                                row.CustomOrderItem.sumOf { it.Quantity?.toIntOrNull() ?: 0 }
-                                    .toString(),
+                                row.CustomOrderItem.sumOf { it.Quantity?.toIntOrNull() ?: 0 }.toString(),
                                 totalWt,
                                 totalgrWt,
                                 totalNetWt,
-                                row.TotalFineMetal,
-                                row.TotalNetAmount,
-                                row.TotalAmount,
+                                row.TotalFineMetal ?: "",
+                                row.TotalNetAmount ?: "",
+                                row.TotalAmount ?: "",
                                 formatDate(row.OrderDate),
                                 formatDate(row.OrderStatus)
-                            ).forEach {
+                            )
+
+                            values.forEachIndexed { index, value ->
                                 Text(
-                                    text = it ?: "",
+                                    text = value,
                                     modifier = Modifier
-                                        .width(120.dp)
-                                        .padding(horizontal = 8.dp),
+                                        .width(columnWidths[index])
+                                        .padding(6.dp),
                                     fontSize = 12.sp,
-                                    fontFamily = poppins
+                                    fontFamily = poppins,
+                                    maxLines = 1
                                 )
                             }
                         }
 
-                        // Fixed Actions
+                        // Fixed Actions column (separate)
                         Row(
                             modifier = Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
+                                .width(120.dp) // 👈 consistent width for Actions
+                                .height(40.dp)
+                                .padding(8.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(onClick = {
                                 generateInvoicePdfAndOpen(context, row, employee, itemCodeList)
                             }) {
-                                Icon(
-                                    Icons.Default.Print,
-                                    contentDescription = "Print",
-                                    tint = Color.DarkGray
-                                )
+                                Icon(Icons.Default.Print, contentDescription = "Print", tint = Color.DarkGray)
                             }
 
                             IconButton(onClick = {
-                                employee?.clientCode?.let {
+                                orderToDelete = row
+                                Log.d("deleting item","delete"+row.CustomOrderId)
+                                /*employee?.clientCode?.let {
                                     orderViewModel.deleteOrders(
                                         ClientCodeRequest(it),
                                         row.CustomOrderId
@@ -566,21 +599,71 @@ fun OrderTableWithPagination(
                                             orderViewModel.removeOrderById(row.CustomOrderId)
                                         }
                                     }
-                                }
+                                }*/
                             }) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    tint = Color.DarkGray
-                                )
+                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.DarkGray)
                             }
                         }
+
+                        if (orderToDelete != null) {
+                            AlertDialog(
+                                onDismissRequest = { orderToDelete = null },
+                                title = { Text("Confirm Delete") },
+                                text = { Text("Are you sure you want to delete this order?") },
+                                confirmButton = {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        GradientButton(
+                                            text = "Cancel",
+                                            onClick = { orderToDelete = null },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        GradientButton(
+                                            text = "Yes",
+                                            onClick = {
+                                                orderToDelete?.let { order ->
+                                                    Log.d("customer order id","onclick ok " + order.CustomOrderId)
+                                                    employee?.clientCode?.let {
+                                                        orderViewModel.deleteOrders(
+                                                            ClientCodeRequest(it),
+                                                            order.CustomOrderId
+                                                        ) { isSuccess ->
+                                                            Toast.makeText(
+                                                                context,
+                                                                if (isSuccess) "Order Deleted Successfully" else "Failed to delete",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                            if (isSuccess) {
+                                                                orderViewModel.removeOrderById(order.CustomOrderId)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                orderToDelete = null
+                                            },
+                                            modifier = Modifier.weight(1f)
+                                        )
+
+
+                                    }
+                                },
+                                dismissButton = {} // 👈 leave empty since both buttons are inside confirmButton
+                            )
+                        }
+
+                    }
                     }
                 }
             }
+
         }
     }
-}
+
+
+
 
 
 

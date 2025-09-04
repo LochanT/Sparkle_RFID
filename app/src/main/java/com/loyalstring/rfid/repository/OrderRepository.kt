@@ -142,4 +142,8 @@ class OrderRepository @Inject constructor(
         // Implement your API call here
         return apiService.syncOrders(customOrderResponse)
     }*/
+
+    suspend fun clearOrderItems() {
+        orderItemDao.clearAll()
+    }
 }

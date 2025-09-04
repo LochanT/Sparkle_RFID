@@ -43,6 +43,7 @@ class OrderViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+
     /* private val _empListResponse = MutableLiveData<List<EmployeeList>>()
     val empListResponse: LiveData<List<EmployeeList>> = _empListResponse
     val empListFlow = _empListResponse.asStateFlow()*/
@@ -81,7 +82,8 @@ class OrderViewModel @Inject constructor(
         _orderResponse.value = response
     }
 
-    fun clearOrderItems() {
+    suspend fun clearOrderItems() {
+        repository.clearOrderItems()
         _allOrderItems.value = emptyList()
     }
 

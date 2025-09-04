@@ -111,17 +111,18 @@ fun ProductListScreen(
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
     var showConfirmDelete by remember { mutableStateOf(false) }
     val baseUrl = "https://rrgold.loyalstring.co.in/"
-    var deletingItemId by remember { mutableStateOf<Int?>(null) }
+    //var deletingItemId by remember { mutableStateOf<Int?>(null) }
     val deleteResponse by singleproductViewModel.productDeleetResponse.observeAsState()
 
     LaunchedEffect(deleteResponse) {
         when (deleteResponse) {
             is Resource.Success -> {
-                deletingItemId?.let { id ->
-                    singleproductViewModel.deleteItem(id) // ✅ local delete with cached id
+
+                   // singleproductViewModel.insertLabelledStock(request)
+                   // singleproductViewModel.deleteItem(id) // ✅ local delete with cached id
                     Toast.makeText(context, "Item deleted successfully", Toast.LENGTH_SHORT).show()
-                }
-                deletingItemId = null // reset after use
+
+
             }
             is Resource.Error -> {
                 Toast.makeText(context, "Delete failed", Toast.LENGTH_SHORT).show()
@@ -129,7 +130,7 @@ fun ProductListScreen(
             else -> Unit
         }
     }
-    val deleteResult by singleproductViewModel.deleteResult.collectAsState()
+/*    val deleteResult by singleproductViewModel.deleteResult.collectAsState()
     LaunchedEffect(deleteResult) {
         when {
             deleteResult == null -> Unit
@@ -142,7 +143,7 @@ fun ProductListScreen(
                 Toast.makeText(context, "Delete failed", Toast.LENGTH_SHORT).show()
             }
         }
-    }
+    }*/
 
 
 
@@ -576,7 +577,7 @@ fun ProductListScreen(
                     val id = selectedItem?.id ?: 0
                     val clientCode = employee?.clientCode
                     if (id > 0) {
-                        deletingItemId = id // ✅ keep id safe
+                        //deletingItemId = id // ✅ keep id safe
                         singleproductViewModel.deleetProduct(
                             listOf(
                                 ProductDeleteModelReq(

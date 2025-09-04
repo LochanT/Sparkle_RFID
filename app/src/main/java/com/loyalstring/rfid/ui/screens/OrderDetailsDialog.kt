@@ -169,10 +169,7 @@ fun OrderDetailsDialog(
             tonalElevation = 4.dp
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-
-                    .verticalScroll(rememberScrollState())
+                modifier = Modifier.fillMaxWidth()
             ) {
                 // Title
                 Box(
@@ -208,10 +205,10 @@ fun OrderDetailsDialog(
                 Spacer(modifier = Modifier.height(5.dp))
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .weight(1f) // take remaining space
+                        .verticalScroll(rememberScrollState())
                         .padding(8.dp)
-                    // .verticalScroll(rememberScrollState())
-                ) {
+                ){
                     // Use your DropdownMenuField & input rows here
                     // Example: Branch dropdown
                     Surface(
@@ -730,106 +727,104 @@ fun OrderDetailsDialog(
                         }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+
+                    GradientButtonIcon(
+                        text = "Cancel",
+                        onClick = {
+                            println("Form Reset")
+                            onDismiss()
+                            // showAddCustomerDialog = false
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(58.dp) // reduce height here
+                            .padding(start = 8.dp, bottom = 16.dp),
+                        icon = painterResource(id = R.drawable.ic_cancel),
+                        iconDescription = "Check Icon",
+                        fontSize = 12
+                    )
+                    Spacer(modifier = Modifier.width(8.dp)) // Add space between buttons
+                    GradientButtonIcon(
+                        text = "OK",
+
+                        onClick = {
+                            val orderItem = OrderItem(
+                                branchId = "1",
+                                branchName = branch,
+                                exhibition = exhibition,
+                                remark = remark,
+                                purity = purity,
+                                size = size,
+                                length = length,
+                                typeOfColor = typeOfColors,
+                                screwType = screwType,
+                                polishType = polishType,
+                                finePer = finePercentage,
+                                wastage = wastage,
+                                orderDate = orderDate,
+                                deliverDate = deliverDate,
+                                productName = selectedItem?.ProductName.toString(),
+                                itemCode = selectedItem?.ProductName.toString(),
+                                rfidCode = selectedItem?.RFIDCode.toString(),
+                                itemAmt = selectedItem?.MakingFixedAmt,
+                                grWt = selectedItem?.GrossWt,
+                                nWt = selectedItem?.NetWt,
+                                stoneAmt = selectedItem?.TotalStoneAmount,
+                                finePlusWt = selectedItem?.FinePercent,
+
+                                packingWt = selectedItem?.PackingWeight.toString(),
+                                totalWt = selectedItem?.TotalWeight.toString(),
+                                stoneWt = selectedItem?.TotalStoneWeight.toString(),
+                                dimondWt = selectedItem?.DiamondWeight.toString(),
+                                sku = selectedItem?.SKU.toString(),
+                                qty = selectedItem?.ClipQuantity.toString(),
+                                hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
+                                mrp = selectedItem?.MRP.toString(),
+                                image = selectedItem?.Images.toString(),
+                                netAmt = "",
+                                diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
+                                categoryId = selectedItem?.CategoryId?.toString(),
+                                categoryName = selectedItem?.CategoryName ?: "",
+                                productId = selectedItem?.ProductId ?: 0,
+                                productCode = selectedItem?.ProductCode ?: "",
+                                skuId = selectedItem?.SKUId ?: 0,
+                                designid = selectedItem?.DesignId ?: 0,
+                                designName = selectedItem?.DesignName ?: "",
+                                purityid = selectedItem?.PurityId ?: 0,
+                                counterId = selectedItem?.CounterId ?: 0,
+                                counterName = "",
+                                companyId = 0,
+                                epc = selectedItem?.TIDNumber ?: "",
+                                tid = selectedItem?.TIDNumber ?: "",
+                                todaysRate = selectedItem?.TodaysRate?.toString() ?: "0",
+                                makingPercentage = selectedItem?.MakingPercentage?.toString() ?: "0",
+                                makingFixedAmt = selectedItem?.MakingFixedAmt?.toString() ?: "0",
+                                makingFixedWastage = selectedItem?.MakingFixedWastage?.toString() ?: "0",
+                                makingPerGram = selectedItem?.MakingPerGram?.toString() ?: "0"
 
 
 
+                            )
+                            orderViewModel.insertOrderItemToRoomORUpdate(orderItem)
+                            onDismiss()
 
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-
-                        GradientButtonIcon(
-                            text = "Cancel",
-                            onClick = {
-                                println("Form Reset")
-                                onDismiss()
-                                // showAddCustomerDialog = false
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(58.dp) // reduce height here
-                                .padding(start = 8.dp, bottom = 16.dp),
-                            icon = painterResource(id = R.drawable.ic_cancel),
-                            iconDescription = "Check Icon",
-                            fontSize = 12
-                        )
-                        Spacer(modifier = Modifier.width(8.dp)) // Add space between buttons
-                        GradientButtonIcon(
-                            text = "OK",
-
-                            onClick = {
-                                val orderItem = OrderItem(
-                                    branchId = "1",
-                                    branchName = branch,
-                                    exhibition = exhibition,
-                                    remark = remark,
-                                    purity = purity,
-                                    size = size,
-                                    length = length,
-                                    typeOfColor = typeOfColors,
-                                    screwType = screwType,
-                                    polishType = polishType,
-                                    finePer = finePercentage,
-                                    wastage = wastage,
-                                    orderDate = orderDate,
-                                    deliverDate = deliverDate,
-                                    productName = selectedItem?.ProductName.toString(),
-                                    itemCode = selectedItem?.ProductName.toString(),
-                                    rfidCode = selectedItem?.RFIDCode.toString(),
-                                    itemAmt = selectedItem?.MakingFixedAmt,
-                                    grWt = selectedItem?.GrossWt,
-                                    nWt = selectedItem?.NetWt,
-                                    stoneAmt = selectedItem?.TotalStoneAmount,
-                                    finePlusWt = selectedItem?.FinePercent,
-
-                                    packingWt = selectedItem?.PackingWeight.toString(),
-                                    totalWt = selectedItem?.TotalWeight.toString(),
-                                    stoneWt = selectedItem?.TotalStoneWeight.toString(),
-                                    dimondWt = selectedItem?.DiamondWeight.toString(),
-                                    sku = selectedItem?.SKU.toString(),
-                                    qty = selectedItem?.ClipQuantity.toString(),
-                                    hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
-                                    mrp = selectedItem?.MRP.toString(),
-                                    image = selectedItem?.Images.toString(),
-                                    netAmt = "",
-                                    diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
-                                    categoryId = selectedItem?.CategoryId?.toString(),
-                                    categoryName = selectedItem?.CategoryName ?: "",
-                                    productId = selectedItem?.ProductId ?: 0,
-                                    productCode = selectedItem?.ProductCode ?: "",
-                                    skuId = selectedItem?.SKUId ?: 0,
-                                    designid = selectedItem?.DesignId ?: 0,
-                                    designName = selectedItem?.DesignName ?: "",
-                                    purityid = selectedItem?.PurityId ?: 0,
-                                    counterId = selectedItem?.CounterId ?: 0,
-                                    counterName = "",
-                                    companyId = 0,
-                                    epc = selectedItem?.TIDNumber ?: "",
-                                    tid = selectedItem?.TIDNumber ?: "",
-                                    todaysRate = selectedItem?.TodaysRate?.toString() ?: "0",
-                                    makingPercentage = selectedItem?.MakingPercentage?.toString() ?: "0",
-                                    makingFixedAmt = selectedItem?.MakingFixedAmt?.toString() ?: "0",
-                                    makingFixedWastage = selectedItem?.MakingFixedWastage?.toString() ?: "0",
-                                    makingPerGram = selectedItem?.MakingPerGram?.toString() ?: "0"
-
-
-
-                                )
-                                orderViewModel.insertOrderItemToRoomORUpdate(orderItem)
-                                onDismiss()
-
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(58.dp) // Adjust height as needed
-                                .padding(end = 8.dp, bottom = 16.dp),
-                            icon = painterResource(id = R.drawable.check_circle),
-                            iconDescription = "Check Icon",
-                            fontSize = 12
-                        )
-                    }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(58.dp) // Adjust height as needed
+                            .padding(end = 8.dp, bottom = 16.dp),
+                        icon = painterResource(id = R.drawable.check_circle),
+                        iconDescription = "Check Icon",
+                        fontSize = 12
+                    )
                 }
             }
         }
