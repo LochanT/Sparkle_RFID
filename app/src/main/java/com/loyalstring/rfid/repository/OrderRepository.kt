@@ -9,6 +9,7 @@ import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
+import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import com.loyalstring.rfid.data.remote.api.RetrofitInterface
@@ -145,5 +146,11 @@ class OrderRepository @Inject constructor(
 
     suspend fun clearOrderItems() {
         orderItemDao.clearAll()
+    }
+
+
+    /*update order*/
+    suspend fun updateOrder(customOrderRequest: CustomOrderRequest): Response<CustomOrderUpdateResponse> {
+        return apiService.updateCustomerOrder(customOrderRequest)
     }
 }

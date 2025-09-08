@@ -305,6 +305,7 @@ class BulkViewModel @Inject constructor(
                     readerManager.stopInventory()
                     withContext(Dispatchers.Main) {
                         onTagFound(tag)
+
                         readerManager.playSound(1)
                         readerManager.stopSound(1)
                     }
@@ -1125,6 +1126,19 @@ class BulkViewModel @Inject constructor(
         }
 
 
+    }
+
+    fun addSingleTag(epc: String) {
+        val updated = _scannedTags.value.toMutableList()
+
+        // add a blank tag instead of real EPC
+        updated.add(UHFTAGInfo().apply { this.epc = "" })
+        _scannedTags.value = updated
+
+        val map = _rfidMap.value.toMutableMap()
+        // keep a placeholder in the map too
+        map[updated.lastIndex] = ""   // blank instead of epc
+        _rfidMap.value = map
     }
 
 

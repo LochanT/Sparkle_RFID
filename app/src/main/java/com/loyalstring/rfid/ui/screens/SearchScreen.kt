@@ -61,7 +61,7 @@ fun SearchScreen(
     var isScanning by remember { mutableStateOf(false) }
     //val activity = LocalContext.current as MainActivity
     var firstPress by remember { mutableStateOf(false) }
-
+    var isEditMode by remember { mutableStateOf(false) }
     val unmatchedItems = navController
         .currentBackStackEntry
         ?.savedStateHandle
@@ -210,7 +210,8 @@ fun SearchScreen(
                     isScanning=false
 
                 },
-                isScanning = isScanning
+                isScanning = isScanning,
+                isEditMode=isEditMode
 
             )
         }

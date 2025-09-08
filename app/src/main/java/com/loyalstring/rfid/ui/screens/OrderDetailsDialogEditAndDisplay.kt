@@ -100,11 +100,11 @@ fun OrderDetailsDialogEditAndDisplay(
     selectedItem: OrderItem?,
     branchList: List<BranchModel>,
     onDismiss: () -> Unit,
-    onSave: (OrderDetailsData) -> Unit,
+   // onSave: (OrderDetailsData) -> Unit,
     viewModel: SingleProductViewModel = hiltViewModel(),
     edit: Int,
-
-    ) {
+    onSave: (OrderItem) -> Unit
+) {
     Log.e("TAG", "RFID Code: ${selectedItem?.rfidCode+" image url"+selectedItem?.image.toString()}")
 
     val orderViewModel: OrderViewModel = hiltViewModel()
@@ -606,7 +606,7 @@ fun OrderDetailsDialogEditAndDisplay(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -624,7 +624,6 @@ fun OrderDetailsDialogEditAndDisplay(
                                 .weight(0.9f)
                                 .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
                                 .height(32.dp)
-
                                 .background(Color.White, RoundedCornerShape(4.dp)),
                             contentAlignment = Alignment.CenterStart
                         ) {
@@ -640,12 +639,21 @@ fun OrderDetailsDialogEditAndDisplay(
 
                             BasicTextField(
                                 value = grossWT,
-                                onValueChange = { grossWT = it },
+                                onValueChange = { newText ->
+                                    grossWT = newText
+
+                                    val g = newText.toDoubleOrNull() ?: 0.0
+                                    val s = stoneWt.toDoubleOrNull() ?: 0.0
+                                    val d = dimondWt.toDoubleOrNull() ?: 0.0
+
+                                    // ✅ Auto calculate Net Wt
+                                    NetWt = "%.3f".format(g - s - d)
+                                },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                                    .padding(2.dp)
                             )
                         }
                     }
@@ -771,11 +779,11 @@ fun OrderDetailsDialogEditAndDisplay(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Net Weight",
+                            text = "Net Wt",
                             modifier = Modifier
                                 .weight(0.4f)
                                 .padding(start = 2.dp),
@@ -789,31 +797,19 @@ fun OrderDetailsDialogEditAndDisplay(
                                 .weight(0.9f)
                                 .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
                                 .height(32.dp)
-
                                 .background(Color.White, RoundedCornerShape(4.dp)),
                             contentAlignment = Alignment.CenterStart
                         ) {
-                            if (NetWt.isEmpty()) {
-                                Text(
-                                    text = "Enter net wt",
-                                    fontSize = 13.sp,
-                                    color = Color.Gray,
-                                    modifier = Modifier.padding(start = 4.dp),
-                                    fontFamily = poppins
-                                )
-                            }
-
-                            BasicTextField(
-                                value = NetWt,
-                                onValueChange = { NetWt = it },
-                                singleLine = true,
-                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            Text(
+                                text = if (NetWt.isEmpty()) "0.000" else NetWt,
+                                fontSize = 13.sp,
+                                color = Color.Black,
+                                modifier = Modifier.padding(start = 4.dp),
+                                fontFamily = poppins
                             )
                         }
                     }
+
                     Spacer(modifier = Modifier.height(4.dp))
 
 
@@ -1724,6 +1720,7 @@ fun OrderDetailsDialogEditAndDisplay(
 
                             )
                             orderViewModel.insertOrderItemToRoomORUpdate(orderItem)
+                            onSave(orderItem)
                             onDismiss()
 
                         },

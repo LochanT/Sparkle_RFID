@@ -112,6 +112,7 @@ fun ProductListScreen(
     var showConfirmDelete by remember { mutableStateOf(false) }
     val baseUrl = "https://rrgold.loyalstring.co.in/"
     //var deletingItemId by remember { mutableStateOf<Int?>(null) }
+    var isEditMode by remember { mutableStateOf(false) }
     val deleteResponse by singleproductViewModel.productDeleetResponse.observeAsState()
 
     LaunchedEffect(deleteResponse) {
@@ -182,7 +183,8 @@ fun ProductListScreen(
                 onScan = { /* Scan logic */ },
                 onGscan = { /* Gscan logic */ },
                 onReset = { /* Reset logic */ },
-                isScanning = isScanning
+                isScanning = isScanning,
+                isEditMode=isEditMode
             )
         }
     ) { innerPadding ->

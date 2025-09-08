@@ -103,6 +103,7 @@ fun BulkProductScreen(
     val activity = LocalContext.current as MainActivity
     var isScanning by remember { mutableStateOf(false) }
     //var showSuccessDialog by remember { mutableStateOf(false) }
+    var isEditMode by remember { mutableStateOf(false) }
 
 
     DisposableEffect(Unit) {
@@ -222,7 +223,8 @@ fun BulkProductScreen(
                     viewModel.resetProductScanResults()
                     viewModel.stopBarcodeScanner()
                 },
-                isScanning = isScanning
+                isScanning = isScanning,
+                isEditMode=isEditMode
 
             )
         }

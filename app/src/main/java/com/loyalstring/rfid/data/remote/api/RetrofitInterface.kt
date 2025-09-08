@@ -22,6 +22,7 @@ import com.loyalstring.rfid.data.model.login.LoginRequest
 import com.loyalstring.rfid.data.model.login.LoginResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
+import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
@@ -175,6 +176,10 @@ interface RetrofitInterface {
     suspend fun updateStock(
         @Body payload: List<EditDataRequest>
     ): Response<List<PurityModel>>
+
+    /*update customer order*/
+    @POST("api/Order/UpdateCustomOrder")
+    suspend fun updateCustomerOrder(@Body customerOrderRequest: CustomOrderRequest): Response<CustomOrderUpdateResponse>
 
 
 }

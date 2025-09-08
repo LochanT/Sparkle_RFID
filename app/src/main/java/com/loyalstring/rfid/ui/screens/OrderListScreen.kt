@@ -27,6 +27,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Mediation
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -49,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
@@ -129,20 +132,20 @@ fun OrderLisrScreen(
     )
 
     val columnWidths = listOf(
-        50.dp,   // Order No
-        100.dp,  // Customer Name
-        100.dp,  // Contact
-        150.dp,  // Product
-        100.dp,  // Branch
-        60.dp,   // Qty
+        45.dp,   // Order No
+        60.dp,  // Customer Name
+        70.dp,  // Contact
+        110.dp,  // Product
+        70.dp,  // Branch
+        40.dp,   // Qty
         60.dp, // tot wt
-        80.dp,   // G.Wt
-        80.dp,   // N.Wt,
-        90.dp,   //finemetal
-        120.dp,  // Taxable Amt
-        100.dp,  // Total Amt
-        100.dp,  // Order Date
-        100.dp   // Status
+        60.dp,   // G.Wt
+        60.dp,   // N.Wt,
+        70.dp,   //finemetal
+        100.dp,  // Taxable Amt
+        80.dp,  // Total Amt
+        80.dp,  // Order Date
+        105.dp   // Status
     )
 
 
@@ -232,210 +235,6 @@ fun SearchBar(value: String, onValueChange: (String) -> Unit) {
         }
     }
 }
-/*
-@Composable
-fun OrderTableWithPagination(
-    navController: NavHostController,
-    headerTitles: List<String>,
-    data: List<CustomOrderResponse>,
-    onLoadMore: () -> Unit,
-    isLoading: Boolean,
-    context: Context,
-    employee: Employee?,
-    itemCodeList: List<ItemCodeResponse>
-) {
-    val sharedScrollState = rememberScrollState()
-    val orderViewModel: OrderViewModel = hiltViewModel()
-
-    Column(modifier = Modifier.fillMaxSize()) {
-
-        // Shared header scroll
-        Row(
-            modifier = Modifier
-                .horizontalScroll(sharedScrollState)
-                .background(Color.DarkGray)
-                .padding(vertical = 8.dp)
-        ) {
-            headerTitles.forEach {
-                Text(
-                    text = it,
-                    modifier = Modifier
-                        .width(120.dp)
-                        .padding(horizontal = 8.dp),
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(data) { row ->
-                    val totalGrossWt = row.CustomOrderItem.sumOf {
-                        val grossWt = it.GrossWt?.toFloatOrNull() ?: 0f
-                        val qty = it.Quantity?.toIntOrNull() ?: 0
-                        (grossWt * qty).toDouble()  // Ensure the multiplication result is treated as Double
-                    }.toString()
-
-                    val totalNetWt = row.CustomOrderItem.sumOf {
-                        val netWt = it.NetWt?.toFloatOrNull() ?: 0f  // Handle null values by defaulting to 0
-                        val qty = it.Quantity?.toIntOrNull() ?: 0
-                        (netWt * qty).toDouble()  // Multiply and ensure the result is treated as Double
-                    }.toString()
-                    Row(
-                        modifier = Modifier
-                            .horizontalScroll(sharedScrollState)
-                            .padding(vertical = 6.dp)
-                    ) {
-                        Text(
-                            row.OrderNo ?: "",
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-                        Text(
-                            row.Customer?.FirstName ?: "",
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-                        Text(
-                            row.Customer?.Mobile ?: "",
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-                        Text(
-                            row.CustomOrderItem.joinToString(", ") { it.ProductName ?: "" },
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-                        Text(
-                            row.CustomOrderItem.joinToString(", ") { it.BranchName ?: "" },
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-
-                        Text(
-                            row.CustomOrderItem.sumOf { it.Quantity?.toIntOrNull() ?: 0 }.toString(),
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-                        Text(
-                            totalGrossWt?:"",
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-
-                        Text(
-                            totalNetWt?: "",
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-                        Text(
-                            row.TotalFineMetal?: "",
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-                        Text(
-                            row.TotalAmount ?: "",
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-                        Text(
-                            formatDate(row.OrderDate),
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-
-                        Text(
-                            formatDate(row.OrderStatus),
-                            Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            fontSize = 12.sp
-                        )
-
-
-                        Row(
-                            modifier = Modifier
-                                .width(120.dp)
-                                .padding(horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-
-                            IconButton(onClick = {
-                                generateInvoicePdfAndOpen(
-                                    context,
-                                    row,
-                                    employee,
-                                    itemCodeList
-                                )
-                            }) {
-                                Icon(
-                                    Icons.Default.Print,
-                                    contentDescription = "Print",
-                                    tint = Color.DarkGray
-                                )
-                            }
-
-                            IconButton(onClick = {
-                                employee?.clientCode?.let {
-                                    orderViewModel.deleteOrders(
-                                        ClientCodeRequest(it),
-                                        row.CustomOrderId
-                                    ) { isSuccess ->
-                                        Toast.makeText(
-                                            context,
-                                            if (isSuccess) "Order Deleted Successfully" else "Failed to delete",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        if (isSuccess) {
-                                            orderViewModel.removeOrderById(row.CustomOrderId)
-                                        }
-                                    }
-                                }
-                            }) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    tint = Color.DarkGray
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}*/
-
 // Replace the entire OrderTableWithPagination method with this updated version
 @Composable
 fun OrderTableWithPagination(
@@ -476,23 +275,26 @@ fun OrderTableWithPagination(
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         fontFamily = poppins,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         maxLines = 1
                     )
                 }
             }
 
-            Text(
-                text = "Actions",
+            Box(
                 modifier = Modifier
-                    .width(120.dp)
-                    .padding(start = 20.dp),
-
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                fontFamily = poppins
-            )
+                    .width(90.dp) // same as actions column width
+                    .height(32.dp), // same height as header row
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Actions",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    fontFamily = poppins
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -560,7 +362,7 @@ fun OrderTableWithPagination(
                                     modifier = Modifier
                                         .width(columnWidths[index])
                                         .padding(6.dp),
-                                    fontSize = 12.sp,
+                                    fontSize = 10.sp,
                                     fontFamily = poppins,
                                     maxLines = 1
                                 )
@@ -570,16 +372,38 @@ fun OrderTableWithPagination(
                         // Fixed Actions column (separate)
                         Row(
                             modifier = Modifier
-                                .width(120.dp) // 👈 consistent width for Actions
-                                .height(40.dp)
-                                .padding(8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                .width(90.dp) // 👈 consistent width for Actions
+                                .height(40.dp),
+
+                            horizontalArrangement = Arrangement.Start,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(onClick = {
                                 generateInvoicePdfAndOpen(context, row, employee, itemCodeList)
-                            }) {
-                                Icon(Icons.Default.Print, contentDescription = "Print", tint = Color.DarkGray)
+                            },
+                                modifier = Modifier.size(28.dp) ) {
+                                Icon(Icons.Default.Print, contentDescription = "Print", tint = Color.DarkGray,
+                                    modifier = Modifier.size(18.dp))
+                            }
+
+
+
+                            IconButton(onClick = {
+                                /*navController.currentBackStackEntry
+                                    ?.savedStateHandle
+                                    ?.set("editOrder", row)
+
+                                navController.navigate("order_screen")*/
+                               // editOrder(navController, row)
+                                navController.previousBackStackEntry
+                                    ?.savedStateHandle
+                                    ?.set("editOrder", row)
+
+                                // Navigate back
+                                navController.popBackStack()
+                            }, modifier = Modifier.size(28.dp) ) {
+                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.DarkGray,
+                                    modifier = Modifier.size(18.dp))
                             }
 
                             IconButton(onClick = {
@@ -600,8 +424,9 @@ fun OrderTableWithPagination(
                                         }
                                     }
                                 }*/
-                            }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.DarkGray)
+                            }, modifier = Modifier.size(28.dp) ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.DarkGray,
+                                    modifier = Modifier.size(18.dp))
                             }
                         }
 
