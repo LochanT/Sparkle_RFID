@@ -7,12 +7,14 @@ import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.loyalstring.rfid.data.local.dao.OrderItemDao
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import com.loyalstring.rfid.data.remote.api.RetrofitInterface
+import com.loyalstring.rfid.data.remote.data.DailyRateResponse
 import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
 import com.loyalstring.rfid.data.remote.data.DeleteOrderResponse
 import kotlinx.coroutines.flow.Flow
@@ -152,5 +154,10 @@ class OrderRepository @Inject constructor(
     /*update order*/
     suspend fun updateOrder(customOrderRequest: CustomOrderRequest): Response<CustomOrderUpdateResponse> {
         return apiService.updateCustomerOrder(customOrderRequest)
+    }
+
+    /*update order*/
+    suspend fun dailyRate(clientcodeRequest: ClientCodeRequest): Response<List<DailyRateResponse>> {
+        return apiService.getDailyDailyRate(clientcodeRequest)
     }
 }

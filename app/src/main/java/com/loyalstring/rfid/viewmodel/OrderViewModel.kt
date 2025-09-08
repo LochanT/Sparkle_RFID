@@ -12,11 +12,13 @@ import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.google.gson.Gson
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
+import com.loyalstring.rfid.data.remote.data.DailyRateResponse
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -78,6 +80,9 @@ class OrderViewModel @Inject constructor(
 
     private val _getAllOrderList = MutableStateFlow<List<CustomOrderResponse>>(emptyList())
     val getAllOrderList: StateFlow<List<CustomOrderResponse>> = _getAllOrderList
+
+    private val _getAllDailyRate = MutableStateFlow<List<DailyRateResponse>>(emptyList())
+    val getAllDailyRate: StateFlow<List<DailyRateResponse>> = _getAllDailyRate
 
 //    private val _orderPlaced = mutableStateOf(false)
 //    val orderPlaced: State<Boolean> = _orderPlaced
@@ -801,6 +806,26 @@ class OrderViewModel @Inject constructor(
 
     fun clearUpdateResponse() {
         _orderUpdateResponse.value = null
+    }
+
+    /*update customer Order*/
+    /*customer order*/
+    fun getDailyRate(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            try {
+                val response = repository.dailyRate(request)
+                if (response.isSuccessful && response.body() != null) {
+                    _getAllDailyRate.value = response.body()!!
+                    Log.d("OrderViewModel", "Custom Order: ${response.body()}")
+                } else {
+                    _getAllDailyRate.value = response.body()!!// ✅ Use default object
+                    Log.e("OrderViewModel", "Custom Order Response error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                //  _orderUpdateResponse.value = _orderResponse.value.OrderStatus.toString()
+                Log.e("OrderViewModel", "Custom Order Exception: ${e.message}")
+            }
+        }
     }
 }
 

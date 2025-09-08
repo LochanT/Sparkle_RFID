@@ -63,6 +63,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -98,6 +99,7 @@ import com.loyalstring.rfid.data.model.order.Customer
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.Payment
 import com.loyalstring.rfid.data.model.order.URDPurchase
+import com.loyalstring.rfid.data.remote.data.DailyRateResponse
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.GradientButtonIcon
 import com.loyalstring.rfid.ui.utils.NetworkUtils
@@ -271,6 +273,12 @@ fun OrderScreenContent(
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
     var isEditMode by remember { mutableStateOf(false) }
 
+    orderViewModel.getDailyRate(ClientCodeRequest(employee?.clientCode))
+
+    // Collect the latest rates
+    val dailyRates by orderViewModel.getAllDailyRate.collectAsState()
+
+
 // ViewModels
 
     var isScanning by remember { mutableStateOf(false) }
@@ -324,6 +332,20 @@ fun OrderScreenContent(
         itemCode = TextFieldValue("")
         orderViewModel.clearOrderItems()
     }*/
+
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { productList.toList() } // observe contents
+            .collect { list ->
+                totalAMt = list.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
+                totalGrWt = list.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }.toString()
+                totalFinemetal = list.sumOf {
+                    val finePer = it.finePer.toDoubleOrNull() ?: 0.0
+                    val netWt = it.nWt?.toDoubleOrNull() ?: 0.0
+                    (finePer / 100.0) * netWt
+                }.toString()
+            }
+    }
 
     LaunchedEffect(editOrder) {
 
@@ -555,7 +577,7 @@ fun OrderScreenContent(
     }
 
     val onSaveEditedItem: (OrderItem) -> Unit = { updatedItem ->
-        val index = productList.indexOfFirst { it.id == updatedItem.id }
+        val index = productList.indexOfFirst { it.itemCode == updatedItem.itemCode }
         if (index != -1) {
             productList[index] = updatedItem
         }
@@ -1855,7 +1877,7 @@ fun OrderScreenContent(
             modifier = Modifier
                 .fillMaxSize()
                 .zIndex(0f)
-                .verticalScroll(scrollState)
+                /*.verticalScroll(scrollState)*/
                 .padding(bottom = 80.dp)
         ) {
             Spacer(modifier = Modifier.height(4.dp))
@@ -1951,9 +1973,11 @@ fun OrderScreenContent(
                 onItemSelected = { selectedItem = it },
 
                 saveToDb = {
-                    val orderItem = mapItemCodeToOrderItem(it)
+
+                              val orderItem = mapItemCodeToOrderItem(it, dailyRates)
 
                   if (!orderItem.itemCode.isNullOrBlank() && orderItem.itemCode != "null") {
+                      Log.d("itemAmt","itemAmt"+orderItem.itemAmt)
                         orderViewModel.insertOrderItemToRoom(orderItem)
                         productList.add(orderItem)
 
@@ -2484,6 +2508,7 @@ fun GstRowView(
 ) {
     // Calculate GST-adjusted total
     val baseAmount = totalAmount
+    Log.d("GSTROW","totalAmount"+totalAmount)
     val finalAmount = if (isGstChecked) {
         baseAmount + (baseAmount * gstPercent / 100)
     } else {
@@ -2566,23 +2591,37 @@ fun GstRowView(
 
 }
 
-fun mapItemCodeToOrderItem(item: ItemCodeResponse): OrderItem {
+fun mapItemCodeToOrderItem(
+    item: ItemCodeResponse,
+    dailyRates: List<DailyRateResponse> // 👈 pass daily rates here
+): OrderItem {
+    // 1. Convert NetWt
+    val netWt = item.NetWt?.toDoubleOrNull() ?: 0.0
+
+    // 2. Find matching purity rate from API data
+    val matchedRate = dailyRates.find {
+        it.PurityName.equals(item.PurityName, ignoreCase = true)
+    }?.Rate?.toDoubleOrNull() ?: 0.0
+
+    // 3. Calculate item amount
+    val itemAmount = netWt * matchedRate
+
     return OrderItem(
-        id = 0, // Auto-generated
+        id = 0,
         branchId = item.BranchId?.toString() ?: "",
         branchName = item.BranchName ?: "",
-        exhibition = "", // Not present in ItemCodeResponse
-        remark = "", // Not present in ItemCodeResponse
+        exhibition = "",
+        remark = "",
         purity = item.PurityName ?: "",
         size = item.Size ?: "",
-        length = "", // Not present in ItemCodeResponse
+        length = "",
         typeOfColor = item.Colour ?: "",
-        screwType = "", // Not present in ItemCodeResponse
-        polishType = "", // Not present in ItemCodeResponse
+        screwType = "",
+        polishType = "",
         finePer = item.FinePercent ?: "",
         wastage = item.WastagePercent ?: "",
-        orderDate = "", // To be filled separately (e.g., current date)
-        deliverDate = "", // To be filled separately
+        orderDate = "",
+        deliverDate = "",
         productName = item.ProductName ?: "",
         itemCode = item.ItemCode ?: "",
         rfidCode = item.RFIDCode ?: "",
@@ -2590,17 +2629,17 @@ fun mapItemCodeToOrderItem(item: ItemCodeResponse): OrderItem {
         nWt = item.NetWt,
         stoneAmt = item.TotalStoneAmount,
         finePlusWt = item.FinePercent,
-        itemAmt = item.MakingFixedAmt,
-        packingWt = "", // Not in ItemCodeResponse
-        totalWt = "",   // Not in ItemCodeResponse
+        itemAmt = "%.2f".format(itemAmount), // ✅ calculated
+        packingWt = "",
+        totalWt = "",
         stoneWt = item.TotalStoneWeight ?: "",
         dimondWt = item.TotalDiamondWeight ?: "",
         sku = item.SKU ?: "",
-        qty = "", // Not in ItemCodeResponse
+        qty = "",
         hallmarkAmt = item.HallmarkAmount ?: "",
         mrp = item.MRP ?: "",
         image = item.Images ?: "",
-        netAmt = "", // To be calculated?
+        netAmt = "",
         diamondAmt = item.TotalDiamondAmount ?: "",
         categoryId = item.CategoryId.toString(),
         categoryName = item.CategoryName ?: "",
@@ -2611,17 +2650,18 @@ fun mapItemCodeToOrderItem(item: ItemCodeResponse): OrderItem {
         designName = item.DesignName ?: "",
         purityid = item.PurityId ?: 0,
         counterId = item.CounterId ?: 0,
-        counterName = "", // Not present
+        counterName = "",
         companyId = item.CompanyId ?: 0,
-        epc = "", // Not present
+        epc = "",
         tid = item.TIDNumber ?: "",
-        todaysRate = item.TodaysRate ?: "",
+        todaysRate = matchedRate.toString(), // ✅ keep today’s rate
         makingPercentage = item.MakingPercentage ?: "",
         makingFixedAmt = item.MakingFixedAmt ?: "",
         makingFixedWastage = item.MakingFixedWastage ?: "",
         makingPerGram = item.MakingPerGram ?: ""
     )
 }
+
 /*
 @Composable
 fun OrderItemTableScreen(
