@@ -105,9 +105,9 @@ fun OrderLisrScreen(
 
     val filteredData = if (searchQuery.isNotEmpty()) {
         allItems.filter {
-            it.OrderNo.contains(searchQuery, true) ||
-                    it.Category.contains(searchQuery, true) ||
-                    it.Customer.FirstName.contains(searchQuery, true) == true
+            it.OrderNo.orEmpty().contains(searchQuery, true) ||
+                    it.ProductName.orEmpty().contains(searchQuery, true) ||
+                    it.Customer?.FirstName.orEmpty().contains(searchQuery, true)
         }
     } else allItems
 
