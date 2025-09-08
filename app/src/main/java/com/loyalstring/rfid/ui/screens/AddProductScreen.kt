@@ -247,9 +247,7 @@ fun AddProductScreen(
                     bulkViewModel.stopScanning()
                     isScanning = false
                 } else {
-                    bulkViewModel.startSingleScan(20) { tag ->
-                        tag.epc?.let { updateField("EPC", it) }
-                    }
+                    bulkViewModel.startSingleScan(20)
                     isScanning = true
                 }
             }
@@ -572,9 +570,7 @@ fun AddProductScreen(
 
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
                 onScan = {
-                    bulkViewModel.startSingleScan(20) { tag ->
-                        tag.epc?.let { updateField("EPC", it) }
-                    }
+                    bulkViewModel.startSingleScan(20)
                 },
                 onGscan = {},
                 onReset = {
@@ -950,7 +946,7 @@ fun ScanBottomBarInventory(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "Scan",
+                    if (isScanning) "Stop" else "Scan",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,

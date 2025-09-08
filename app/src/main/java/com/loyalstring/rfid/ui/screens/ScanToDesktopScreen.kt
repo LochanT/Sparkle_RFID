@@ -161,11 +161,7 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
                 },
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
                 onScan = { //viewModel.startScanning(20)
-                    viewModel.startSingleScan(20) { tag ->
-                        tag.epc?.let {
-
-                        }
-                    }
+                    viewModel.startSingleScan(20)
                 },
                 onGscan = {
                     /*if (!firstPress && !isScanning) {

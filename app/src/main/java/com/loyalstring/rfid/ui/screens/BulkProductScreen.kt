@@ -73,7 +73,6 @@ fun BulkProductScreen(
     val context = LocalContext.current
     // Observe barcode and tag data
     val tags by viewModel.scannedTags.collectAsState()
-    val items by viewModel.scannedItems.collectAsState()
     val rfidMap by viewModel.rfidMap.collectAsState()
     val itemCodes = remember { mutableStateOf("") }
     // Dropdown options
@@ -91,8 +90,7 @@ fun BulkProductScreen(
     var clickedIndex by remember { mutableStateOf<Int?>(null) }
 
     var selectedPower by remember { mutableStateOf(10) }
-    val scanTrigger by viewModel.scanTrigger.collectAsState()
-    val rfidValue =  remember { mutableStateOf("") }
+    remember { mutableStateOf("") }
 
 
 
@@ -197,11 +195,7 @@ fun BulkProductScreen(
                 },
                 onList = { navController.navigate(Screens.ProductListScreen.route) },
                 onScan = {
-                    viewModel.startSingleScan(20) { tag ->
-                        tag.epc?.let {
-
-                        }
-                    }
+                    viewModel.startSingleScan(20)
                 },
                 onGscan = {
 
@@ -388,8 +382,8 @@ fun BulkProductScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                               val rfid = rfidMap[index]
-                              val isScanned = rfid != null
-                              val displayText = rfid ?: ""
+                              rfid != null
+                              rfid ?: ""
                                 BasicTextField(
                                     value = itemCodes.value,
                                     onValueChange = { itemCodes.value = it },
