@@ -81,7 +81,9 @@ class SearchViewModel @Inject constructor(
 
                     // Update UI list
 
-                    val index = _searchItems.indexOfFirst { it.epc.trim().uppercase() == epc }
+                    val index = _searchItems.indexOfFirst {
+                        it.epc.trim().uppercase() == epc.trim().uppercase()
+                    }
 
                     if (index != -1) {
                         withContext(Dispatchers.Main) {

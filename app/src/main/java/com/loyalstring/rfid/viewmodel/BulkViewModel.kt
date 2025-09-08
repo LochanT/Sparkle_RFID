@@ -286,41 +286,68 @@ class BulkViewModel @Inject constructor(
         _visibleUnmatchedItems.addAll(_unmatchedItems) // only real unmatched
     }
 
-    fun startSingleScan(selectedPower: Int, onTagFound: (UHFTAGInfo) -> Unit) {
+    fun startSingleScan(selectedPower: Int) {
         if (!success) return
-
-        readerManager.startInventoryTag(selectedPower, false)
-
-        // Cancel any ongoing scan job first
         scanJob?.cancel()
 
         scanJob = viewModelScope.launch(Dispatchers.IO) {
-            val timeoutMillis = 2000L // wait max 2 seconds
+            readerManager.startInventoryTag(selectedPower, false)
+
+            val timeoutMillis = 2000L
             val startTime = System.currentTimeMillis()
+            var foundTag: UHFTAGInfo? = null
 
             while (isActive && (System.currentTimeMillis() - startTime < timeoutMillis)) {
                 val tag = readerManager.readTagFromBuffer()
                 if (tag != null && !tag.epc.isNullOrBlank()) {
-                    Log.d("RFID", "Single scan found: ${tag.epc}")
-                    readerManager.stopInventory()
-                    withContext(Dispatchers.Main) {
-                        onTagFound(tag)
-                        readerManager.playSound(1)
-                        readerManager.stopSound(1)
-                    }
-                    return@launch
+                    foundTag = tag
+                    break
                 } else {
-                    delay(100) // brief wait before retry
+                    delay(100)
                 }
             }
 
-            // Timeout
             readerManager.stopInventory()
-            withContext(Dispatchers.Main) {
-                Log.d("Tags :", "No Tags found")
+
+            foundTag?.let {
+                handleScannedTag(it)   // ✅ adds to the same lists as bulk
+                readerManager.playSound(1)
             }
         }
     }
+
+
+    fun scanSingleTagRaw(
+        selectedPower: Int,
+        onResult: (String?) -> Unit
+    ) {
+        if (!success) {
+            onResult(null)
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            readerManager.startInventoryTag(selectedPower, false)
+            val timeoutMillis = 2000L
+            val startTime = System.currentTimeMillis()
+            var epc: String? = null
+
+            while (isActive && (System.currentTimeMillis() - startTime < timeoutMillis)) {
+                val tag = readerManager.readTagFromBuffer()
+                if (tag != null && !tag.epc.isNullOrBlank()) {
+                    epc = tag.epc
+                    break
+                } else delay(100)
+            }
+
+            readerManager.stopInventory()
+
+            withContext(Dispatchers.Main) {
+                onResult(epc)
+            }
+        }
+    }
+
 
     fun startScanningInventory(selectedPower: Int) {
         if (!success || _isScanning.value) return
@@ -428,40 +455,10 @@ class BulkViewModel @Inject constructor(
                     if (tag != null) {
                         val epc = tag.epc ?: continue
 
-                        val exists = isTagExistsInDatabase(epc)
+                        isTagExistsInDatabase(epc)
 
                         withContext(Dispatchers.Main) {
-                            val alreadyInExisting = existingTags.any { it.epc == epc }
-                            val alreadyInScanned = _allScannedTags.value.any { it.epc == epc }
-                            val alreadyInDuplicates = duplicateTags.any { it.epc == epc }
-
-                            // Case 1: Already marked existing → ignore
-                            if (alreadyInExisting) return@withContext
-
-                            // Case 2: Seen before but not in duplicates → mark as duplicate
-                            if (alreadyInScanned) {
-                                if (!alreadyInDuplicates) {
-                                    duplicateTags.add(tag)
-                                    _duplicateItems.value = duplicateTags.toList()
-                                }
-                            } else {
-                                // First time scanned → add to list
-                                _allScannedTags.value += tag
-
-                                // Only mark as existing if it exists in DB and is not a duplicate
-                                if (exists && !alreadyInDuplicates) {
-                                    existingTags.add(tag)
-                                    _existingItems.value = existingTags.toList()
-                                }
-                            }
-
-                            // Always update scannedTags with distinct values
-                            _scannedTags.update { currentList ->
-                                if (currentList.any { it.epc == epc }) currentList
-                                else currentList + tag
-                            }
-
-                            Log.d("RFID", "Scanned EPC: $epc")
+                            handleScannedTag(tag)
                         }
                     }
                 }
@@ -524,6 +521,13 @@ class BulkViewModel @Inject constructor(
     }
     private suspend fun isTagExistsInDatabase(epc: String): Boolean {
         return bulkItemDao.getItemByEpc(epc) != null
+    }
+
+    private fun addTagUnique(tag: UHFTAGInfo) {
+        val current = _scannedTags.value
+        if (current.none { it.epc == tag.epc }) {   // 👈 check EPC before adding
+            _scannedTags.value = current + tag
+        }
     }
 
     fun getLocalCounters(): List<String> =
@@ -594,6 +598,39 @@ class BulkViewModel @Inject constructor(
     private fun generateSerialNumber(index: Int): String {
         return index.toString()
     }
+
+    private suspend fun handleScannedTag(tag: UHFTAGInfo) {
+        val epc = tag.epc ?: return
+        val exists = isTagExistsInDatabase(epc)
+
+        withContext(Dispatchers.Main) {
+            val alreadyInExisting = existingTags.any { it.epc == epc }
+            val alreadyInScanned = _allScannedTags.value.any { it.epc == epc }
+            val alreadyInDuplicates = duplicateTags.any { it.epc == epc }
+
+            if (!alreadyInExisting) {
+                if (alreadyInScanned) {
+                    if (!alreadyInDuplicates) {
+                        duplicateTags.add(tag)
+                        _duplicateItems.value = duplicateTags.toList()
+                    }
+                } else {
+                    _allScannedTags.value += tag
+                    if (exists && !alreadyInDuplicates) {
+                        existingTags.add(tag)
+                        _existingItems.value = existingTags.toList()
+                    }
+                }
+            }
+
+            _scannedTags.update { currentList ->
+                if (currentList.any { it.epc == epc }) currentList else currentList + tag
+            }
+
+            Log.d("RFID", "Processed EPC: $epc")
+        }
+    }
+
 
     fun stopScanning() {
         //  onScanStopped()

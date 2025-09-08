@@ -285,7 +285,7 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
         derivedStateOf { scopeItems.isNotEmpty() && scopeItems.all { it.scannedStatus == "Matched" } }
     }
 
-    val activity = LocalContext.current as MainActivity
+    val activity = LocalContext.current as? MainActivity
 
     DisposableEffect(Unit) {
         val listener = object : ScanKeyListener {
@@ -304,8 +304,8 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                 }
             }
         }
-        activity.registerScanKeyListener(listener)
-        onDispose { activity.unregisterScanKeyListener() }
+        activity?.registerScanKeyListener(listener)
+        onDispose { activity?.unregisterScanKeyListener() }
     }
 
     LaunchedEffect(isScanning, allMatched) {
@@ -625,28 +625,30 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                             selectedMenu = MENU_ALL
                             bulkViewModel.clearStickyUnmatched()
                         }
+                        // In ScanDisplayScreen
                         "Search" -> {
-                            val scanMap =
-                                bulkViewModel.scannedFilteredItems.value.associateBy { it.rfid }
+                            val scanMap = bulkViewModel.scannedFilteredItems.value
+                                .associateBy { it.rfid?.trim()?.uppercase() }
+
                             val latestUnmatched = scopeItems
-                                .map { original -> scanMap[original.rfid] ?: original }
+                                .map { original ->
+                                    val key = original.rfid?.trim()?.uppercase()
+                                    scanMap[key] ?: original
+                                }
                                 .filter { it.scannedStatus == "Unmatched" }
 
-                            // ✅ Navigate to Search and keep Scan screen state intact
+                            // ✅ Set on the *current entry* before navigation
+                            navController.currentBackStackEntry?.savedStateHandle?.set(
+                                "unmatchedItems",
+                                ArrayList(latestUnmatched) // ⚠️ must be ArrayList if BulkItem implements Serializable/Parcelable
+                            )
+
                             navController.navigate(Screens.SearchScreen.route) {
                                 launchSingleTop = true
                                 restoreState = true
                             }
-
-// ✅ Post data into SearchScreen’s SavedStateHandle
-                            navController.currentBackStackEntry
-                                ?.destination?.route
-                                ?.let { currentRoute ->
-                                    navController.getBackStackEntry(Screens.SearchScreen.route).savedStateHandle
-                                        .set("unmatchedItems", latestUnmatched)
-                                }
-
                         }
+
 
 
 

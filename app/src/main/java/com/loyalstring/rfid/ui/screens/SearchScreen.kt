@@ -27,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,7 +47,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.MainActivity
 import com.loyalstring.rfid.data.local.entity.BulkItem
-import com.loyalstring.rfid.data.local.entity.SearchItem
 import com.loyalstring.rfid.data.reader.ScanKeyListener
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.poppins
@@ -59,64 +59,44 @@ fun SearchScreen(
 ) {
     val searchViewModel: SearchViewModel = hiltViewModel()
     var isScanning by remember { mutableStateOf(false) }
-    //val activity = LocalContext.current as MainActivity
     var firstPress by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     val unmatchedItems = navController
-        .currentBackStackEntry
+        .previousBackStackEntry
         ?.savedStateHandle
-        ?.get<List<BulkItem>>("unmatchedItems")
-        ?: emptyList()
+        ?.get<ArrayList<BulkItem>>("unmatchedItems")
+        ?: arrayListOf()
 
-    // Log to verify
-    Log.d("UNMATCHED_LIST", "From SavedStateHandle: ${unmatchedItems.size}")
-    var showList by remember { mutableStateOf(true) }
+    Log.d("SEARCH_SCREEN", "Got ${unmatchedItems.size} unmatched items")
 
-
-    var searchQuery by remember { mutableStateOf("") }
     val context = LocalContext.current
+    val activity = context.findActivity() as? MainActivity
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-
-    val allItems = remember(searchViewModel.searchItems, unmatchedItems) {
-        searchViewModel.searchItems.toMutableList().apply {
-            addAll(unmatchedItems.map {
-                SearchItem(
-                    epc = it.epc ?: "",
-                    itemCode = it.itemCode ?: "",
-                    productName = it.productName ?: "",
-                    rfid = it.rfid ?: ""
-                )
-            })
-        }
-    }
-
-
-
+    // ✅ Filter ViewModel items (not local allItems)
     val filteredItems by remember(searchQuery, searchViewModel.searchItems) {
         derivedStateOf {
             if (searchQuery.isBlank()) {
                 searchViewModel.searchItems
             } else {
                 searchViewModel.searchItems.filter {
-                    it.rfid.contains(searchQuery, ignoreCase = true) || it.itemCode.contains(
-                        searchQuery,
-                        ignoreCase = true
-                    )
+                    it.rfid.contains(searchQuery, ignoreCase = true) ||
+                            it.itemCode.contains(searchQuery, ignoreCase = true)
                 }
             }
         }
     }
+    LaunchedEffect(unmatchedItems) {
+        if (unmatchedItems.isNotEmpty()) {
+            searchViewModel.startSearch(unmatchedItems)
+        }
+    }
 
-    val activity = context.findActivity() as? MainActivity
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-
+    // ✅ Register scan key listener
     DisposableEffect(lifecycleOwner, activity) {
         val listener = object : ScanKeyListener {
-            override fun onBarcodeKeyPressed() {
-                // optional
-            }
-
+            override fun onBarcodeKeyPressed() {}
             override fun onRfidKeyPressed() {
                 if (isScanning) {
                     searchViewModel.stopSearch()
@@ -132,12 +112,9 @@ fun SearchScreen(
 
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> {
-                    activity?.registerScanKeyListener(listener)
-                }
+                Lifecycle.Event.ON_RESUME -> activity?.registerScanKeyListener(listener)
                 Lifecycle.Event.ON_PAUSE -> {
                     activity?.unregisterScanKeyListener()
-                    // optional: force stop when leaving screen
                     if (isScanning) {
                         searchViewModel.stopSearch()
                         isScanning = false
@@ -148,7 +125,6 @@ fun SearchScreen(
         }
 
         lifecycleOwner.lifecycle.addObserver(observer)
-
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             activity?.unregisterScanKeyListener()
@@ -158,8 +134,6 @@ fun SearchScreen(
             }
         }
     }
-
-
 
     Scaffold(
         topBar = {
@@ -175,43 +149,33 @@ fun SearchScreen(
                     }
                 },
                 showCounter = true,
-                selectedCount = 30,
+                selectedCount = filteredItems.size,
                 onCountSelected = {}
             )
         },
         bottomBar = {
-
             ScanBottomBar(
                 onSave = { },
-                onList = { /*navController.navigate(Screens.ProductListScreen.route) */ },
+                onList = { },
                 onScan = { },
                 onGscan = {
-
                     if (!isScanning) {
                         firstPress = true
-                        isScanning=true
+                        isScanning = true
                         searchViewModel.startSearch(unmatchedItems)
-
-                        // 🔊 Start sound here
-                        // searchViewModel.start()
                     } else {
                         searchViewModel.stopSearch()
                         firstPress = false
-                        isScanning=false
-
-                        // 🔇 Stop sound here
-                        // searchViewModel.stopScanSound()
+                        isScanning = false
                     }
                 },
                 onReset = {
                     searchQuery = ""
                     searchViewModel.stopSearch()
                     firstPress = false
-                    isScanning=false
-
+                    isScanning = false
                 },
                 isScanning = isScanning
-
             )
         }
     ) { innerPadding ->
@@ -227,30 +191,24 @@ fun SearchScreen(
                     .fillMaxWidth()
                     .padding(12.dp),
                 label = { Text("Enter RFID / Itemcode", fontFamily = poppins) },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = "Search")
-                },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                 singleLine = true
             )
-            if (showList) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    item {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFF3B363E))
-                                .padding(vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            listOf(
-                                "Sr No",
-                                "RFIDcode",
-                                "Itemcode",
-                                "Progress",
-                                "Percentage"
-                            ).forEach {
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // ✅ Header row
+                item {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF3B363E))
+                            .padding(vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        listOf("Sr No", "RFIDcode", "Itemcode", "Progress", "Percentage")
+                            .forEach {
                                 Text(
                                     text = it,
                                     color = Color.White,
@@ -259,50 +217,54 @@ fun SearchScreen(
                                     fontSize = 12.sp
                                 )
                             }
-                        }
                     }
-                    val displayItems = if (filteredItems.isNotEmpty()) filteredItems else allItems
-                    itemsIndexed(displayItems, key = { _, item -> item.epc }) { index, item ->
-                        val percent = item.proximityPercent.toFloat()
-                        val progressColor = getColorByPercentage(percent.toInt())
+                }
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp, horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            Text("${index + 1}", modifier = Modifier.weight(1f), fontSize = 12.sp)
-                            Text(item.rfid, modifier = Modifier.weight(1f), fontSize = 12.sp)
-                            Text(item.itemCode, modifier = Modifier.weight(1f), fontSize = 12.sp)
+                // ✅ Show filtered ViewModel items only
+                itemsIndexed(
+                    filteredItems,
+                    key = { index, item -> "${item.epc}-$index" }
+                ) { index, item ->
+                    val percent = item.proximityPercent.toFloat()
+                    val progressColor = getColorByPercentage(percent.toInt())
 
-                            Box(modifier = Modifier.weight(2f)) {
-                                LinearProgressIndicator(
-                                    progress = { percent / 100f },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(10.dp)
-                                        .clip(RoundedCornerShape(4.dp)),
-                                    color = progressColor,
-                                    trackColor = Color.LightGray,
-                                )
-                            }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Text("${index + 1}", modifier = Modifier.weight(1f), fontSize = 12.sp)
+                        Text(item.rfid, modifier = Modifier.weight(1f), fontSize = 12.sp)
+                        Text(item.itemCode, modifier = Modifier.weight(1f), fontSize = 12.sp)
 
-                            Text(
-                                "${percent.toInt()}%",
+                        Box(modifier = Modifier.weight(2f)) {
+                            LinearProgressIndicator(
+                                progress = { percent / 100f },
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 4.dp),
-                                fontSize = 12.sp
+                                    .fillMaxWidth()
+                                    .height(10.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                color = progressColor,
+                                trackColor = Color.LightGray,
                             )
                         }
+
+                        Text(
+                            "${percent.toInt()}%",
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 4.dp),
+                            fontSize = 12.sp
+                        )
                     }
                 }
             }
         }
     }
 }
+
 
 fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
