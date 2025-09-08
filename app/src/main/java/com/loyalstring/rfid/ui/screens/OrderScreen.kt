@@ -1684,160 +1684,163 @@ fun OrderScreenContent(
                 },
                 onScan = {
                    // resetScan(bulkViewModel,firstPress)
-                    bulkViewModel.startSingleScan(30) { tag ->
-                        tag.epc?.let {
-                            Log.d("Scanned EPC", it)
+                    /*  bulkViewModel.startSingleScan(30) { tag ->
+                          tag.epc?.let {
+                              Log.d("Scanned EPC", it)
 
-                            // Find the product that matches the scanned TID from itemList
-                            val matchedItem = itemCodeList.find { item ->
-                                item.TIDNumber.equals(
-                                    it,
-                                    ignoreCase = true
-                                ) // Match based on TID
-                            }
+                              // Find the product that matches the scanned TID from itemList
+                              val matchedItem = itemCodeList.find { item ->
+                                  item.TIDNumber.equals(
+                                      it,
+                                      ignoreCase = true
+                                  ) // Match based on TID
+                              }
 
-                            if (matchedItem != null) {
-                                Log.d("Match Found", "Item: ${matchedItem.ItemCode}")
+                              if (matchedItem != null) {
+                                  Log.d("Match Found", "Item: ${matchedItem.ItemCode}")
 
-                                // Check if the product already exists in the database based on TID (or SKU)
-                                val existingProduct = productList.find { product ->
-                                    product.tid == matchedItem.TIDNumber // Match based on TID
-                                }
+                                  // Check if the product already exists in the database based on TID (or SKU)
+                                  val existingProduct = productList.find { product ->
+                                      product.tid == matchedItem.TIDNumber // Match based on TID
+                                  }
 
-                                if (existingProduct == null) {
-                                     selectedItem= matchedItem
-                                    val netWt: Double = (selectedItem?.GrossWt?.toDoubleOrNull()
-                                        ?: 0.0) - (selectedItem?.TotalStoneWeight?.toDoubleOrNull()
-                                        ?: 0.0)
+                                  if (existingProduct == null) {
+                                       selectedItem= matchedItem
+                                      val netWt: Double = (selectedItem?.GrossWt?.toDoubleOrNull()
+                                          ?: 0.0) - (selectedItem?.TotalStoneWeight?.toDoubleOrNull()
+                                          ?: 0.0)
 
-                                    val finePercent =
-                                        selectedItem?.FinePercent?.toDoubleOrNull() ?: 0.0
-                                    val wastagePercent =
-                                        selectedItem?.WastagePercent?.toDoubleOrNull() ?: 0.0
-
-
-                                    val finewt: Double =
-                                        ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
-                                    val metalAmt: Double =
-                                        (selectedItem?.NetWt?.toDoubleOrNull()
-                                            ?: 0.0) * (selectedItem?.TodaysRate?.toDoubleOrNull()
-                                            ?: 0.0)
-
-                                    val makingPercentage =
-                                        selectedItem?.MakingPercentage?.toDoubleOrNull() ?: 0.0
-                                    val fixMaking =
-                                        selectedItem?.MakingFixedAmt?.toDoubleOrNull() ?: 0.0
-                                    val extraMakingPercent =
-                                        selectedItem?.MakingPercentage?.toDoubleOrNull() ?: 0.0
-                                    val fixWastage =
-                                        selectedItem?.MakingFixedWastage?.toDoubleOrNull()
-                                            ?: 0.0
-
-                                    val makingAmt: Double =
-                                        ((makingPercentage / 100.0) * netWt) +
-                                                fixMaking +
-                                                ((extraMakingPercent / 100.0) * netWt) +
-                                                fixWastage
-
-                                    val totalStoneAmount =
-                                        selectedItem?.TotalStoneAmount?.toDoubleOrNull() ?: 0.0
-                                    val diamondAmount =
-                                        selectedItem?.DiamondPurchaseAmount?.toDoubleOrNull()
-                                            ?: 0.0
-                                    val safeMetalAmt = metalAmt
-                                    val safeMakingAmt = makingAmt
-
-                                    val itemAmt: Double =
-                                        totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt
-
-                                    val baseUrl =
-                                        "https://rrgold.loyalstring.co.in/" // Replace with actual base URL
-                                    val imageString = selectedItem?.Images.toString()
-                                    val lastImagePath =
-                                        imageString.split(",").lastOrNull()?.trim()
-                                    val fullImageUrl = "$baseUrl$lastImagePath"
-                                    // If the product doesn't exist in productList, add it and insert into database
-                                    val newProduct = OrderItem(
-                                        branchId = selectedItem?.BranchId.toString(),
-                                        branchName = selectedItem?.BranchName.toString(),
-                                        exhibition = "",
-                                        remark = "",
-                                        purity = selectedItem?.PurityName.toString(),
-                                        size = selectedItem?.Size.toString(),
-                                        length = "",
-                                        typeOfColor = selectedItem?.Colour.toString(),
-                                        screwType = "",
-                                        polishType = "",
-                                        finePer = selectedItem?.FinePercent.toString(),
-                                        wastage = selectedItem?.WastagePercent.toString(),
-                                        orderDate = "",
-                                        deliverDate = "",
-                                        productName = selectedItem?.ProductName.toString(),
-                                        itemCode = selectedItem?.ItemCode ?: "",
-                                        rfidCode = selectedItem?.RFIDCode.toString(),
-                                        itemAmt = itemAmt.toString(),
-                                        grWt = selectedItem?.GrossWt,
-                                        nWt = selectedItem?.NetWt,
-                                        stoneAmt = selectedItem?.TotalStoneAmount,
-                                        finePlusWt = "",
-                                        packingWt = selectedItem?.PackingWeight.toString(),
-                                        totalWt = selectedItem?.TotalWeight.toString(),
-                                        stoneWt = selectedItem?.TotalStoneWeight.toString(),
-                                        dimondWt = selectedItem?.DiamondWeight.toString(),
-                                        sku = selectedItem?.SKU.toString(),
-                                        qty = selectedItem?.ClipQuantity.toString(),
-                                        hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
-                                        mrp = selectedItem?.MRP.toString(),
-                                        image = lastImagePath.toString(),
-                                        netAmt = "",
-                                        diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
-                                        categoryId = selectedItem?.CategoryId?.toString(),
-
-                                        categoryName = selectedItem?.CategoryName ?: "",
-                                        productId = selectedItem?.ProductId ?: 0,
-                                        productCode = selectedItem?.ProductCode ?: "",
-                                        skuId = selectedItem?.SKUId ?: 0,
-                                        designid = selectedItem?.DesignId ?: 0,
-                                        designName = selectedItem?.DesignName ?: "",
-                                        purityid = selectedItem?.PurityId ?: 0,
-                                        counterId = selectedItem?.CounterId ?: 0,
-                                        counterName = "",
-                                        companyId = 0,
-                                        epc = selectedItem?.TIDNumber ?: "",
-                                        tid = selectedItem?.TIDNumber ?: "",
-                                        todaysRate = selectedItem?.TodaysRate?.toString() ?: "0",
-                                        makingPercentage = selectedItem?.MakingPercentage?.toString() ?: "0",
-                                        makingFixedAmt = selectedItem?.MakingFixedAmt?.toString() ?: "0",
-                                        makingFixedWastage = selectedItem?.MakingFixedWastage?.toString() ?: "0",
-                                        makingPerGram = selectedItem?.MakingPerGram?.toString() ?: "0"
+                                      val finePercent =
+                                          selectedItem?.FinePercent?.toDoubleOrNull() ?: 0.0
+                                      val wastagePercent =
+                                          selectedItem?.WastagePercent?.toDoubleOrNull() ?: 0.0
 
 
+                                      val finewt: Double =
+                                          ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
+                                      val metalAmt: Double =
+                                          (selectedItem?.NetWt?.toDoubleOrNull()
+                                              ?: 0.0) * (selectedItem?.TodaysRate?.toDoubleOrNull()
+                                              ?: 0.0)
 
-                                    )
-                                    //   productList.add(newProduct) // Add to productList if it doesn't already exist
-                                    Log.d(
-                                        "Added to Product List",
-                                        "Product added: ${newProduct.productName}"
-                                    )
+                                      val makingPercentage =
+                                          selectedItem?.MakingPercentage?.toDoubleOrNull() ?: 0.0
+                                      val fixMaking =
+                                          selectedItem?.MakingFixedAmt?.toDoubleOrNull() ?: 0.0
+                                      val extraMakingPercent =
+                                          selectedItem?.MakingPercentage?.toDoubleOrNull() ?: 0.0
+                                      val fixWastage =
+                                          selectedItem?.MakingFixedWastage?.toDoubleOrNull()
+                                              ?: 0.0
 
-                                    // Insert the new product into the database
-                                  if (!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") {
-                                        orderViewModel.insertOrderItemToRoom(newProduct)
-                                        productList.add(newProduct)
+                                      val makingAmt: Double =
+                                          ((makingPercentage / 100.0) * netWt) +
+                                                  fixMaking +
+                                                  ((extraMakingPercent / 100.0) * netWt) +
+                                                  fixWastage
 
-                                    }
-                                } else {
-                                    Log.d(
-                                        "Already Exists",
-                                        "Product already exists in the list: ${existingProduct.productName}"
-                                    )
-                                }
+                                      val totalStoneAmount =
+                                          selectedItem?.TotalStoneAmount?.toDoubleOrNull() ?: 0.0
+                                      val diamondAmount =
+                                          selectedItem?.DiamondPurchaseAmount?.toDoubleOrNull()
+                                              ?: 0.0
+                                      val safeMetalAmt = metalAmt
+                                      val safeMakingAmt = makingAmt
 
-                            } else {
-                                Log.d("No Match", "No item matched with scanned TID")
-                            }
-                        }
-                    }
+                                      val itemAmt: Double =
+                                          totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt
+
+                                      val baseUrl =
+                                          "https://rrgold.loyalstring.co.in/" // Replace with actual base URL
+                                      val imageString = selectedItem?.Images.toString()
+                                      val lastImagePath =
+                                          imageString.split(",").lastOrNull()?.trim()
+                                      val fullImageUrl = "$baseUrl$lastImagePath"
+                                      // If the product doesn't exist in productList, add it and insert into database
+                                      val newProduct = OrderItem(
+                                          branchId = selectedItem?.BranchId.toString(),
+                                          branchName = selectedItem?.BranchName.toString(),
+                                          exhibition = "",
+                                          remark = "",
+                                          purity = selectedItem?.PurityName.toString(),
+                                          size = selectedItem?.Size.toString(),
+                                          length = "",
+                                          typeOfColor = selectedItem?.Colour.toString(),
+                                          screwType = "",
+                                          polishType = "",
+                                          finePer = selectedItem?.FinePercent.toString(),
+                                          wastage = selectedItem?.WastagePercent.toString(),
+                                          orderDate = "",
+                                          deliverDate = "",
+                                          productName = selectedItem?.ProductName.toString(),
+                                          itemCode = selectedItem?.ItemCode ?: "",
+                                          rfidCode = selectedItem?.RFIDCode.toString(),
+                                          itemAmt = itemAmt.toString(),
+                                          grWt = selectedItem?.GrossWt,
+                                          nWt = selectedItem?.NetWt,
+                                          stoneAmt = selectedItem?.TotalStoneAmount,
+                                          finePlusWt = "",
+                                          packingWt = selectedItem?.PackingWeight.toString(),
+                                          totalWt = selectedItem?.TotalWeight.toString(),
+                                          stoneWt = selectedItem?.TotalStoneWeight.toString(),
+                                          dimondWt = selectedItem?.DiamondWeight.toString(),
+                                          sku = selectedItem?.SKU.toString(),
+                                          qty = selectedItem?.ClipQuantity.toString(),
+                                          hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
+                                          mrp = selectedItem?.MRP.toString(),
+                                          image = lastImagePath.toString(),
+                                          netAmt = "",
+                                          diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
+                                          categoryId = selectedItem?.CategoryId?.toString(),
+
+                                          categoryName = selectedItem?.CategoryName ?: "",
+                                          productId = selectedItem?.ProductId ?: 0,
+                                          productCode = selectedItem?.ProductCode ?: "",
+                                          skuId = selectedItem?.SKUId ?: 0,
+                                          designid = selectedItem?.DesignId ?: 0,
+                                          designName = selectedItem?.DesignName ?: "",
+                                          purityid = selectedItem?.PurityId ?: 0,
+                                          counterId = selectedItem?.CounterId ?: 0,
+                                          counterName = "",
+                                          companyId = 0,
+                                          epc = selectedItem?.TIDNumber ?: "",
+                                          tid = selectedItem?.TIDNumber ?: "",
+                                          todaysRate = selectedItem?.TodaysRate?.toString() ?: "0",
+                                          makingPercentage = selectedItem?.MakingPercentage?.toString() ?: "0",
+                                          makingFixedAmt = selectedItem?.MakingFixedAmt?.toString() ?: "0",
+                                          makingFixedWastage = selectedItem?.MakingFixedWastage?.toString() ?: "0",
+                                          makingPerGram = selectedItem?.MakingPerGram?.toString() ?: "0"
+
+
+
+                                      )
+                                      //   productList.add(newProduct) // Add to productList if it doesn't already exist
+                                      Log.d(
+                                          "Added to Product List",
+                                          "Product added: ${newProduct.productName}"
+                                      )
+
+                                      // Insert the new product into the database
+                                    if (!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") {
+                                          orderViewModel.insertOrderItemToRoom(newProduct)
+                                          productList.add(newProduct)
+
+                                      }
+                                  } else {
+                                      Log.d(
+                                          "Already Exists",
+                                          "Product already exists in the list: ${existingProduct.productName}"
+                                      )
+                                  }
+
+                              } else {
+                                  Log.d("No Match", "No item matched with scanned TID")
+                              }
+                          }
+                      }*/
+
+                    bulkViewModel.startSingleScan(20)
+
                 },
                 onGscan = {
                  //   resetScan(bulkViewModel,firstPress)
