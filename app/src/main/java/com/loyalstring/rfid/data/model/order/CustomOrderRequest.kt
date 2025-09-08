@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.loyalstring.rfid.data.local.converters.CustomOrderConverters
+import kotlinx.android.parcel.Parcelize
 
 @Entity(tableName = "customerorderequest")
 @TypeConverters(CustomOrderConverters::class)

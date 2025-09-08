@@ -69,6 +69,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -118,7 +119,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URL
-import androidx.compose.ui.platform.LocalConfiguration
 
 @RequiresApi(Build.VERSION_CODES.R)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -145,8 +145,10 @@ fun OrderScreen(
 
     LaunchedEffect(customerSuggestions) {
         if (customerSuggestions is UiState.Success) {
+
             val data = (customerSuggestions as UiState.Success<List<EmployeeList>>).data
             Log.d("CustomerList", Gson().toJson(data))
+
         }
     }
 
@@ -322,7 +324,7 @@ fun OrderScreenContent(
     val tags by bulkViewModel.scannedTags.collectAsState()
     val scanTrigger by bulkViewModel.scanTrigger.collectAsState()
 
-    val stateorder by orderViewModel.lastOrderNoresponse.collectAsState()
+
     val orderRequest by orderViewModel.insertOrderOffline.collectAsState()
 
 
@@ -336,6 +338,7 @@ fun OrderScreenContent(
 
 
     LaunchedEffect(Unit) {
+
         snapshotFlow { productList.toList() } // observe contents
             .collect { list ->
                 totalAMt = list.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
@@ -346,6 +349,7 @@ fun OrderScreenContent(
                     (finePer / 100.0) * netWt
                 }.toString()
             }
+
     }
 
     LaunchedEffect(editOrder) {
@@ -353,29 +357,33 @@ fun OrderScreenContent(
 
         if (editOrder != null) {
             isEditMode = true
+
             Log.d("EditOrder", "Got order for edit: ${editOrder.Customer.FirstName}")
             // Prefill your form fields here
             /* navController.currentBackStackEntry
-                 ?.savedStateHandle
-                 ?.remove<CustomOrderResponse>("editOrder") // clear after using*/
+             ?.savedStateHandle
+             ?.remove<CustomOrderResponse>("editOrder") // clear after using*/
             // ✅ Prefill customer data
-              customerName = "${editOrder.Customer.FirstName.orEmpty()} ${editOrder.Customer.LastName.orEmpty()}".trim()
-              customerId = editOrder.Customer.Id
+            customerName =
+                "${editOrder.Customer.FirstName.orEmpty()} ${editOrder.Customer.LastName.orEmpty()}".trim()
+            customerId = editOrder.Customer.Id
 
             // ✅ Prefill amounts
-              totalAmount = editOrder.TotalAmount ?: "0.0"
-              gst = editOrder.GST ?: "false"
-              gstApplied = editOrder.GSTApplied ?: "false"
-              totalNetAmt = editOrder.TotalNetAmount ?: "0"
-              totalGstAmt = editOrder.TotalGSTAmount ?: "0"
-              totalPupaseAmt = editOrder.TotalPurchaseAmount ?: "0"
-              totalStoneAmt = editOrder.TotalStoneAmount ?: "0"
-              totalStoneWt = editOrder.TotalStoneWeight ?: "0"
-              totalDiamondAMt = editOrder.TotalDiamondAmount ?: "0"
-              totalDiamondWt = editOrder.TotalDiamondWeight ?: "0"
-              totalNetWt = editOrder.CustomOrderItem.sumOf { it.NetWt?.toDoubleOrNull() ?: 0.0 }.toString()
-              totalGrWt = editOrder.CustomOrderItem.sumOf { it.GrossWt?.toDoubleOrNull() ?: 0.0 }.toString()
-              totalFinemetal = editOrder.TotalFineMetal ?: "0"
+            totalAmount = editOrder.TotalAmount ?: "0.0"
+            gst = editOrder.GST ?: "false"
+            gstApplied = editOrder.GSTApplied ?: "false"
+            totalNetAmt = editOrder.TotalNetAmount ?: "0"
+            totalGstAmt = editOrder.TotalGSTAmount ?: "0"
+            totalPupaseAmt = editOrder.TotalPurchaseAmount ?: "0"
+            totalStoneAmt = editOrder.TotalStoneAmount ?: "0"
+            totalStoneWt = editOrder.TotalStoneWeight ?: "0"
+            totalDiamondAMt = editOrder.TotalDiamondAmount ?: "0"
+            totalDiamondWt = editOrder.TotalDiamondWeight ?: "0"
+            totalNetWt =
+                editOrder.CustomOrderItem.sumOf { it.NetWt?.toDoubleOrNull() ?: 0.0 }.toString()
+            totalGrWt = editOrder.CustomOrderItem.sumOf { it.GrossWt?.toDoubleOrNull() ?: 0.0 }
+                .toString()
+            totalFinemetal = editOrder.TotalFineMetal ?: "0"
 
             // ✅ Prefill product list in Room/State
             orderViewModel.clearOrderItems()
@@ -434,18 +442,17 @@ fun OrderScreenContent(
                     makingPerGram = coItem.MakingPerGram.orEmpty()
                 )
 
-         if (!orderItem.itemCode.isNullOrBlank() && orderItem.itemCode != "null") {
-               orderViewModel.insertOrderItemToRoom(orderItem)
+                if (!orderItem.itemCode.isNullOrBlank() && orderItem.itemCode != "null") {
+                    orderViewModel.insertOrderItemToRoom(orderItem)
                     productList.add(orderItem)
 
                 }
 
 
+                // ✅ Clear saved state so it won’t reload again
+                // navController.currentBackStackEntry?.savedStateHandle?.remove<CustomOrderResponse>("editOrder")
+
             }
-
-            // ✅ Clear saved state so it won’t reload again
-           // navController.currentBackStackEntry?.savedStateHandle?.remove<CustomOrderResponse>("editOrder")
-
         }else
         {
             customerName = ""
@@ -497,8 +504,10 @@ fun OrderScreenContent(
 
     LaunchedEffect(customerSuggestions) {
         if (customerSuggestions is UiState.Success) {
+
             val data = (customerSuggestions as UiState.Success<List<EmployeeList>>).data
             Log.d("CustomerList", Gson().toJson(data))
+
 
         }
     }
@@ -593,47 +602,56 @@ fun OrderScreenContent(
          Toast.makeText(context, "Customer order added successfully", Toast.LENGTH_SHORT).show()
          generateInvoicePdfAndOpen(context, it, employee)
          showInvoice = true*/
-
+        // withContext(Dispatchers.IO) {
         orderRequest?.let {
-            val orderResponse = it.toCustomOrderResponse()
-            orderViewModel.setOrderResponse(orderResponse)
+            if (!isEditMode) {
 
-            orderViewModel.setOrderResponse(orderResponse)
-            Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
-            generateInvoicePdfAndOpen(context, orderResponse, employee,itemCodeList)
-            showInvoice = true
-            orderViewModel.clearOrderItems()
-            customerName = ""
-            itemCode = TextFieldValue("")
-            productList.clear()
+                val orderResponse = it.toCustomOrderResponse()
+                orderViewModel.setOrderResponse(orderResponse)
+
+                orderViewModel.setOrderResponse(orderResponse)
+                Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
+                generateInvoicePdfAndOpen(context, orderResponse, employee, itemCodeList)
+                showInvoice = true
+                orderViewModel.clearOrderItems()
+                customerName = ""
+                itemCode = TextFieldValue("")
+                productList.clear()
+            }
         }
+
 
 
     }
 
     LaunchedEffect(orderSuccess) {
         orderSuccess?.let {
-            orderViewModel.setOrderResponse(it)
-            Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
-            generateInvoicePdfAndOpen(context, it, employee,itemCodeList)
-            showInvoice = true
-            orderViewModel.clearOrderItems()
-            /* itemCode.text=""
+            if (!isEditMode) {
+                orderViewModel.setOrderResponse(it)
+                Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
+                generateInvoicePdfAndOpen(context, it, employee, itemCodeList)
+                showInvoice = true
+                orderViewModel.clearOrderItems()
+                /* itemCode.text=""
              customerName.text=""*/
-            customerName = ""
-            itemCode = TextFieldValue("")  // reset text field
-            productList.clear()
+                customerName = ""
+                itemCode = TextFieldValue("")  // reset text field
+                productList.clear()
 
+
+            }
         }
     }
 
     LaunchedEffect(addEmpResponse) {
         if (addEmpResponse != null) {
+
             Toast.makeText(context, "Customer added successfully", Toast.LENGTH_SHORT).show()
             orderViewModel.getAllEmpList(employee?.clientCode ?: "")
             // ✅ Clear search so new customer shows in list
             customerName = ""
             productList.clear()
+
         }
     }
 
@@ -656,6 +674,7 @@ fun OrderScreenContent(
 
 
     LaunchedEffect(tags) {
+
         if (tags.isNotEmpty()) {
             Log.d("RFID", "Tags list: ${tags.map { it.epc }}")
             // Iterate through all scanned EPCs in the `tags` list
@@ -694,7 +713,8 @@ fun OrderScreenContent(
                             val fullImageUrl = "$baseUrl$lastImagePath"
 
                             val netWt: Double = (selectedItem?.GrossWt?.toDoubleOrNull()
-                                ?: 0.0) - (selectedItem?.TotalStoneWeight?.toDoubleOrNull() ?: 0.0)
+                                ?: 0.0) - (selectedItem?.TotalStoneWeight?.toDoubleOrNull()
+                                ?: 0.0)
 
                             val finePercent = selectedItem?.FinePercent?.toDoubleOrNull() ?: 0.0
                             val wastagePercent =
@@ -708,7 +728,8 @@ fun OrderScreenContent(
 
                             val makingPercentage =
                                 selectedItem?.MakingPercentage?.toDoubleOrNull() ?: 0.0
-                            val fixMaking = selectedItem?.MakingFixedAmt?.toDoubleOrNull() ?: 0.0
+                            val fixMaking =
+                                selectedItem?.MakingFixedAmt?.toDoubleOrNull() ?: 0.0
                             val extraMakingPercent =
                                 selectedItem?.MakingPercentage?.toDoubleOrNull() ?: 0.0
                             val fixWastage =
@@ -762,7 +783,7 @@ fun OrderScreenContent(
                                 qty = selectedItem?.ClipQuantity.toString(),
                                 hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
                                 mrp = selectedItem?.MRP.toString(),
-                                image =lastImagePath.toString(),
+                                image = lastImagePath.toString(),
                                 netAmt = "",
                                 diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
                                 categoryId = selectedItem?.CategoryId?.toString(),
@@ -794,7 +815,7 @@ fun OrderScreenContent(
                             )
 
                             // Insert the new product into the database
-                          if (!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") {
+                            if (!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") {
                                 orderViewModel.insertOrderItemToRoom(newProduct)
                                 productList.add(newProduct)
 
@@ -809,9 +830,10 @@ fun OrderScreenContent(
                     } else {
                         Log.d("No Match", "No item matched with scanned TID")
                     }
+                    }
                 }
             }
-        }
+
     }
 
 
@@ -837,6 +859,7 @@ fun OrderScreenContent(
 
 // ✅ Automatically update selectedItem whenever matchedItem changes
     LaunchedEffect(matchedItem) {
+
         selectedItem = matchedItem
         if (itemCode.text.isNotEmpty()) {
 
@@ -909,17 +932,19 @@ fun OrderScreenContent(
             )
 
             // Insert the new product into the database
-          if (!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") {
+            if (!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") {
                 orderViewModel.insertOrderItemToRoom(newProduct)
                 productList.add(newProduct)
 
             }
-        }
+            }
+
 
     }
 
 // ✅ This is your barcode scanner logic
     LaunchedEffect(Unit) {
+
         bulkViewModel.barcodeReader.openIfNeeded()
         bulkViewModel.barcodeReader.setOnBarcodeScanned { scanned ->
             bulkViewModel.onBarcodeScanned(scanned)
@@ -943,7 +968,7 @@ fun OrderScreenContent(
                 }
 
                 if (existingProduct == null) {
-                    selectedItem= matchedItem
+                    selectedItem = matchedItem
                     val netWt: Double = (selectedItem?.GrossWt?.toDoubleOrNull()
                         ?: 0.0) - (selectedItem?.TotalStoneWeight?.toDoubleOrNull()
                         ?: 0.0)
@@ -1046,9 +1071,9 @@ fun OrderScreenContent(
                         todaysRate = selectedItem?.TodaysRate?.toString() ?: "0",
                         makingPercentage = selectedItem?.MakingPercentage?.toString() ?: "0",
                         makingFixedAmt = selectedItem?.MakingFixedAmt?.toString() ?: "0",
-                        makingFixedWastage = selectedItem?.MakingFixedWastage?.toString() ?: "0",
+                        makingFixedWastage = selectedItem?.MakingFixedWastage?.toString()
+                            ?: "0",
                         makingPerGram = selectedItem?.MakingPerGram?.toString() ?: "0"
-
 
 
                     )
@@ -1059,7 +1084,7 @@ fun OrderScreenContent(
                     )
 
                     // Insert the new product into the database
-                  if (!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") {
+                    if (!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") {
                         orderViewModel.insertOrderItemToRoom(newProduct)
                         productList.add(newProduct)
 
@@ -1076,16 +1101,20 @@ fun OrderScreenContent(
             }
 
         }
+
     }
     var nextOrderNo = remember { mutableStateOf(0) }
     LaunchedEffect(lastOrder) {
+        if (!isEditMode) {
         lastOrder.LastOrderNo.toIntOrNull()?.let { last ->
             nextOrderNo.value = last + 1
             Log.d("Order", "Last order number: $last")
             Log.d("Order", "Next order number: ${nextOrderNo.value}")
         }
+        }
     }
     LaunchedEffect(productList) {
+
         totalStoneAmt = productList.sumOf { it.stoneAmt?.toDoubleOrNull() ?: 0.0 }.toString()
         totalNetAmt = productList.sumOf { it.netAmt.toDoubleOrNull() ?: 0.0 }.toString()
         // totalGstAmt= productList.sumOf { it.to?.toDoubleOrNull() ?: 0.0 }.toString()
@@ -1095,14 +1124,14 @@ fun OrderScreenContent(
         totalDiamondAMt = productList.sumOf { it.diamondAmt.toDoubleOrNull() ?: 0.0 }.toString()
         totalDiamondWt = productList.sumOf { it.dimondWt.toDoubleOrNull() ?: 0.0 }.toString()
         totalDiamondWt = productList.sumOf { it.dimondWt.toDoubleOrNull() ?: 0.0 }.toString()
-       // totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+        // totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
 
-      /*  totalAMt = productList.sumOf {
-            val netWt = it.nWt?.toDoubleOrNull() ?: 0.0
-            val rate = it.todaysRate.toDoubleOrNull() ?: 0.0
-            netWt * rate
-        }.toDouble()*/
-        totalAMt =productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
+        /*  totalAMt = productList.sumOf {
+        val netWt = it.nWt?.toDoubleOrNull() ?: 0.0
+        val rate = it.todaysRate.toDoubleOrNull() ?: 0.0
+        netWt * rate
+    }.toDouble()*/
+        totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
         totalGrWt = productList.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }.toString()
         totalFinemetal = productList.sumOf {
             val finePer = it.finePer.toDoubleOrNull() ?: 0.0
@@ -1111,6 +1140,7 @@ fun OrderScreenContent(
         }.toString()
 
         // quantity=productList.sumOf { it.qty?.toDoubleOrNull() ?: 0.0 }.toString()
+
     }
 
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
@@ -3003,7 +3033,9 @@ fun OrderItemTableScreen(
     )
 
     LaunchedEffect(Unit) {
+
         orderViewModel.getAllOrderItemsFromRoom()
+
     }
 
     // Totals
