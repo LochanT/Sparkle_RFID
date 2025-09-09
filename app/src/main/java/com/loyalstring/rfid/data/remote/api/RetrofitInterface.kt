@@ -22,6 +22,7 @@ import com.loyalstring.rfid.data.model.login.LoginRequest
 import com.loyalstring.rfid.data.model.login.LoginResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
+import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
@@ -29,6 +30,7 @@ import com.loyalstring.rfid.data.remote.data.DeleteOrderResponse
 import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
 import com.loyalstring.rfid.data.remote.data.ProductDeleteResponse
 import com.loyalstring.rfid.data.model.stockTransfer.StockTransferResponse
+import com.loyalstring.rfid.data.remote.data.DailyRateResponse
 import com.loyalstring.rfid.data.remote.data.EditDataRequest
 import com.loyalstring.rfid.data.remote.data.StockTransferRequest
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
@@ -175,6 +177,15 @@ interface RetrofitInterface {
     suspend fun updateStock(
         @Body payload: List<EditDataRequest>
     ): Response<List<PurityModel>>
+
+    /*update customer order*/
+    @POST("api/Order/UpdateCustomOrder")
+    suspend fun updateCustomerOrder(@Body customerOrderRequest: CustomOrderRequest): Response<CustomOrderUpdateResponse>
+
+    /*daily rate*/
+
+    @POST("/api/ProductMaster/GetAllDailyRate")
+    suspend fun getDailyDailyRate(@Body request: ClientCodeRequest): Response<List<DailyRateResponse>>
 
 
 }

@@ -49,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.OrderItem
+import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.addSingleItem.BranchModel
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.ui.utils.GradientButtonIcon
@@ -100,11 +101,11 @@ fun OrderDetailsDialogEditAndDisplay(
     selectedItem: OrderItem?,
     branchList: List<BranchModel>,
     onDismiss: () -> Unit,
-    onSave: (OrderDetailsData) -> Unit,
+   // onSave: (OrderDetailsData) -> Unit,
     viewModel: SingleProductViewModel = hiltViewModel(),
     edit: Int,
-
-    ) {
+    onSave: (OrderItem) -> Unit
+) {
     Log.e("TAG", "RFID Code: ${selectedItem?.rfidCode+" image url"+selectedItem?.image.toString()}")
 
     val orderViewModel: OrderViewModel = hiltViewModel()
@@ -145,6 +146,7 @@ fun OrderDetailsDialogEditAndDisplay(
 
     var itemAmt by remember { mutableStateOf("") }
 
+
     LaunchedEffect(selectedItem) {
         branch = selectedItem?.branchName.toString()
         productName = selectedItem?.productName.toString()
@@ -181,12 +183,15 @@ fun OrderDetailsDialogEditAndDisplay(
 // or for plain console apps
         println(selectedItem)
 
+
+
         qty = if (selectedItem?.qty.isNullOrBlank() || selectedItem.qty == "0") {
             "1"
         } else {
             selectedItem.qty
         }
     }
+
 
     val purityList by singleProductViewModel.purityResponse1.collectAsState()
     val skuList by singleProductViewModel.skuResponse1.collectAsState()
@@ -226,6 +231,23 @@ fun OrderDetailsDialogEditAndDisplay(
               orderViewModel.getAllBranchList(ClientCodeRequest(it))
           }
       }*/
+
+    orderViewModel.getDailyRate(ClientCodeRequest(employee?.clientCode))
+
+    // Collect the latest rates
+    val dailyRates by orderViewModel.getAllDailyRate.collectAsState()
+    LaunchedEffect(purity, dailyRates) {
+        if (purity.isNotBlank() && dailyRates.isNotEmpty()) {
+            val match = dailyRates.find { it.PurityName.equals(purity, ignoreCase = true) }
+            ratePerGRam = match?.Rate ?: ""
+            Log.d("ratePerGRam", "ratePerGRam" + ratePerGRam)
+
+            val net = NetWt.toDoubleOrNull() ?: 0.0
+            val rate = ratePerGRam.toDoubleOrNull() ?: 0.0
+            val totalRate= net * rate
+            itemAmt = "%.2f".format(totalRate)
+        }
+    }
 
 
     Dialog(onDismissRequest = { onDismiss() }) {
@@ -527,7 +549,16 @@ fun OrderDetailsDialogEditAndDisplay(
                                     val dimondWtValue = dimondWt.toDoubleOrNull() ?: 0.0
                                     val stoneAmtValue = stoneAmt.toDoubleOrNull() ?: 0.0
 
-                                    NetWt = String.format("%.3f", total - (stoneWtValue + dimondWtValue + stoneAmtValue))   },
+                                    NetWt = String.format(
+                                        "%.3f",
+                                        total - (stoneWtValue + dimondWtValue + stoneAmtValue)
+                                    )
+                                    val net = NetWt.toDoubleOrNull() ?: 0.0
+                                    val rate = ratePerGRam.toDoubleOrNull() ?: 0.0
+                                    val totalRate= net * rate
+                                    itemAmt = "%.2f".format(totalRate)
+                                },
+
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
@@ -591,7 +622,11 @@ fun OrderDetailsDialogEditAndDisplay(
                                     val stoneAmtValue = stoneAmt.toDoubleOrNull() ?: 0.0
 
                                     NetWt = String.format("%.3f", total - (stoneWtValue + dimondWtValue + stoneAmtValue))
-                                                },
+                                    val net = NetWt.toDoubleOrNull() ?: 0.0
+                                    val rate = ratePerGRam.toDoubleOrNull() ?: 0.0
+                                    val totalRate= net * rate
+                                    itemAmt = "%.2f".format(totalRate)
+                                },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
@@ -606,7 +641,7 @@ fun OrderDetailsDialogEditAndDisplay(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -624,7 +659,6 @@ fun OrderDetailsDialogEditAndDisplay(
                                 .weight(0.9f)
                                 .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
                                 .height(32.dp)
-
                                 .background(Color.White, RoundedCornerShape(4.dp)),
                             contentAlignment = Alignment.CenterStart
                         ) {
@@ -640,12 +674,25 @@ fun OrderDetailsDialogEditAndDisplay(
 
                             BasicTextField(
                                 value = grossWT,
-                                onValueChange = { grossWT = it },
+                                onValueChange = { newText ->
+                                    grossWT = newText
+
+                                    val g = newText.toDoubleOrNull() ?: 0.0
+                                    val s = stoneWt.toDoubleOrNull() ?: 0.0
+                                    val d = dimondWt.toDoubleOrNull() ?: 0.0
+
+                                    // ✅ Auto calculate Net Wt
+                                    NetWt = "%.3f".format(g - s - d)
+                                    val net = NetWt.toDoubleOrNull() ?: 0.0
+                                    val rate = ratePerGRam.toDoubleOrNull() ?: 0.0
+                                    val totalRate= net * rate
+                                    itemAmt = "%.2f".format(totalRate)
+                                },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                                    .padding(2.dp)
                             )
                         }
                     }
@@ -698,6 +745,10 @@ fun OrderDetailsDialogEditAndDisplay(
                                     val stoneAmtValue = stoneAmt.toDoubleOrNull() ?: 0.0
 
                                     NetWt = String.format("%.3f", total - (stoneWtValue + dimondWtValue + stoneAmtValue))
+                                    val net = NetWt.toDoubleOrNull() ?: 0.0
+                                    val rate = ratePerGRam.toDoubleOrNull() ?: 0.0
+                                    val totalRate= net * rate
+                                    itemAmt = "%.2f".format(totalRate)
                                 },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
@@ -757,6 +808,10 @@ fun OrderDetailsDialogEditAndDisplay(
                                     val stoneAmtValue = stoneAmt.toDoubleOrNull() ?: 0.0
 
                                     NetWt = String.format("%.3f", total - (stoneWtValue + dimondWtValue + stoneAmtValue))
+                                    val net = NetWt.toDoubleOrNull() ?: 0.0
+                                    val rate = ratePerGRam.toDoubleOrNull() ?: 0.0
+                                    val totalRate= net * rate
+                                    itemAmt = "%.2f".format(totalRate)
                                 },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
@@ -771,11 +826,11 @@ fun OrderDetailsDialogEditAndDisplay(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp), // only inner padding
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Net Weight",
+                            text = "Net Wt",
                             modifier = Modifier
                                 .weight(0.4f)
                                 .padding(start = 2.dp),
@@ -789,31 +844,19 @@ fun OrderDetailsDialogEditAndDisplay(
                                 .weight(0.9f)
                                 .padding(start = 6.dp, top = 4.dp, end = 2.dp, bottom = 4.dp)
                                 .height(32.dp)
-
                                 .background(Color.White, RoundedCornerShape(4.dp)),
                             contentAlignment = Alignment.CenterStart
                         ) {
-                            if (NetWt.isEmpty()) {
-                                Text(
-                                    text = "Enter net wt",
-                                    fontSize = 13.sp,
-                                    color = Color.Gray,
-                                    modifier = Modifier.padding(start = 4.dp),
-                                    fontFamily = poppins
-                                )
-                            }
-
-                            BasicTextField(
-                                value = NetWt,
-                                onValueChange = { NetWt = it },
-                                singleLine = true,
-                                textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(2.dp) // minimal inner padding for cursor spacing
+                            Text(
+                                text = if (NetWt.isEmpty()) "0.000" else NetWt,
+                                fontSize = 13.sp,
+                                color = Color.Black,
+                                modifier = Modifier.padding(start = 4.dp),
+                                fontFamily = poppins
                             )
                         }
                     }
+
                     Spacer(modifier = Modifier.height(4.dp))
 
 
@@ -861,7 +904,8 @@ fun OrderDetailsDialogEditAndDisplay(
                                     val net = NetWt.toDoubleOrNull() ?: 0.0
                                     val rate = ratePerGRam.toDoubleOrNull() ?: 0.0
                                     val total = net * rate
-                                    itemAmt= if (total == 0.0) "" else total.toString()},
+                                    itemAmt = total.toString()
+                                },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
@@ -1662,7 +1706,7 @@ fun OrderDetailsDialogEditAndDisplay(
 
                     val finePlusWt = ((fineVal / 100.0) * netWtVal) + ((wastageVal / 100.0) * netWtVal)
 
-
+                    Log.d("itemAmt", "itemAmt.toString()" + itemAmt)
 
                     GradientButtonIcon(
                         text = "OK",
@@ -1724,6 +1768,7 @@ fun OrderDetailsDialogEditAndDisplay(
 
                             )
                             orderViewModel.insertOrderItemToRoomORUpdate(orderItem)
+                            onSave(orderItem)
                             onDismiss()
 
                         },

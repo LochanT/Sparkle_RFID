@@ -97,6 +97,7 @@ fun ProductManagementScreen(
 
     val scanTrigger by viewModel.scanTrigger.collectAsState()
     var isScanning by remember { mutableStateOf(false) }
+    var isEditMode by remember { mutableStateOf(false) }
     val bulkItemFieldNames = listOf(
         "itemCode",
         "rfid",
@@ -225,7 +226,8 @@ fun ProductManagementScreen(
                 onScan = { /* TODO */ },
                 onGscan = { /* TODO */ },
                 onReset = { /* TODO */ },
-                isScanning = isScanning
+                isScanning = isScanning,
+                isEditMode=isEditMode
             )
         }
 

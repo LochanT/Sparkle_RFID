@@ -167,6 +167,7 @@ fun AddProductScreen(
     val shouldLaunchCamera = remember { mutableStateOf(false) }
 
     val fieldValues = remember { mutableStateMapOf<String, String>() }
+    var isEditMode by remember { mutableStateOf(false) }
 
     val categoryName = fieldValues["Category"].orEmpty()
     val productName = fieldValues["Product"].orEmpty()
@@ -592,7 +593,8 @@ fun AddProductScreen(
                     updateField("Diamond Amount", "")
                     updateField("Stone Weight", "")
                 },
-                isScanning = isScanning
+                isScanning = isScanning,
+                isEditMode=isEditMode
             )
         }
     ) { innerPadding ->
@@ -685,7 +687,8 @@ fun ScanBottomBar(
     onScan: () -> Unit,
     onGscan: () -> Unit,
     onReset: () -> Unit,
-    isScanning: Boolean
+    isScanning: Boolean,
+    isEditMode: Boolean
 ) {
 
     // We use a Box to allow the center button to overlap/elevate
@@ -707,7 +710,12 @@ fun ScanBottomBar(
                         contentDescription = "Save",
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Save", color = Color.DarkGray, fontSize = 12.sp, fontFamily = poppins)
+                    Text(
+                        text = if (isEditMode) "Update" else "Save",
+                        color = Color.DarkGray,
+                        fontSize = 12.sp,
+                        fontFamily = poppins
+                    )
                 }
             }
             TextButton(onClick = onList) {

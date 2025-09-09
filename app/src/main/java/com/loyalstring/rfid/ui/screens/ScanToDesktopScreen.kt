@@ -68,6 +68,7 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
     val activity = LocalContext.current as MainActivity
     var selectedPower by remember { mutableStateOf(30) }
     var isScanning by remember { mutableStateOf(false) }
+    var isEditMode by remember { mutableStateOf(false) }
 
 
 
@@ -192,7 +193,8 @@ fun ScanToDesktopScreen(onBack: () -> Unit, navController: NavHostController) {
                     viewModel.resetProductScanResults()
 
                 },
-                isScanning = isScanning
+                isScanning = isScanning,
+                isEditMode=isEditMode
             )
         }
     ) { innerPadding ->

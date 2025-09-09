@@ -1,3 +1,6 @@
 package com.loyalstring.rfid.data.model.order
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 
-data class Diamond(val string: String)
+@Parcelize
+data class Diamond(val string: String) : Parcelable

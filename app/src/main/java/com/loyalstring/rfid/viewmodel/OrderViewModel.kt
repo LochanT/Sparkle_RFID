@@ -12,10 +12,13 @@ import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
 import com.google.gson.Gson
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.addSingleItem.PurityModel
 import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
+import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
+import com.loyalstring.rfid.data.remote.data.DailyRateResponse
 import com.loyalstring.rfid.data.remote.resource.Resource
 import com.loyalstring.rfid.repository.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -64,6 +67,9 @@ class OrderViewModel @Inject constructor(
     private val _orderResponse = MutableStateFlow<CustomOrderResponse?>(null)
     val orderResponse: StateFlow<CustomOrderResponse?> = _orderResponse
 
+    private val _orderUpdateResponse = MutableStateFlow<CustomOrderUpdateResponse?>(null)
+    val orderUpdateResponse: StateFlow<CustomOrderUpdateResponse?> = _orderUpdateResponse
+
     private val _allOrderItems = MutableStateFlow<List<OrderItem>>(emptyList())
     val allOrderItems: StateFlow<List<OrderItem>> = _allOrderItems
 
@@ -75,6 +81,9 @@ class OrderViewModel @Inject constructor(
     private val _getAllOrderList = MutableStateFlow<List<CustomOrderResponse>>(emptyList())
     val getAllOrderList: StateFlow<List<CustomOrderResponse>> = _getAllOrderList
 
+    private val _getAllDailyRate = MutableStateFlow<List<DailyRateResponse>>(emptyList())
+    val getAllDailyRate: StateFlow<List<DailyRateResponse>> = _getAllDailyRate
+
 //    private val _orderPlaced = mutableStateOf(false)
 //    val orderPlaced: State<Boolean> = _orderPlaced
 
@@ -85,6 +94,14 @@ class OrderViewModel @Inject constructor(
     suspend fun clearOrderItems() {
         repository.clearOrderItems()
         _allOrderItems.value = emptyList()
+    }
+
+    fun clearOrderRequest() {
+        _insertOrderOffline.value = null
+    }
+
+    fun clearOrderResponse() {
+        _orderResponse.value = null
     }
 
 
@@ -247,7 +264,7 @@ class OrderViewModel @Inject constructor(
             GstNo = this.GstNo.orEmpty(),
             PanNo = this.PanNo.orEmpty(),
             AadharNo = this.AadharNo.orEmpty(),
-            BalanceAmount = this.BalanceAmount.orEmpty(),
+            BalanceAmount = this.BalanceAmount ?: "0.0",
             AdvanceAmount = this.AdvanceAmount.orEmpty(),
             Discount = this.Discount.orEmpty(),
             CreditPeriod = this.CreditPeriod,
@@ -391,7 +408,7 @@ class OrderViewModel @Inject constructor(
                             TotalPurchaseAmount = customerOrderRequest.TotalPurchaseAmount,
                             ReceivedAmount = customerOrderRequest.ReceivedAmount,
                             TotalBalanceMetal = customerOrderRequest.TotalBalanceMetal,
-                            BalanceAmount = customerOrderRequest.BalanceAmount,
+                            BalanceAmount = customerOrderRequest.BalanceAmount?:"0.0",
                             TotalFineMetal = customerOrderRequest.TotalFineMetal,
                             CourierCharge = customerOrderRequest.CourierCharge,
                             SaleType = customerOrderRequest.SaleType,
@@ -490,7 +507,7 @@ class OrderViewModel @Inject constructor(
                                         TotalPurchaseAmount = customerOrderRequest.TotalPurchaseAmount,
                                         ReceivedAmount = customerOrderRequest.ReceivedAmount,
                                         TotalBalanceMetal = customerOrderRequest.TotalBalanceMetal,
-                                        BalanceAmount = customerOrderRequest.BalanceAmount,
+                                        BalanceAmount = customerOrderRequest.BalanceAmount?:"0.0",
                                         TotalFineMetal = customerOrderRequest.TotalFineMetal,
                                         CourierCharge = customerOrderRequest.CourierCharge,
                                         SaleType = customerOrderRequest.SaleType,
@@ -587,7 +604,7 @@ class OrderViewModel @Inject constructor(
             TotalPurchaseAmount = this.TotalPurchaseAmount,
             ReceivedAmount = this.ReceivedAmount,
             TotalBalanceMetal = this.TotalBalanceMetal,
-            BalanceAmount = this.BalanceAmount,
+            BalanceAmount = this.BalanceAmount?:"0.0",
             TotalFineMetal = this.TotalFineMetal,
             CourierCharge = this.CourierCharge,
             SaleType = this.SaleType,
@@ -773,6 +790,50 @@ class OrderViewModel @Inject constructor(
                 } catch (e: Exception) {
                     Log.e("Sync", "Failed to sync: ${e.message}")
                 }
+            }
+        }
+    }
+
+    /*update customer Order*/
+    /*customer order*/
+    fun updateOrderCustomer(request: CustomOrderRequest) {
+        viewModelScope.launch {
+            try {
+                val response = repository.updateOrder(request)
+                if (response.isSuccessful && response.body() != null) {
+                    _orderUpdateResponse.value = response.body()!!
+                    Log.d("OrderViewModel", "Custom Order: ${response.body()}")
+                } else {
+                    _orderUpdateResponse.value = response.body()// ✅ Use default object
+                    Log.e("OrderViewModel", "Custom Order Response error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+              //  _orderUpdateResponse.value = _orderResponse.value.OrderStatus.toString()
+                Log.e("OrderViewModel", "Custom Order Exception: ${e.message}")
+            }
+        }
+    }
+
+    fun clearUpdateResponse() {
+        _orderUpdateResponse.value = null
+    }
+
+    /*update customer Order*/
+    /*customer order*/
+    fun getDailyRate(request: ClientCodeRequest) {
+        viewModelScope.launch {
+            try {
+                val response = repository.dailyRate(request)
+                if (response.isSuccessful && response.body() != null) {
+                    _getAllDailyRate.value = response.body()!!
+                    Log.d("OrderViewModel", "Custom Order: ${response.body()}")
+                } else {
+                    _getAllDailyRate.value = response.body()!!// ✅ Use default object
+                    Log.e("OrderViewModel", "Custom Order Response error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                //  _orderUpdateResponse.value = _orderResponse.value.OrderStatus.toString()
+                Log.e("OrderViewModel", "Custom Order Exception: ${e.message}")
             }
         }
     }

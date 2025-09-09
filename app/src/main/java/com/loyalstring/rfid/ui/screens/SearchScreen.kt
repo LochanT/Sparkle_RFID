@@ -61,6 +61,7 @@ fun SearchScreen(
     var isScanning by remember { mutableStateOf(false) }
     var firstPress by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var isEditMode by remember { mutableStateOf(false) }
 
     val unmatchedItems = navController
         .previousBackStackEntry
@@ -175,7 +176,9 @@ fun SearchScreen(
                     firstPress = false
                     isScanning = false
                 },
-                isScanning = isScanning
+                isScanning = isScanning,
+                isEditMode=isEditMode
+
             )
         }
     ) { innerPadding ->

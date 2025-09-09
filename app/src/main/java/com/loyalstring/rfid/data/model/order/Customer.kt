@@ -1,5 +1,8 @@
 package com.loyalstring.rfid.data.model.order
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 data class Customer(
     val FirstName: String,
     val LastName: String,
@@ -42,5 +45,5 @@ data class Customer(
     val CreatedOn: String,
     val LastUpdated: String,
     val StatusType: Boolean
-)
+) : Parcelable
 

@@ -6,6 +6,9 @@ import androidx.room.TypeConverters
 import com.loyalstring.rfid.data.local.converters.CustomOrderTypeConverters
 import com.loyalstring.rfid.data.local.converters.OrderTypeConverter
 import java.io.Serializable
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+@Parcelize
 @Entity(tableName = "customer_order_response")
 @TypeConverters(CustomOrderTypeConverters::class)
 data class CustomOrderResponse(
@@ -94,4 +97,4 @@ data class CustomOrderResponse(
     val Customer: Customer,
     val syncStatus: Boolean = false,
     val ProductName: String
-): Serializable
+): Serializable, Parcelable

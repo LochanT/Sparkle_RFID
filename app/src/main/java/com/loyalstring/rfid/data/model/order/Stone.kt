@@ -1,5 +1,8 @@
 package com.loyalstring.rfid.data.model.order
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 data class Stone(  val Id: Int,
                    val StoneName: String?,
                    val StoneWeight: String?,
@@ -20,4 +23,4 @@ data class Stone(  val Id: Int,
                    val StoneSettingType: String?,
                    val StoneRatePerPiece: String?,
                    val StoneRateKarate: String?,
-                   val StoneStatusType: String?)
+                   val StoneStatusType: String?) : Parcelable
