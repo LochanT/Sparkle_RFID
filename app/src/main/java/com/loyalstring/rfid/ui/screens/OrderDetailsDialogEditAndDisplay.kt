@@ -122,7 +122,7 @@ fun OrderDetailsDialogEditAndDisplay(
     var polishType by remember { mutableStateOf("") }
     var finePercentage by remember { mutableStateOf("") }
     var wastage by remember { mutableStateOf("") }
-    var orderDate by remember { mutableStateOf("") }
+    // var orderDate by remember { mutableStateOf("") }
     var deliverDate by remember { mutableStateOf("") }
 
     var productName by remember { mutableStateOf("") }
@@ -169,7 +169,7 @@ fun OrderDetailsDialogEditAndDisplay(
         polishType = selectedItem?.polishType.toString()
         finePercentage = selectedItem?.finePer.toString()
         wastagePer = selectedItem?.wastage.toString()
-        orderDate = selectedItem?.orderDate.toString()
+        //   orderDate = selectedItem?.orderDate.toString()
         deliverDate = selectedItem?.deliverDate.toString()
       //  qty = selectedItem?.qty.toString()
         hallMarkAmt = selectedItem?.hallmarkAmt.toString()
@@ -220,10 +220,13 @@ fun OrderDetailsDialogEditAndDisplay(
     var expandedPolish by remember { mutableStateOf(false) }
     var expandedSKU by remember { mutableStateOf(false) }
 
+
     // Inside @Composable
 
     val calendar = Calendar.getInstance()
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+    var orderDate by remember { mutableStateOf(dateFormatter.format(calendar.time)) }
+
     val context = LocalContext.current
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
     /*  LaunchedEffect(Unit) {
@@ -1386,7 +1389,16 @@ fun OrderDetailsDialogEditAndDisplay(
                                         calendar.get(Calendar.YEAR),
                                         calendar.get(Calendar.MONTH),
                                         calendar.get(Calendar.DAY_OF_MONTH)
-                                    ).show()
+                                    ).apply {
+                                        val today = Calendar.getInstance().apply {
+                                            set(Calendar.HOUR_OF_DAY, 0)
+                                            set(Calendar.MINUTE, 0)
+                                            set(Calendar.SECOND, 0)
+                                            set(Calendar.MILLISECOND, 0)
+                                        }
+                                        datePicker.minDate = today.timeInMillis  // ✅ safe for today & future dates
+                                    }.show()
+
                                 },
                             contentAlignment = Alignment.CenterStart
                         ) {
@@ -1449,7 +1461,22 @@ fun OrderDetailsDialogEditAndDisplay(
                                         calendar.get(Calendar.YEAR),
                                         calendar.get(Calendar.MONTH),
                                         calendar.get(Calendar.DAY_OF_MONTH)
-                                    ).show()
+                                    ).apply {
+                                        // 👇 Instead of today's date, use orderDate as the minimum
+                                        val orderCal = Calendar.getInstance()
+                                        if (orderDate.isNotEmpty()) {
+                                            try {
+                                                orderCal.time = dateFormatter.parse(orderDate)!!
+                                                orderCal.set(Calendar.HOUR_OF_DAY, 0)
+                                                orderCal.set(Calendar.MINUTE, 0)
+                                                orderCal.set(Calendar.SECOND, 0)
+                                                orderCal.set(Calendar.MILLISECOND, 0)
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                            }
+                                        }
+                                        datePicker.minDate = orderCal.timeInMillis
+                                    }.show()
                                 },
                             contentAlignment = Alignment.CenterStart
                         ) {
@@ -1460,7 +1487,7 @@ fun OrderDetailsDialogEditAndDisplay(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = if (deliverDate.isEmpty()) "Enter Deliver Date" else orderDate,
+                                    text = if (deliverDate.isEmpty()) "Enter Deliver Date" else deliverDate,
                                     fontSize = 13.sp,
                                     color = if (deliverDate.isEmpty()) Color.Gray else Color.Black,
                                     modifier = Modifier.weight(1f),
