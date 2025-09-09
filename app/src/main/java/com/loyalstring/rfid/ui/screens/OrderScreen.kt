@@ -53,6 +53,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -156,7 +157,18 @@ fun OrderScreen(
         .currentBackStackEntry
         ?.savedStateHandle
         ?.get<CustomOrderResponse>("editOrder")
-    selectedCustomer = editOrder?.Customer?.toEmployeeList()
+
+    LaunchedEffect(editOrder) {
+        if (editOrder != null) {
+
+            selectedCustomer = editOrder.Customer?.toEmployeeList()
+
+
+            // ✅ remove after consuming so it won’t run again
+
+        }
+    }
+    //selectedCustomer = editOrder?.Customer?.toEmployeeList()
    // val navController = rememberNavController()
    // val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
 
@@ -460,6 +472,17 @@ fun OrderScreenContent(
             orderViewModel.clearOrderItems()
             isEditMode = false
             productList.clear()
+
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            customerName = ""
+            itemCode = TextFieldValue("")
+            productList.clear()
+            isEditMode = false
+            //orderViewModel.clearOrderItems()
         }
     }
 
@@ -566,25 +589,48 @@ fun OrderScreenContent(
     var showInvoice by remember { mutableStateOf(false) }
 
     val updateResponse by orderViewModel.orderUpdateResponse.collectAsState()
-
-    LaunchedEffect(updateResponse) {
-        updateResponse?.let {
-            // Show success message (Toast, Snackbar, Dialog etc.)
-            Toast.makeText(
-               context,
-                "Order updated successfully!",
-                Toast.LENGTH_SHORT
-            ).show()
-            orderViewModel.clearUpdateResponse()
-            navController.navigate("order_list")
-        }
-        if (!isEditMode) { // ✅ only clear if it's a new order flow
-            orderViewModel.clearOrderItems()
+    LaunchedEffect(editOrder) {
+        if (editOrder == null) {
             customerName = ""
             itemCode = TextFieldValue("")
             productList.clear()
+            isEditMode = false
+            orderViewModel.clearOrderItems()
         }
     }
+    LaunchedEffect(updateResponse) {
+        updateResponse?.let {
+            // 🔄 Reset UI state
+            customerName = ""
+            itemCode = TextFieldValue("")
+            productList.clear()
+            isEditMode = false
+
+            // 🔄 Reset ViewModel state
+            orderViewModel.clearUpdateResponse()
+            /*  orderViewModel.clearOrderItems()
+              orderViewModel.clearOrderResponse()
+              orderViewModel.clearOrderRequest()*/
+
+            // 🔄 Remove editOrder so it won’t prefill next time
+            navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.remove<CustomOrderResponse>("editOrder")
+
+            // 🔄 Show toast
+            Toast.makeText(
+                context,
+                "Order updated successfully!",
+                Toast.LENGTH_SHORT
+            ).show()
+            navController.currentBackStackEntry
+                ?.savedStateHandle
+                ?.remove<CustomOrderResponse>("editOrder")
+            navController.navigate("order_list")
+
+        }
+    }
+
 
     val onSaveEditedItem: (OrderItem) -> Unit = { updatedItem ->
         val index = productList.indexOfFirst { it.itemCode == updatedItem.itemCode }
@@ -618,6 +664,8 @@ fun OrderScreenContent(
                 itemCode = TextFieldValue("")
                 productList.clear()
             }
+            orderViewModel.clearOrderRequest()
+            orderViewModel.clearOrderResponse()
         }
 
 
@@ -640,6 +688,8 @@ fun OrderScreenContent(
 
 
             }
+            orderViewModel.clearOrderRequest()
+            orderViewModel.clearOrderResponse()
         }
     }
 

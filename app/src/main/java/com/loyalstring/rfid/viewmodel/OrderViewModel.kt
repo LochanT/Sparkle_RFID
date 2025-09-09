@@ -96,6 +96,14 @@ class OrderViewModel @Inject constructor(
         _allOrderItems.value = emptyList()
     }
 
+    fun clearOrderRequest() {
+        _insertOrderOffline.value = null
+    }
+
+    fun clearOrderResponse() {
+        _orderResponse.value = null
+    }
+
 
 //
 //    fun placeOrder(request: ClientCodeRequest, order: CustomOrderRequest) {
