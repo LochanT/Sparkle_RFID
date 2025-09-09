@@ -127,6 +127,7 @@ dependencies {
     implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation ("androidx.fragment:fragment-ktx:1.8.2")
     implementation("com.opencsv:opencsv:5.9")
+    implementation("com.itextpdf:itext7-core:7.2.5")
 
 
     //LiveData

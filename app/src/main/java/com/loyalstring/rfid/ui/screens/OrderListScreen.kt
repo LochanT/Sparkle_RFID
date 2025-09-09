@@ -28,7 +28,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Mediation
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -51,7 +50,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
@@ -383,7 +381,7 @@ fun OrderTableWithPagination(
                         ) {
                             IconButton(onClick = {
                                 CoroutineScope(Dispatchers.Main).launch {
-                                    generateInvoicePdfAndOpen(context, row, employee, itemCodeList)
+                                    generateTablePdfWithImages(context, row)
                                 }
 
                             },
