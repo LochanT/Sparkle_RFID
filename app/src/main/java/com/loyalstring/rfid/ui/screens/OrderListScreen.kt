@@ -64,6 +64,9 @@ import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.OrderViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -577,7 +580,10 @@ fun OrderTableWithPagination(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(onClick = {
-                                generateInvoicePdfAndOpen(context, row, employee, itemCodeList)
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    generateInvoicePdfAndOpen(context, row, employee, itemCodeList)
+                                }
+
                             }) {
                                 Icon(Icons.Default.Print, contentDescription = "Print", tint = Color.DarkGray)
                             }

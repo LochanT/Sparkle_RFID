@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -109,13 +108,13 @@ import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import com.loyalstring.rfid.viewmodel.UiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.net.HttpURLConnection
 import java.net.URL
 
 @RequiresApi(Build.VERSION_CODES.R)
@@ -130,10 +129,8 @@ fun OrderScreen(
 ) {
 
 
-
     val context = LocalContext.current
-    val employee =
-        remember { UserPreferences.getInstance(context).getEmployee(Employee::class.java) }
+    remember { UserPreferences.getInstance(context).getEmployee(Employee::class.java) }
 
     val bulkViewModel: BulkViewModel = hiltViewModel()
     var selectedPower by remember { mutableStateOf(30) }
@@ -180,14 +177,15 @@ fun OrderScreen(
                 selectedCustomer = selectedCustomer,
                 onCustomerSelected = { selectedCustomer = it },
                 selectedPower,
-                orderViewModel=orderViewModel,
-                singleProductViewModel=singleProductViewModel
+                orderViewModel = orderViewModel,
+                singleProductViewModel = singleProductViewModel
 
             )
         }
     }
 }
 
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun OrderScreenContent(
     navController: NavHostController,
@@ -219,20 +217,15 @@ fun OrderScreenContent(
     var orderSelectedItem by remember { mutableStateOf<OrderItem?>(null) }
     var firstPress by remember { mutableStateOf(false) }
     var isGstChecked by remember { mutableStateOf(false) }
-    var totalAmount by remember { mutableStateOf("0.000") }
-    var order by remember { mutableStateOf("0.000") }
     var totalAMt by remember { mutableStateOf(0.0) }
     var quantity by remember { mutableStateOf("") }
-    var gst by remember { mutableStateOf("") }
     var gstApplied by remember { mutableStateOf("") }
     var totalNetAmt by remember { mutableStateOf("") }
-    var totalGstAmt by remember { mutableStateOf("") }
     var totalPupaseAmt by remember { mutableStateOf("") }
     var totalStoneAmt by remember { mutableStateOf("") }
     var totalStoneWt by remember { mutableStateOf("") }
     var totalDiamondAMt by remember { mutableStateOf("") }
     var totalDiamondWt by remember { mutableStateOf("") }
-    var totalNetWt by remember { mutableStateOf("") }
     var totalGrWt by remember { mutableStateOf("") }
 
     var totalFinemetal by remember { mutableStateOf("") }
@@ -244,21 +237,18 @@ fun OrderScreenContent(
 
 // Collecting states from ViewModel
     val isLoading by orderViewModel.isItemCodeLoading.collectAsState()
-    val isLoadingEmp by orderViewModel.isEmpListLoading.collectAsState()
     val lastOrder by orderViewModel.lastOrderNoresponse.collectAsState()
     val orderSuccess by orderViewModel.orderResponse.collectAsState()
     val items by bulkViewModel.scannedItems.collectAsState()
     val tags by bulkViewModel.scannedTags.collectAsState()
     val scanTrigger by bulkViewModel.scanTrigger.collectAsState()
     val productList by orderViewModel.allOrderItems.collectAsState()
-    val stateorder by orderViewModel.lastOrderNoresponse.collectAsState()
     val orderRequest by orderViewModel.insertOrderOffline.collectAsState()
     LaunchedEffect(Unit) {
         customerName = ""
         itemCode = TextFieldValue("")
         orderViewModel.clearOrderItems()
     }
-
 
 
 // Trigger for refreshing components like dropdowns
@@ -281,39 +271,40 @@ fun OrderScreenContent(
 // --------------------------
 
     val customerSuggestions by orderViewModel.empListFlow.collectAsState(UiState.Loading)
-/*
-    val filteredCustomers = remember(customerName, customerSuggestions) {
-        when (customerSuggestions) {
-            is UiState.Success<*> -> {
-                val items = (customerSuggestions as UiState.Success<Any?>)!!.data as List<EmployeeList>
-                items.filter {
-                    val fullName = "${it.FirstName} ${it.LastName}".trim().lowercase()
-                    fullName.contains(customerName.trim().lowercase())
+    /*
+        val filteredCustomers = remember(customerName, customerSuggestions) {
+            when (customerSuggestions) {
+                is UiState.Success<*> -> {
+                    val items = (customerSuggestions as UiState.Success<Any?>)!!.data as List<EmployeeList>
+                    items.filter {
+                        val fullName = "${it.FirstName} ${it.LastName}".trim().lowercase()
+                        fullName.contains(customerName.trim().lowercase())
+                    }
                 }
-            }
 
-            else -> emptyList()
-        }
-    }*/
-
-   /* val filteredCustomers = remember(customerName, customerSuggestions) {
-        when (customerSuggestions) {
-            is UiState.Success<*> -> {
-                val items = (customerSuggestions as UiState.Success<Any?>).data as List<EmployeeList>
-                items.filter {
-                    val fullName = "${it.FirstName} ${it.LastName}".trim().lowercase()
-                    fullName.contains(customerName.trim().lowercase())
-                }.take(20) // ✅ LIMIT to 20
+                else -> emptyList()
             }
-            else -> emptyList()
-        }
-    }
-*/
+        }*/
+
+    /* val filteredCustomers = remember(customerName, customerSuggestions) {
+         when (customerSuggestions) {
+             is UiState.Success<*> -> {
+                 val items = (customerSuggestions as UiState.Success<Any?>).data as List<EmployeeList>
+                 items.filter {
+                     val fullName = "${it.FirstName} ${it.LastName}".trim().lowercase()
+                     fullName.contains(customerName.trim().lowercase())
+                 }.take(20) // ✅ LIMIT to 20
+             }
+             else -> emptyList()
+         }
+     }
+ */
 
     val filteredCustomers by derivedStateOf {
         when (customerSuggestions) {
             is UiState.Success<*> -> {
-                val items = (customerSuggestions as UiState.Success<Any?>).data as List<EmployeeList>
+                val items =
+                    (customerSuggestions as UiState.Success<Any?>).data as List<EmployeeList>
                 if (customerName.isBlank()) {
                     items.take(20) // show first 20 when no input
                 } else {
@@ -323,6 +314,7 @@ fun OrderScreenContent(
                     }.take(20)
                 }
             }
+
             else -> emptyList()
         }
     }
@@ -348,12 +340,8 @@ fun OrderScreenContent(
     var country by remember { mutableStateOf("") }
     var state by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf("") }
 
     val addEmpResponse by orderViewModel.addEmpReposnes.observeAsState()
-    var expandedCity by remember { mutableStateOf(false) }
-    var expandedState by remember { mutableStateOf(false) }
-    var expandedCountry by remember { mutableStateOf(false) }
 
 // Dropdown lists for address
     val cityOptions = listOf(
@@ -402,7 +390,7 @@ fun OrderScreenContent(
 
             orderViewModel.setOrderResponse(orderResponse)
             Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
-            generateInvoicePdfAndOpen(context, orderResponse, employee,itemCodeList)
+            generateInvoicePdfAndOpen(context, orderResponse, employee, itemCodeList)
             showInvoice = true
             orderViewModel.clearOrderItems()
             customerName = ""
@@ -416,7 +404,7 @@ fun OrderScreenContent(
         orderSuccess?.let {
             orderViewModel.setOrderResponse(it)
             Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
-            generateInvoicePdfAndOpen(context, it, employee,itemCodeList)
+            generateInvoicePdfAndOpen(context, it, employee, itemCodeList)
             showInvoice = true
             orderViewModel.clearOrderItems()
             /* itemCode.text=""
@@ -490,7 +478,7 @@ fun OrderScreenContent(
                             val imageString = selectedItem?.Images.toString()
                             val lastImagePath =
                                 imageString.split(",").lastOrNull()?.trim()
-                            val fullImageUrl = "$baseUrl$lastImagePath"
+                            "$baseUrl$lastImagePath"
 
                             val netWt: Double = (selectedItem?.GrossWt?.toDoubleOrNull()
                                 ?: 0.0) - (selectedItem?.TotalStoneWeight?.toDoubleOrNull() ?: 0.0)
@@ -500,8 +488,7 @@ fun OrderScreenContent(
                                 selectedItem?.WastagePercent?.toDoubleOrNull() ?: 0.0
 
 
-                            val finewt: Double =
-                                ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
+                            ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
                             val metalAmt: Double = (selectedItem?.NetWt?.toDoubleOrNull()
                                 ?: 0.0) * (selectedItem?.TodaysRate?.toDoubleOrNull() ?: 0.0)
 
@@ -561,7 +548,7 @@ fun OrderScreenContent(
                                 qty = selectedItem?.ClipQuantity.toString(),
                                 hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
                                 mrp = selectedItem?.MRP.toString(),
-                                image =lastImagePath.toString(),
+                                image = lastImagePath.toString(),
                                 netAmt = "",
                                 diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
                                 categoryId = selectedItem?.CategoryId?.toString(),
@@ -640,7 +627,7 @@ fun OrderScreenContent(
             val imageString = selectedItem?.Images.toString()
             val lastImagePath =
                 imageString.split(",").lastOrNull()?.trim()
-            val fullImageUrl = "$baseUrl$lastImagePath"
+            "$baseUrl$lastImagePath"
             val newProduct = OrderItem(
                 branchId = selectedItem?.BranchId.toString(),
                 branchName = selectedItem?.BranchName.toString(),
@@ -737,14 +724,14 @@ fun OrderScreenContent(
         totalDiamondAMt = productList.sumOf { it.diamondAmt.toDoubleOrNull() ?: 0.0 }.toString()
         totalDiamondWt = productList.sumOf { it.dimondWt.toDoubleOrNull() ?: 0.0 }.toString()
         totalDiamondWt = productList.sumOf { it.dimondWt.toDoubleOrNull() ?: 0.0 }.toString()
-       // totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
+        // totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }.toString()
 
-      /*  totalAMt = productList.sumOf {
-            val netWt = it.nWt?.toDoubleOrNull() ?: 0.0
-            val rate = it.todaysRate.toDoubleOrNull() ?: 0.0
-            netWt * rate
-        }.toDouble()*/
-        totalAMt =productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
+        /*  totalAMt = productList.sumOf {
+              val netWt = it.nWt?.toDoubleOrNull() ?: 0.0
+              val rate = it.todaysRate.toDoubleOrNull() ?: 0.0
+              netWt * rate
+          }.toDouble()*/
+        totalAMt = productList.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
         totalGrWt = productList.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }.toString()
         totalFinemetal = productList.sumOf {
             val finePer = it.finePer.toDoubleOrNull() ?: 0.0
@@ -783,14 +770,15 @@ fun OrderScreenContent(
                         val clientCode = employee?.clientCode.orEmpty()
 
                         // Fetch last order number from API
-                        val lastOrderResponse = orderViewModel.fetchLastOrderNo(ClientCodeRequest(clientCode))
+                        orderViewModel.fetchLastOrderNo(ClientCodeRequest(clientCode))
 
                         // Parse response safely
                         var attempts = 0
                         var lastOrderNo: Int? = null
                         while (attempts < 10 && lastOrderNo == null) {
                             delay(300)
-                            lastOrderNo = orderViewModel.lastOrderNoresponse.value.LastOrderNo.toIntOrNull()
+                            lastOrderNo =
+                                orderViewModel.lastOrderNoresponse.value.LastOrderNo.toIntOrNull()
                             attempts++
                         }
 
@@ -801,422 +789,430 @@ fun OrderScreenContent(
                         Log.d("Order", "totalStoneAmt: $totalStoneAmt")
 
                         if (nextOrderNo == 0) {
-                            Toast.makeText(context, "Failed to generate order number.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "Failed to generate order number.",
+                                Toast.LENGTH_SHORT
+                            ).show()
                             return@launch
                         }
 
                         if (nextOrderNo != 0) {
 
 
-                        val gstPercent = 3.0
-                        //val gstApplied = "true"
-                        var taxableAmt = totalAMt ?: 0.0
-                        val isGstApplied: Boolean
+                            val gstPercent = 3.0
+                            //val gstApplied = "true"
+                            var taxableAmt = totalAMt ?: 0.0
+                            val isGstApplied: Boolean
 
 
-                        val gstAmt: Double
-                        val calculatedTotalAmount: Double
-                        var GST=false
-                            var AdditionTaxApplied=false
+                            val gstAmt: Double
+                            val calculatedTotalAmount: Double
+                            var GST = false
+                            var AdditionTaxApplied = false
 
-                        if (gstApplied == "true") {
-                            gstAmt = taxableAmt * gstPercent / 100
-                            taxableAmt= totalAMt ?: 0.0
-                            calculatedTotalAmount = taxableAmt + gstAmt
-                            isGstApplied = true
-                            GST=true
-                            AdditionTaxApplied=true
-                        } else {
-                            gstAmt = 0.0
-                            calculatedTotalAmount = taxableAmt
-                            taxableAmt = calculatedTotalAmount
-                            isGstApplied = false
-                            GST=false
-                            AdditionTaxApplied=false
+                            if (gstApplied == "true") {
+                                gstAmt = taxableAmt * gstPercent / 100
+                                taxableAmt = totalAMt ?: 0.0
+                                calculatedTotalAmount = taxableAmt + gstAmt
+                                isGstApplied = true
+                                GST = true
+                                AdditionTaxApplied = true
+                            } else {
+                                gstAmt = 0.0
+                                calculatedTotalAmount = taxableAmt
+                                taxableAmt = calculatedTotalAmount
+                                isGstApplied = false
+                                GST = false
+                                AdditionTaxApplied = false
 
-                        }
-                            Log.d("@@",""+calculatedTotalAmount)
+                            }
+                            Log.d("@@", "" + calculatedTotalAmount)
 
-                        val request = CustomOrderRequest(
-                            CustomOrderId = 0,
-                            CustomerId = selectedCustomer.Id.toString(),
-                            ClientCode = employee?.clientCode.orEmpty(),
-                            OrderId = 14,
-                            TotalAmount = calculatedTotalAmount.toString(),
-                            PaymentMode = "",
-                            Offer = null,
-                            Qty = quantity,
-                            GST = GST.toString(),
-                            OrderStatus = "Order Received",
-                            MRP = "",
-                            VendorId = 12,
-                            TDS = null,
-                            PurchaseStatus = null,
-                            GSTApplied = isGstApplied.toString(),
-                            Discount = "",
-                            TotalNetAmount = taxableAmt.toString(),
-                            TotalGSTAmount = gstAmt.toString(),
-                            TotalPurchaseAmount = calculatedTotalAmount.toString(),
-                            ReceivedAmount = "",
-                            TotalBalanceMetal = "",
-                            BalanceAmount = "",
-                            TotalFineMetal =totalFinemetal ,
-                            CourierCharge = null,
-                            SaleType = null,
-                            OrderDate = "2025-07-08",
-                            OrderCount = "1",
-                            AdditionTaxApplied = AdditionTaxApplied.toString(),
-                            CategoryId = 2,
-                            OrderNo = nextOrderNo.toString(),
-                            DeliveryAddress = "123 Street, Mumbai",
-                            BillType = "Retail",
-                            UrdPurchaseAmt = null,
-                            BilledBy = "Employee1",
-                            SoldBy = "Employee1",
-                            CreditSilver = null,
-                            CreditGold = null,
-                            CreditAmount = null,
-                            BalanceAmt = "25000",
-                            BalanceSilver = null,
-                            BalanceGold = null,
-                            TotalSaleGold = null,
-                            TotalSaleSilver = null,
-                            TotalSaleUrdGold = null,
-                            TotalSaleUrdSilver = null,
-                            FinancialYear = "2024-25",
-                            BaseCurrency = "INR",
-                            TotalStoneWeight = totalStoneWt,
-                            TotalStoneAmount = totalStoneAmt,
-                            TotalStonePieces = "3",
-                            TotalDiamondWeight = totalDiamondWt,
-                            TotalDiamondPieces = "2",
-                            TotalDiamondAmount = totalDiamondAMt,
-                            FineSilver = "0",
-                            FineGold = "5.0",
-                            DebitSilver = null,
-                            DebitGold = null,
-                            PaidMetal = "0.0",
-                            PaidAmount = "",
-                            TotalAdvanceAmt = null,
-                            TaxableAmount = calculatedTotalAmount.toString(),
-                            TDSAmount = null,
-                            CreatedOn = "2025-07-08",
-                            //   LastUpdated = "2025-07-08",
-                            StatusType = true,
-                            FineMetal = totalFinemetal,
-                            BalanceMetal = "0.0",
-                            AdvanceAmt = "0",
-                            PaidAmt = "25000",
-                            TaxableAmt = taxableAmt.toString(),
-                            GstAmount = gstAmt.toString(),
-                            GstCheck = isGstChecked.toString(),
-                            Category = "Ring",
-                            TDSCheck = "false",
-                            Remark = "Urgent order",
-                            OrderItemId = null,
-                            StoneStatus = null,
-                            DiamondStatus = null,
-                            BulkOrderId = null,
-
-                            CustomOrderItem = productList.map { product ->
-
-                                CustomOrderItem(
-                                    CustomOrderId = 0,
-                                    // OrderDate = product.orderDate,
-                                    // DeliverDate = product.deliverDate,
-                                    SKUId = 0,
-                                    SKU = product.sku,
-                                    CategoryId = product.categoryId?.toString(),
-                                    VendorId = 0,
-                                    CategoryName = product.categoryName,
-                                    CustomerName = selectedCustomer.FirstName,
-                                    VendorName = "",
-                                    ProductId = product.productId,
-                                    ProductName = product.productName,
-                                    DesignId = product.designid,
-                                    DesignName = product.designName,
-                                    PurityId = product.purityid,
-                                    PurityName = product.purity,
-                                    GrossWt = product.grWt.toString(),
-                                    StoneWt = product.stoneWt,
-                                    DiamondWt = product.dimondWt,
-                                    NetWt = product.nWt.toString(),
-                                    Size = product.size,
-                                    Length = product.length,
-                                    TypesOdColors = product.typeOfColor,
-                                    Quantity = product.qty,
-                                    RatePerGram = "",
-                                    MakingPerGram = "",
-                                    MakingFixed = "",
-                                    FixedWt = "",
-                                    MakingPercentage = "",
-                                    DiamondPieces = "",
-                                    DiamondRate = "",
-                                    DiamondAmount = product.diamondAmt,
-                                    StoneAmount = product.stoneAmt.toString(),
-                                    ScrewType = product.screwType,
-                                    Polish = product.polishType,
-                                    Rhodium = "",
-                                    SampleWt = "",
-                                    Image = product.image.split(",").lastOrNull()?.trim().toString(),
-                                    ItemCode = product.itemCode,
-                                    CustomerId = selectedCustomer.Id ?: 0,
-                                    MRP = product.mrp,
-                                    HSNCode = "",
-                                    UnlProductId = 0,
-                                    OrderBy = "",
-                                    StoneLessPercent = "",
-                                    ProductCode = product.productCode,
-                                    TotalWt = product.totalWt,
-                                    BillType = "",
-                                    FinePercentage = product.finePer,
-                                    ClientCode = employee?.clientCode,
-                                    OrderId = "",
-                                    // CreatedOn = "",
-                                    // LastUpdated = "",
-                                    StatusType = true,
-                                    PackingWeight = product.packingWt,
-                                    MetalAmount = "",
-                                    OldGoldPurchase = true,
-                                    Amount = product.itemAmt.toString(),
-                                    totalGstAmount = "",
-                                    finalPrice = product.itemAmt.toString(),
-                                    MakingFixedWastage = "",
-                                    Description = product.remark,
-                                    CompanyId = 0,
-                                    LabelledStockId = 0,
-                                    TotalStoneWeight = product.stoneWt,
-                                    BranchId = 0,
-                                    BranchName = product.branchName,
-                                    Exhibition = product.exhibition,
-                                    CounterId = product.counterId.toString(),
-                                    EmployeeId = 0,
-                                    OrderNo = nextOrderNo.toString(),
-                                    OrderStatus = "",
-                                    DueDate = "",
-                                    Remark = product.remark,
-                                    Id = product.id,
-                                    PurchaseInvoiceNo = "",
-                                    Purity = product.purity,
-                                    Status = "",
-                                    URDNo = "",
-                                    Stones = emptyList(),
-                                    Diamond = emptyList()
-                                )
-                            },
-
-                            Payments = listOf(Payment("")),
-                            uRDPurchases = listOf(URDPurchase("")),
-                            Customer = Customer(
-                                FirstName = selectedCustomer.FirstName.orEmpty(),
-                                LastName = selectedCustomer.LastName.orEmpty(),
-                                PerAddStreet = "",
-                                CurrAddStreet = "",
-                                Mobile = selectedCustomer.Mobile.orEmpty(),
-                                Email = selectedCustomer.Email.orEmpty(),
-                                Password = "",
-                                CustomerLoginId = selectedCustomer.Email.orEmpty(),
-                                DateOfBirth = "",
-                                MiddleName = "",
-                                PerAddPincode = "",
-                                Gender = "",
-                                OnlineStatus = "",
-                                CurrAddTown = selectedCustomer.CurrAddTown.orEmpty(),
-                                CurrAddPincode = "",
-                                CurrAddState = selectedCustomer.CurrAddState.orEmpty(),
-                                PerAddTown = "",
-                                PerAddState = "",
-                                GstNo = selectedCustomer.GstNo.orEmpty(),
-                                PanNo = selectedCustomer.PanNo.orEmpty(),
-                                AadharNo = "",
-                                BalanceAmount = "0",
-                                AdvanceAmount = "0",
-                                Discount = "0",
-                                CreditPeriod = "",
-                                FineGold = "0",
+                            val request = CustomOrderRequest(
+                                CustomOrderId = 0,
+                                CustomerId = selectedCustomer.Id.toString(),
+                                ClientCode = employee?.clientCode.orEmpty(),
+                                OrderId = 14,
+                                TotalAmount = calculatedTotalAmount.toString(),
+                                PaymentMode = "",
+                                Offer = null,
+                                Qty = quantity,
+                                GST = GST.toString(),
+                                OrderStatus = "Order Received",
+                                MRP = "",
+                                VendorId = 12,
+                                TDS = null,
+                                PurchaseStatus = null,
+                                GSTApplied = isGstApplied.toString(),
+                                Discount = "",
+                                TotalNetAmount = taxableAmt.toString(),
+                                TotalGSTAmount = gstAmt.toString(),
+                                TotalPurchaseAmount = calculatedTotalAmount.toString(),
+                                ReceivedAmount = "",
+                                TotalBalanceMetal = "",
+                                BalanceAmount = "",
+                                TotalFineMetal = totalFinemetal,
+                                CourierCharge = null,
+                                SaleType = null,
+                                OrderDate = "2025-07-08",
+                                OrderCount = "1",
+                                AdditionTaxApplied = AdditionTaxApplied.toString(),
+                                CategoryId = 2,
+                                OrderNo = nextOrderNo.toString(),
+                                DeliveryAddress = "123 Street, Mumbai",
+                                BillType = "Retail",
+                                UrdPurchaseAmt = null,
+                                BilledBy = "Employee1",
+                                SoldBy = "Employee1",
+                                CreditSilver = null,
+                                CreditGold = null,
+                                CreditAmount = null,
+                                BalanceAmt = "25000",
+                                BalanceSilver = null,
+                                BalanceGold = null,
+                                TotalSaleGold = null,
+                                TotalSaleSilver = null,
+                                TotalSaleUrdGold = null,
+                                TotalSaleUrdSilver = null,
+                                FinancialYear = "2024-25",
+                                BaseCurrency = "INR",
+                                TotalStoneWeight = totalStoneWt,
+                                TotalStoneAmount = totalStoneAmt,
+                                TotalStonePieces = "3",
+                                TotalDiamondWeight = totalDiamondWt,
+                                TotalDiamondPieces = "2",
+                                TotalDiamondAmount = totalDiamondAMt,
                                 FineSilver = "0",
-                                ClientCode = selectedCustomer.ClientCode.orEmpty(),
-                                VendorId = 0,
-                                AddToVendor = false,
-                                CustomerSlabId = 0,
-                                CreditPeriodId = 0,
-                                RateOfInterestId = 0,
-                                Remark = "",
-                                Area = "",
-                                City = selectedCustomer.City.orEmpty(),
-                                Country = selectedCustomer.Country.orEmpty(),
-                                Id = selectedCustomer.Id ?: 0,
+                                FineGold = "5.0",
+                                DebitSilver = null,
+                                DebitGold = null,
+                                PaidMetal = "0.0",
+                                PaidAmount = "",
+                                TotalAdvanceAmt = null,
+                                TaxableAmount = calculatedTotalAmount.toString(),
+                                TDSAmount = null,
                                 CreatedOn = "2025-07-08",
-                                LastUpdated = "2025-07-08",
-                                StatusType = true
+                                //   LastUpdated = "2025-07-08",
+                                StatusType = true,
+                                FineMetal = totalFinemetal,
+                                BalanceMetal = "0.0",
+                                AdvanceAmt = "0",
+                                PaidAmt = "25000",
+                                TaxableAmt = taxableAmt.toString(),
+                                GstAmount = gstAmt.toString(),
+                                GstCheck = isGstChecked.toString(),
+                                Category = "Ring",
+                                TDSCheck = "false",
+                                Remark = "Urgent order",
+                                OrderItemId = null,
+                                StoneStatus = null,
+                                DiamondStatus = null,
+                                BulkOrderId = null,
+
+                                CustomOrderItem = productList.map { product ->
+
+                                    CustomOrderItem(
+                                        CustomOrderId = 0,
+                                        // OrderDate = product.orderDate,
+                                        // DeliverDate = product.deliverDate,
+                                        SKUId = 0,
+                                        SKU = product.sku,
+                                        CategoryId = product.categoryId?.toString(),
+                                        VendorId = 0,
+                                        CategoryName = product.categoryName,
+                                        CustomerName = selectedCustomer.FirstName,
+                                        VendorName = "",
+                                        ProductId = product.productId,
+                                        ProductName = product.productName,
+                                        DesignId = product.designid,
+                                        DesignName = product.designName,
+                                        PurityId = product.purityid,
+                                        PurityName = product.purity,
+                                        GrossWt = product.grWt.toString(),
+                                        StoneWt = product.stoneWt,
+                                        DiamondWt = product.dimondWt,
+                                        NetWt = product.nWt.toString(),
+                                        Size = product.size,
+                                        Length = product.length,
+                                        TypesOdColors = product.typeOfColor,
+                                        Quantity = product.qty,
+                                        RatePerGram = "",
+                                        MakingPerGram = "",
+                                        MakingFixed = "",
+                                        FixedWt = "",
+                                        MakingPercentage = "",
+                                        DiamondPieces = "",
+                                        DiamondRate = "",
+                                        DiamondAmount = product.diamondAmt,
+                                        StoneAmount = product.stoneAmt.toString(),
+                                        ScrewType = product.screwType,
+                                        Polish = product.polishType,
+                                        Rhodium = "",
+                                        SampleWt = "",
+                                        Image = product.image.split(",").lastOrNull()?.trim()
+                                            .toString(),
+                                        ItemCode = product.itemCode,
+                                        CustomerId = selectedCustomer.Id ?: 0,
+                                        MRP = product.mrp,
+                                        HSNCode = "",
+                                        UnlProductId = 0,
+                                        OrderBy = "",
+                                        StoneLessPercent = "",
+                                        ProductCode = product.productCode,
+                                        TotalWt = product.totalWt,
+                                        BillType = "",
+                                        FinePercentage = product.finePer,
+                                        ClientCode = employee?.clientCode,
+                                        OrderId = "",
+                                        // CreatedOn = "",
+                                        // LastUpdated = "",
+                                        StatusType = true,
+                                        PackingWeight = product.packingWt,
+                                        MetalAmount = "",
+                                        OldGoldPurchase = true,
+                                        Amount = product.itemAmt.toString(),
+                                        totalGstAmount = "",
+                                        finalPrice = product.itemAmt.toString(),
+                                        MakingFixedWastage = "",
+                                        Description = product.remark,
+                                        CompanyId = 0,
+                                        LabelledStockId = 0,
+                                        TotalStoneWeight = product.stoneWt,
+                                        BranchId = 0,
+                                        BranchName = product.branchName,
+                                        Exhibition = product.exhibition,
+                                        CounterId = product.counterId.toString(),
+                                        EmployeeId = 0,
+                                        OrderNo = nextOrderNo.toString(),
+                                        OrderStatus = "",
+                                        DueDate = "",
+                                        Remark = product.remark,
+                                        Id = product.id,
+                                        PurchaseInvoiceNo = "",
+                                        Purity = product.purity,
+                                        Status = "",
+                                        URDNo = "",
+                                        Stones = emptyList(),
+                                        Diamond = emptyList()
+                                    )
+                                },
+
+                                Payments = listOf(Payment("")),
+                                uRDPurchases = listOf(URDPurchase("")),
+                                Customer = Customer(
+                                    FirstName = selectedCustomer.FirstName.orEmpty(),
+                                    LastName = selectedCustomer.LastName.orEmpty(),
+                                    PerAddStreet = "",
+                                    CurrAddStreet = "",
+                                    Mobile = selectedCustomer.Mobile.orEmpty(),
+                                    Email = selectedCustomer.Email.orEmpty(),
+                                    Password = "",
+                                    CustomerLoginId = selectedCustomer.Email.orEmpty(),
+                                    DateOfBirth = "",
+                                    MiddleName = "",
+                                    PerAddPincode = "",
+                                    Gender = "",
+                                    OnlineStatus = "",
+                                    CurrAddTown = selectedCustomer.CurrAddTown.orEmpty(),
+                                    CurrAddPincode = "",
+                                    CurrAddState = selectedCustomer.CurrAddState.orEmpty(),
+                                    PerAddTown = "",
+                                    PerAddState = "",
+                                    GstNo = selectedCustomer.GstNo.orEmpty(),
+                                    PanNo = selectedCustomer.PanNo.orEmpty(),
+                                    AadharNo = "",
+                                    BalanceAmount = "0",
+                                    AdvanceAmount = "0",
+                                    Discount = "0",
+                                    CreditPeriod = "",
+                                    FineGold = "0",
+                                    FineSilver = "0",
+                                    ClientCode = selectedCustomer.ClientCode.orEmpty(),
+                                    VendorId = 0,
+                                    AddToVendor = false,
+                                    CustomerSlabId = 0,
+                                    CreditPeriodId = 0,
+                                    RateOfInterestId = 0,
+                                    Remark = "",
+                                    Area = "",
+                                    City = selectedCustomer.City.orEmpty(),
+                                    Country = selectedCustomer.Country.orEmpty(),
+                                    Id = selectedCustomer.Id ?: 0,
+                                    CreatedOn = "2025-07-08",
+                                    LastUpdated = "2025-07-08",
+                                    StatusType = true
+                                )
                             )
-                        )
-                        if (isOnline) {
-                            orderViewModel.addOrderCustomer(request)
-                        } else {
-                            orderViewModel.saveOrder(request)
+                            if (isOnline) {
+                                orderViewModel.addOrderCustomer(request)
+                            } else {
+                                orderViewModel.saveOrder(request)
+                            }
                         }
-                    }
                     }
                 },
                 onList = {
                     navController.navigate("order_list")
                 },
                 onScan = {
-                   // resetScan(bulkViewModel,firstPress)
-                    bulkViewModel.startSingleScan(30) { tag ->
-                        tag.epc?.let {
-                            Log.d("Scanned EPC", it)
+                    // resetScan(bulkViewModel,firstPress)
+                    bulkViewModel.startScanning(20)
+                    /*   bulkViewModel.startSingleScan(30) { tag ->
+                           tag?.epc?.let {
+                               Log.d("Scanned EPC", it)
 
-                            // Find the product that matches the scanned TID from itemList
-                            val matchedItem = itemCodeList.find { item ->
-                                item.TIDNumber.equals(
-                                    it,
-                                    ignoreCase = true
-                                ) // Match based on TID
-                            }
+                               // Find the product that matches the scanned TID from itemList
+                               val matchedItem = itemCodeList.find { item ->
+                                   item.TIDNumber.equals(
+                                       it,
+                                       ignoreCase = true
+                                   ) // Match based on TID
+                               }
 
-                            if (matchedItem != null) {
-                                Log.d("Match Found", "Item: ${matchedItem.ItemCode}")
+                               if (matchedItem != null) {
+                                   Log.d("Match Found", "Item: ${matchedItem.ItemCode}")
 
-                                // Check if the product already exists in the database based on TID (or SKU)
-                                val existingProduct = productList.find { product ->
-                                    product.tid == matchedItem.TIDNumber // Match based on TID
-                                }
+                                   // Check if the product already exists in the database based on TID (or SKU)
+                                   val existingProduct = productList.find { product ->
+                                       product.tid == matchedItem.TIDNumber // Match based on TID
+                                   }
 
-                                if (existingProduct == null) {
-                                     selectedItem= matchedItem
-                                    val netWt: Double = (selectedItem?.GrossWt?.toDoubleOrNull()
-                                        ?: 0.0) - (selectedItem?.TotalStoneWeight?.toDoubleOrNull()
-                                        ?: 0.0)
+                                   if (existingProduct == null) {
+                                       selectedItem = matchedItem
+                                       val netWt: Double = (selectedItem?.GrossWt?.toDoubleOrNull()
+                                           ?: 0.0) - (selectedItem?.TotalStoneWeight?.toDoubleOrNull()
+                                           ?: 0.0)
 
-                                    val finePercent =
-                                        selectedItem?.FinePercent?.toDoubleOrNull() ?: 0.0
-                                    val wastagePercent =
-                                        selectedItem?.WastagePercent?.toDoubleOrNull() ?: 0.0
-
-
-                                    val finewt: Double =
-                                        ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
-                                    val metalAmt: Double =
-                                        (selectedItem?.NetWt?.toDoubleOrNull()
-                                            ?: 0.0) * (selectedItem?.TodaysRate?.toDoubleOrNull()
-                                            ?: 0.0)
-
-                                    val makingPercentage =
-                                        selectedItem?.MakingPercentage?.toDoubleOrNull() ?: 0.0
-                                    val fixMaking =
-                                        selectedItem?.MakingFixedAmt?.toDoubleOrNull() ?: 0.0
-                                    val extraMakingPercent =
-                                        selectedItem?.MakingPercentage?.toDoubleOrNull() ?: 0.0
-                                    val fixWastage =
-                                        selectedItem?.MakingFixedWastage?.toDoubleOrNull()
-                                            ?: 0.0
-
-                                    val makingAmt: Double =
-                                        ((makingPercentage / 100.0) * netWt) +
-                                                fixMaking +
-                                                ((extraMakingPercent / 100.0) * netWt) +
-                                                fixWastage
-
-                                    val totalStoneAmount =
-                                        selectedItem?.TotalStoneAmount?.toDoubleOrNull() ?: 0.0
-                                    val diamondAmount =
-                                        selectedItem?.DiamondPurchaseAmount?.toDoubleOrNull()
-                                            ?: 0.0
-                                    val safeMetalAmt = metalAmt
-                                    val safeMakingAmt = makingAmt
-
-                                    val itemAmt: Double =
-                                        totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt
-
-                                    val baseUrl =
-                                        "https://rrgold.loyalstring.co.in/" // Replace with actual base URL
-                                    val imageString = selectedItem?.Images.toString()
-                                    val lastImagePath =
-                                        imageString.split(",").lastOrNull()?.trim()
-                                    val fullImageUrl = "$baseUrl$lastImagePath"
-                                    // If the product doesn't exist in productList, add it and insert into database
-                                    val newProduct = OrderItem(
-                                        branchId = selectedItem?.BranchId.toString(),
-                                        branchName = selectedItem?.BranchName.toString(),
-                                        exhibition = "",
-                                        remark = "",
-                                        purity = selectedItem?.PurityName.toString(),
-                                        size = selectedItem?.Size.toString(),
-                                        length = "",
-                                        typeOfColor = selectedItem?.Colour.toString(),
-                                        screwType = "",
-                                        polishType = "",
-                                        finePer = selectedItem?.FinePercent.toString(),
-                                        wastage = selectedItem?.WastagePercent.toString(),
-                                        orderDate = "",
-                                        deliverDate = "",
-                                        productName = selectedItem?.ProductName.toString(),
-                                        itemCode = selectedItem?.ItemCode.toString(),
-                                        rfidCode = selectedItem?.RFIDCode.toString(),
-                                        itemAmt = itemAmt.toString(),
-                                        grWt = selectedItem?.GrossWt,
-                                        nWt = selectedItem?.NetWt,
-                                        stoneAmt = selectedItem?.TotalStoneAmount,
-                                        finePlusWt = "",
-                                        packingWt = selectedItem?.PackingWeight.toString(),
-                                        totalWt = selectedItem?.TotalWeight.toString(),
-                                        stoneWt = selectedItem?.TotalStoneWeight.toString(),
-                                        dimondWt = selectedItem?.DiamondWeight.toString(),
-                                        sku = selectedItem?.SKU.toString(),
-                                        qty = selectedItem?.ClipQuantity.toString(),
-                                        hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
-                                        mrp = selectedItem?.MRP.toString(),
-                                        image = lastImagePath.toString(),
-                                        netAmt = "",
-                                        diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
-                                        categoryId = selectedItem?.CategoryId?.toString(),
-
-                                        categoryName = selectedItem?.CategoryName ?: "",
-                                        productId = selectedItem?.ProductId ?: 0,
-                                        productCode = selectedItem?.ProductCode ?: "",
-                                        skuId = selectedItem?.SKUId ?: 0,
-                                        designid = selectedItem?.DesignId ?: 0,
-                                        designName = selectedItem?.DesignName ?: "",
-                                        purityid = selectedItem?.PurityId ?: 0,
-                                        counterId = selectedItem?.CounterId ?: 0,
-                                        counterName = "",
-                                        companyId = 0,
-                                        epc = selectedItem?.TIDNumber ?: "",
-                                        tid = selectedItem?.TIDNumber ?: "",
-                                        todaysRate = selectedItem?.TodaysRate?.toString() ?: "0",
-                                        makingPercentage = selectedItem?.MakingPercentage?.toString() ?: "0",
-                                        makingFixedAmt = selectedItem?.MakingFixedAmt?.toString() ?: "0",
-                                        makingFixedWastage = selectedItem?.MakingFixedWastage?.toString() ?: "0",
-                                        makingPerGram = selectedItem?.MakingPerGram?.toString() ?: "0"
+                                       val finePercent =
+                                           selectedItem?.FinePercent?.toDoubleOrNull() ?: 0.0
+                                       val wastagePercent =
+                                           selectedItem?.WastagePercent?.toDoubleOrNull() ?: 0.0
 
 
+                                       ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
+                                       val metalAmt: Double =
+                                           (selectedItem?.NetWt?.toDoubleOrNull()
+                                               ?: 0.0) * (selectedItem?.TodaysRate?.toDoubleOrNull()
+                                               ?: 0.0)
 
-                                    )
-                                    //   productList.add(newProduct) // Add to productList if it doesn't already exist
-                                    Log.d(
-                                        "Added to Product List",
-                                        "Product added: ${newProduct.productName}"
-                                    )
+                                       val makingPercentage =
+                                           selectedItem?.MakingPercentage?.toDoubleOrNull() ?: 0.0
+                                       val fixMaking =
+                                           selectedItem?.MakingFixedAmt?.toDoubleOrNull() ?: 0.0
+                                       val extraMakingPercent =
+                                           selectedItem?.MakingPercentage?.toDoubleOrNull() ?: 0.0
+                                       val fixWastage =
+                                           selectedItem?.MakingFixedWastage?.toDoubleOrNull()
+                                               ?: 0.0
 
-                                    // Insert the new product into the database
-                                    orderViewModel.insertOrderItemToRoom(newProduct)
-                                } else {
-                                    Log.d(
-                                        "Already Exists",
-                                        "Product already exists in the list: ${existingProduct.productName}"
-                                    )
-                                }
+                                       val makingAmt: Double =
+                                           ((makingPercentage / 100.0) * netWt) +
+                                                   fixMaking +
+                                                   ((extraMakingPercent / 100.0) * netWt) +
+                                                   fixWastage
 
-                            } else {
-                                Log.d("No Match", "No item matched with scanned TID")
-                            }
-                        }
-                    }
+                                       val totalStoneAmount =
+                                           selectedItem?.TotalStoneAmount?.toDoubleOrNull() ?: 0.0
+                                       val diamondAmount =
+                                           selectedItem?.DiamondPurchaseAmount?.toDoubleOrNull()
+                                               ?: 0.0
+                                       val safeMetalAmt = metalAmt
+                                       val safeMakingAmt = makingAmt
+
+                                       val itemAmt: Double =
+                                           totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt
+
+                                       val baseUrl =
+                                           "https://rrgold.loyalstring.co.in/" // Replace with actual base URL
+                                       val imageString = selectedItem?.Images.toString()
+                                       val lastImagePath =
+                                           imageString.split(",").lastOrNull()?.trim()
+                                       "$baseUrl$lastImagePath"
+                                       // If the product doesn't exist in productList, add it and insert into database
+                                       val newProduct = OrderItem(
+                                           branchId = selectedItem?.BranchId.toString(),
+                                           branchName = selectedItem?.BranchName.toString(),
+                                           exhibition = "",
+                                           remark = "",
+                                           purity = selectedItem?.PurityName.toString(),
+                                           size = selectedItem?.Size.toString(),
+                                           length = "",
+                                           typeOfColor = selectedItem?.Colour.toString(),
+                                           screwType = "",
+                                           polishType = "",
+                                           finePer = selectedItem?.FinePercent.toString(),
+                                           wastage = selectedItem?.WastagePercent.toString(),
+                                           orderDate = "",
+                                           deliverDate = "",
+                                           productName = selectedItem?.ProductName.toString(),
+                                           itemCode = selectedItem?.ItemCode.toString(),
+                                           rfidCode = selectedItem?.RFIDCode.toString(),
+                                           itemAmt = itemAmt.toString(),
+                                           grWt = selectedItem?.GrossWt,
+                                           nWt = selectedItem?.NetWt,
+                                           stoneAmt = selectedItem?.TotalStoneAmount,
+                                           finePlusWt = "",
+                                           packingWt = selectedItem?.PackingWeight.toString(),
+                                           totalWt = selectedItem?.TotalWeight.toString(),
+                                           stoneWt = selectedItem?.TotalStoneWeight.toString(),
+                                           dimondWt = selectedItem?.DiamondWeight.toString(),
+                                           sku = selectedItem?.SKU.toString(),
+                                           qty = selectedItem?.ClipQuantity.toString(),
+                                           hallmarkAmt = selectedItem?.HallmarkAmount.toString(),
+                                           mrp = selectedItem?.MRP.toString(),
+                                           image = lastImagePath.toString(),
+                                           netAmt = "",
+                                           diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
+                                           categoryId = selectedItem?.CategoryId?.toString(),
+
+                                           categoryName = selectedItem?.CategoryName ?: "",
+                                           productId = selectedItem?.ProductId ?: 0,
+                                           productCode = selectedItem?.ProductCode ?: "",
+                                           skuId = selectedItem?.SKUId ?: 0,
+                                           designid = selectedItem?.DesignId ?: 0,
+                                           designName = selectedItem?.DesignName ?: "",
+                                           purityid = selectedItem?.PurityId ?: 0,
+                                           counterId = selectedItem?.CounterId ?: 0,
+                                           counterName = "",
+                                           companyId = 0,
+                                           epc = selectedItem?.TIDNumber ?: "",
+                                           tid = selectedItem?.TIDNumber ?: "",
+                                           todaysRate = selectedItem?.TodaysRate?.toString() ?: "0",
+                                           makingPercentage = selectedItem?.MakingPercentage?.toString()
+                                               ?: "0",
+                                           makingFixedAmt = selectedItem?.MakingFixedAmt?.toString()
+                                               ?: "0",
+                                           makingFixedWastage = selectedItem?.MakingFixedWastage?.toString()
+                                               ?: "0",
+                                           makingPerGram = selectedItem?.MakingPerGram?.toString()
+                                               ?: "0"
+
+
+                                       )
+                                       //   productList.add(newProduct) // Add to productList if it doesn't already exist
+                                       Log.d(
+                                           "Added to Product List",
+                                           "Product added: ${newProduct.productName}"
+                                       )
+
+                                       // Insert the new product into the database
+                                       orderViewModel.insertOrderItemToRoom(newProduct)
+                                   } else {
+                                       Log.d(
+                                           "Already Exists",
+                                           "Product already exists in the list: ${existingProduct.productName}"
+                                       )
+                                   }
+
+                               } else {
+                                   Log.d("No Match", "No item matched with scanned TID")
+                               }
+                           }
+                       }*/
                 },
                 onGscan = {
-                 //   resetScan(bulkViewModel,firstPress)
+                    //   resetScan(bulkViewModel,firstPress)
                     if (isScanning && firstPress) {
                         firstPress = false
                         bulkViewModel.stopScanning()
@@ -1232,14 +1228,14 @@ fun OrderScreenContent(
                 },
                 onReset = {
 
-                   // bulkViewModel.resetData()
+                    // bulkViewModel.resetData()
                     bulkViewModel.stopBarcodeScanner()
                     CoroutineScope(Dispatchers.Main).launch {
                         orderViewModel.clearOrderItems()
                     }
                     customerName = ""
                     itemCode = TextFieldValue("")
-                    isScanning=false
+                    isScanning = false
 
 
                 },
@@ -1318,13 +1314,12 @@ fun OrderScreenContent(
                 },
                 coroutineScope = coroutineScope, // ✅ Required argument
                 fetchSuggestions = {
-                 //   orderViewModel.getAllEmpList(employee?.clientCode ?: "")
+                    //   orderViewModel.getAllEmpList(employee?.clientCode ?: "")
                 },
 
                 expanded = false,
 
-            )
-
+                )
 
 
             // Spacer(modifier = Modifier.height(5.dp))
@@ -1489,7 +1484,7 @@ fun OrderScreenContent(
                                 onExpandedChange: (Boolean) -> Unit,
                                 modifier: Modifier = Modifier
                             ) {
-                                Column (modifier = modifier) {
+                                Column(modifier = modifier) {
                                     BasicTextField(
                                         value = value,
                                         onValueChange = {
@@ -1610,7 +1605,8 @@ fun OrderScreenContent(
                                 cityOptions,
                                 expandedCity,
                                 { expandedCity = it },
-                                modifier = Modifier.fillMaxWidth())
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
                         }
 
@@ -1827,7 +1823,7 @@ fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
         TDSAmount = this.TDSAmount ?: "",
         CreatedOn = this.CreatedOn ?: "",
         LastUpdated = this.LastUpdated ?: "",
-        StatusType = this.StatusType ?: true,
+        StatusType = this.StatusType != false,
         FineMetal = this.FineMetal.toString(),
         BalanceMetal = this.BalanceMetal,
         AdvanceAmt = this.AdvanceAmt,
@@ -1853,11 +1849,11 @@ fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
 
 fun resetScan(model: BulkViewModel, firstPress: Boolean) {
     // Add logic to stop or clear scanning state
- //   model.resetData()
+    //   model.resetData()
     model.stopBarcodeScanner()
     model.stopScanning()  // Make sure scanning stops properly
-     // Reset any data that might be lingering
-  //  firstPress=false;
+    // Reset any data that might be lingering
+    //  firstPress=false;
 }
 
 @Composable
@@ -2007,6 +2003,7 @@ fun mapItemCodeToOrderItem(item: ItemCodeResponse): OrderItem {
         makingPerGram = item.MakingPerGram ?: ""
     )
 }
+
 /*
 @Composable
 fun OrderItemTableScreen(
@@ -2468,7 +2465,8 @@ fun OrderItemTableScreen(
                                                             Ranking = "",
                                                             CompanyId = item.companyId,
                                                             CounterId = item.counterId,
-                                                            BranchId = item.branchId.toIntOrNull() ?: 0,
+                                                            BranchId = item.branchId.toIntOrNull()
+                                                                ?: 0,
                                                             EmployeeId = 0,
                                                             Status = "",
                                                             ClientCode = employee?.clientCode,
@@ -2576,8 +2574,6 @@ fun OrderItemTableScreen(
         }
     }
 }
-
-
 
 
 /*@Composable
@@ -3173,7 +3169,8 @@ fun CustomerNameInput(
 
             // Right-side icon: + when empty, × when text entered
             if (customerName.isEmpty()) {
-                IconButton(onClick = { onAddCustomerClick() },
+                IconButton(
+                    onClick = { onAddCustomerClick() },
                     modifier = Modifier
                         .size(36.dp)
                         .padding(end = 2.dp)
@@ -3186,12 +3183,13 @@ fun CustomerNameInput(
                     )
                 }
             } else {
-                IconButton(onClick = {
-                    onClear()
-                    expandedState = false
-                },  modifier = Modifier
-                    .size(36.dp)
-                    .padding(end = 2.dp)
+                IconButton(
+                    onClick = {
+                        onClear()
+                        expandedState = false
+                    }, modifier = Modifier
+                        .size(36.dp)
+                        .padding(end = 2.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -3231,24 +3229,6 @@ fun CustomerNameInput(
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 fun Modifier.gradientBorderBox(
     borderRadius: Dp = 8.dp,
     borderWidth: Dp = 1.dp,
@@ -3263,302 +3243,8 @@ fun Modifier.gradientBorderBox(
         .clip(RoundedCornerShape(borderRadius))
 }
 
-/*fun generateInvoicePdfAndOpen(context: Context, order: CustomOrderResponse, employee: Employee?) {
-    val document = PdfDocument()
-    val paint = Paint()
 
-    // Page size: A4 (595x842 pixels)
-    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-    val page = document.startPage(pageInfo)
-    val canvas = page.canvas
-
-    var y = 40
-
-    // ---------- Header ----------
-    paint.textSize = 14f
-    paint.isFakeBoldText = true
-    canvas.drawText("Order Receipt", 220f, y.toFloat(), paint)
-
-    y += 50
-    paint.textSize = 10f
-    paint.isFakeBoldText = false
-    canvas.drawText("Date: ${order.OrderDate}", 20f, y.toFloat(), paint)
-    canvas.drawText("KT: 18KT", 450f, y.toFloat(), paint)
-
-    y += 20
-    canvas.drawText(
-        "Client Name: ${order.Customer?.FirstName.orEmpty()} ${order.Customer?.LastName.orEmpty()}",
-        20f,
-        y.toFloat(),
-        paint
-    )
-    canvas.drawText("Screw: 88NS", 450f, y.toFloat(), paint)
-
-    y += 20
-    canvas.drawText("Separate Tags: YES", 20f, y.toFloat(), paint)
-    canvas.drawText("Wastage: 0.0", 450f, y.toFloat(), paint)
-
-    y += 30
-
-    // ---------- Table Header ----------
-    val headers =
-        listOf("SNO", "TAG", "ITEM", "DESIGN", "STAMP", "GWT", "SWT", "NWT", "FINE", "STN VAL")
-    val colX = listOf(10, 50, 100, 150, 245, 295, 345, 395, 445, 500)
-    val colWidth = listOf(40, 50, 50, 95, 50, 50, 50, 50, 55, 85)
-    val rowHeight = 22
-
-    paint.textSize = 9f
-    paint.isFakeBoldText = true
-
-    for (i in headers.indices) {
-        val left = colX[i].toFloat()
-        val right = (colX[i] + colWidth[i]).toFloat()
-        val bottom = (y + rowHeight).toFloat()
-
-        // Draw header cell border
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 1f
-        canvas.drawRect(left, y.toFloat(), right, bottom, paint)
-
-        // Draw header text
-        paint.style = Paint.Style.FILL
-        canvas.drawText(headers[i], left + 2f, bottom - 6f, paint)
-    }
-
-    y += rowHeight
-    paint.isFakeBoldText = false
-
-    // ---------- Table Rows ----------
-    for ((index, item) in order.CustomOrderItem.withIndex()) {
-        if (y > 750) break // Prevent overflow
-
-        val netWeight =
-            (item.GrossWt?.toDoubleOrNull() ?: 0.0) - (item.StoneWt?.toDoubleOrNull() ?: 0.0)
-        val row = listOf(
-            "${index + 1}",
-            item.ItemCode.orEmpty(),
-            item.SKU.orEmpty(),
-            item.DesignName.orEmpty(),
-            item.Purity.orEmpty(),
-            item.GrossWt ?: "0.000",
-            item.StoneWt ?: "0.000",
-            "%.3f".format(netWeight),
-            item.FinePercentage ?: "0.000",
-            item.StoneAmount ?: "0.000"
-        )
-
-        for (i in row.indices) {
-            val left = colX[i].toFloat()
-            val right = (colX[i] + colWidth[i]).toFloat()
-            val bottom = (y + rowHeight).toFloat()
-
-            // Cell border
-            paint.style = Paint.Style.STROKE
-            canvas.drawRect(left, y.toFloat(), right, bottom, paint)
-
-            // Cell text
-            paint.style = Paint.Style.FILL
-            canvas.drawText(row[i], left + 2f, bottom - 6f, paint)
-        }
-
-        y += rowHeight
-    }
-
-    // ---------- Total Row ----------
-    val totalGross = order.CustomOrderItem.sumOf { it.GrossWt?.toDoubleOrNull() ?: 0.0 }
-    val totalStone = order.CustomOrderItem.sumOf { it.StoneWt?.toDoubleOrNull() ?: 0.0 }
-    val totalNet = totalGross - totalStone
-    val totalFine = order.CustomOrderItem.sumOf { it.FinePercentage?.toDoubleOrNull() ?: 0.0 }
-    val totalStnValue = order.CustomOrderItem.sumOf { it.StoneAmount?.toDoubleOrNull() ?: 0.0 }
-
-    val totalRow = listOf(
-        "TOTAL", "", "", "", "",
-        "%.3f".format(totalGross),
-        "%.3f".format(totalStone),
-        "%.3f".format(totalNet),
-        "%.3f".format(totalFine),
-        "%.3f".format(totalStnValue)
-    )
-
-    for (i in totalRow.indices) {
-        val left = colX[i].toFloat()
-        val right = (colX[i] + colWidth[i]).toFloat()
-        val bottom = (y + rowHeight).toFloat()
-
-        paint.style = Paint.Style.STROKE
-        canvas.drawRect(left, y.toFloat(), right, bottom, paint)
-
-        paint.style = Paint.Style.FILL
-        canvas.drawText(totalRow[i], left + 2f, bottom - 6f, paint)
-    }
-
-    y += rowHeight + 50
-    paint.isFakeBoldText = true
-
-    // ---------- Footer (Client Details) ----------
-    canvas.drawText(employee?.clients?.organisationName.orEmpty(), 20f, y.toFloat(), paint)
-    y += 15
-    paint.isFakeBoldText = false
-
-    canvas.drawText(
-        "ADDRESS - ${employee?.clients?.streetAddress.orEmpty()} , ${employee?.clients?.city.orEmpty()} - ${employee?.clients?.postalCode.orEmpty()}",
-        20f,
-        y.toFloat(),
-        paint
-    )
-    y += 15
-    canvas.drawText("GST - ${employee?.clients?.gstNo.orEmpty()}", 20f, y.toFloat(), paint)
-
-    y += 15
-    canvas.drawText("Note - This is not a Tax Invoice", 20f, y.toFloat(), paint)
-
-    document.finishPage(page)
-
-    // ---------- Save PDF File and Launch Viewer ----------
-    try {
-        val file = File(
-            context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-            "Invoice_${System.currentTimeMillis()}.pdf"
-        )
-        document.writeTo(FileOutputStream(file))
-        document.close()
-
-        val uri = FileProvider.getUriForFile(
-            context,
-            context.packageName + ".provider",
-            file
-        )
-
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/pdf")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-
-        context.startActivity(Intent.createChooser(intent, "Open PDF with..."))
-
-    } catch (e: IOException) {
-        e.printStackTrace()
-        Toast.makeText(context, "Error saving PDF: ${e.message}", Toast.LENGTH_LONG).show()
-    } catch (e: ActivityNotFoundException) {
-        Toast.makeText(context, "No PDF viewer found", Toast.LENGTH_SHORT).show()
-    }
-}*/
-
-
-/*fun generateInvoicePdfAndOpen(
-    context: Context,
-    order: CustomOrderResponse,
-    employee: Employee?
-) {
-    CoroutineScope(Dispatchers.Main).launch {
-        // Preload images first
-        val imageBitmaps = mutableListOf<Bitmap?>()
-        for (item in order.CustomOrderItem) {
-            Log.d("@@","image@@"+item.Image)
-            val bitmap = loadBitmapFromUrl("https://rrgold.loyalstring.co.in/"+item.Image ?: "")
-            imageBitmaps.add(bitmap)
-        }
-
-        // Now draw PDF with loaded bitmaps
-        val document = PdfDocument()
-        val paint = Paint()
-
-        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-        val page = document.startPage(pageInfo)
-        val canvas = page.canvas
-
-        val boldTextSize = 12f
-        val regularTextSize = 11f
-        var y = 30
-
-        paint.textSize = boldTextSize
-        paint.isFakeBoldText = true
-        canvas.drawText("Bill Report", 20f, y.toFloat(), paint)
-        y += 20
-
-        val leftX = 25f
-        val rightX = 320f
-
-        paint.textSize = regularTextSize
-        paint.isFakeBoldText = false
-
-        for ((index, item) in order.CustomOrderItem.withIndex()) {
-            // Box
-            val boxLeft = 20f
-            val boxTop = y.toFloat()
-            val boxRight = 575f
-            val boxHeight = 80f
-            val boxBottom = boxTop + boxHeight
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 1f
-            canvas.drawRect(boxLeft, boxTop, boxRight, boxBottom, paint)
-
-            // Left Column
-            paint.style = Paint.Style.FILL
-            var leftTextY = y + 15f
-            canvas.drawText(
-                "Customer Name : ${order.Customer?.FirstName.orEmpty()} ${order.Customer?.LastName.orEmpty()}",
-                leftX,
-                leftTextY,
-                paint
-            )
-            leftTextY += 18
-            canvas.drawText("Order No       : ${item.OrderNo}", leftX, leftTextY, paint)
-            leftTextY += 18
-            canvas.drawText("Itemcode       : ${item.ItemCode}", leftX, leftTextY, paint)
-            leftTextY += 18
-            canvas.drawText("Notes          : ${"" ?: "null"}", leftX, leftTextY, paint)
-
-            // Right Column
-            var rightTextY = y + 15f
-            canvas.drawText("G wt  : ${item.GrossWt}", rightX, rightTextY, paint)
-            rightTextY += 18
-            canvas.drawText("S wt  : ${item.StoneWt}", rightX, rightTextY, paint)
-            rightTextY += 18
-            canvas.drawText("N Wt  : ${item.NetWt}", rightX, rightTextY, paint)
-
-            y += boxHeight.toInt() + 10
-
-            // Draw Image from preloaded list
-            imageBitmaps.getOrNull(index)?.let { bitmap ->
-                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 400, 600, true)
-                val imageX = (595 - scaledBitmap.width) / 2f
-                canvas.drawBitmap(scaledBitmap, imageX, y.toFloat(), null)
-                y += scaledBitmap.height + 10
-            }
-        }
-
-        document.finishPage(page)
-
-        try {
-            val file = File(
-                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-                "Bill_Report_${System.currentTimeMillis()}.pdf"
-            )
-            document.writeTo(FileOutputStream(file))
-            document.close()
-
-            val uri = FileProvider.getUriForFile(
-                context,
-                context.packageName + ".provider",
-                file
-            )
-
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/pdf")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-
-            context.startActivity(Intent.createChooser(intent, "Open PDF with..."))
-
-        } catch (e: IOException) {
-            e.printStackTrace()
-            Toast.makeText(context, "Error saving PDF: ${e.message}", Toast.LENGTH_LONG).show()
-        } catch (e: ActivityNotFoundException) {
-            Toast.makeText(context, "No PDF viewer found", Toast.LENGTH_SHORT).show()
-        }
-    }
-}*/
+@SuppressLint("UseKtx")
 fun generateInvoicePdfAndOpen(
     context: Context,
     order: CustomOrderResponse,
@@ -3566,25 +3252,20 @@ fun generateInvoicePdfAndOpen(
     itemCodeList: List<ItemCodeResponse>
 ) {
 
-    CoroutineScope(Dispatchers.Main).launch {
+    CoroutineScope(Dispatchers.Default).launch {
         val imageBitmaps = mutableListOf<Bitmap?>()
         for (item in order.CustomOrderItem) {
-            Log.d("@@@","lastImagePath"+item.Image+" "+itemCodeList)
+            Log.d("@@@", "lastImagePath" + item.Image + " " + itemCodeList)
             if (item.Image != "" && item.Image != "https://rrgold.loyalstring.co.in/null") {
-                val bitmap = loadBitmapFromUrl(item.Image)
-                imageBitmaps.add(bitmap)
-            }else
-            {
-
                 for (x in itemCodeList) {
-                    if (item.ItemCode.equals(x.ItemCode))
-                    {
-
+                    if (item.ItemCode.equals(x.ItemCode)) {
                         val imageString = x.Images.toString()
-                        val lastImagePath =
-                            imageString.split(",").lastOrNull()?.trim()
-                        Log.d("@@","lastImagePath"+lastImagePath)
-                        val bitmap = loadBitmapFromUrl("https://rrgold.loyalstring.co.in/"+lastImagePath.toString())
+                        val lastImagePath = imageString.split(",").lastOrNull()?.trim()
+                        val finalUrl = "https://rrgold.loyalstring.co.in/$lastImagePath"
+                        Log.d("@@@", "Final image URL = $finalUrl")
+
+                        val bitmap = loadBitmapFromUrl(finalUrl)
+                        Log.d("@@@", "Bitmap loaded? ${bitmap != null}")
                         imageBitmaps.add(bitmap)
                         break
                     }
@@ -3620,7 +3301,7 @@ fun generateInvoicePdfAndOpen(
         val rightX = 320f
 
         for ((index, item) in order.CustomOrderItem.withIndex()) {
-            val boxHeight = 80
+            val boxHeight = 100
             val imageHeight = 600
             val spaceNeeded = boxHeight + 10 + imageHeight + 10
 
@@ -3650,25 +3331,41 @@ fun generateInvoicePdfAndOpen(
                 paint
             )
             leftTextY += 18
-            canvas.drawText("Order No       : ${item.OrderNo}", leftX, leftTextY, paint)
+            canvas.drawText("Order No : ${item.OrderNo}", leftX, leftTextY, paint)
+
             leftTextY += 18
-            canvas.drawText("Itemcode       : ${item.ItemCode}", leftX, leftTextY, paint)
+            canvas.drawText("Date : ${order.CreatedOn}", leftX, leftTextY, paint)
             leftTextY += 18
-            canvas.drawText("Notes          : ${""}", leftX, leftTextY, paint)
+            canvas.drawText("Exhibition : ${item.Exhibition}", leftX, leftTextY, paint)
+            leftTextY += 18
+            canvas.drawText("Remark : ${""}", leftX, leftTextY, paint)
 
             // Right Column
             var rightTextY = y + 15f
-            canvas.drawText("T wt  : ${item.GrossWt}", rightX, rightTextY, paint)
+            canvas.drawText("G Wt : ${item.GrossWt}", rightX, rightTextY, paint)
             rightTextY += 18
-            canvas.drawText("S wt  : ${item.StoneWt}", rightX, rightTextY, paint)
+            canvas.drawText("S Wt : ${item.StoneWt}", rightX, rightTextY, paint)
             rightTextY += 18
-            canvas.drawText("N Wt  : ${item.NetWt}", rightX, rightTextY, paint)
+            canvas.drawText("N Wt : ${item.NetWt}", rightX, rightTextY, paint)
 
             y += boxHeight + 10
 
             // Image
             imageBitmaps.getOrNull(index)?.let { bitmap ->
-                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 400, 600, true)
+                // Scale proportionally to fit within page width (minus margins)
+                val maxWidth = pageWidth - 40   // leave margins
+                val maxHeight = 400             // limit image height
+
+                val ratio = minOf(
+                    maxWidth.toFloat() / bitmap.width,
+                    maxHeight.toFloat() / bitmap.height
+                )
+
+                val newWidth = (bitmap.width * ratio).toInt()
+                val newHeight = (bitmap.height * ratio).toInt()
+
+                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+
                 val imageX = (pageWidth - scaledBitmap.width) / 2f
 
                 if (y + scaledBitmap.height > pageHeight - marginBottom) {
@@ -3681,6 +3378,7 @@ fun generateInvoicePdfAndOpen(
                 canvas.drawBitmap(scaledBitmap, imageX, y.toFloat(), null)
                 y += scaledBitmap.height + 10
             }
+
         }
 
         document.finishPage(currentPage)
@@ -3688,7 +3386,7 @@ fun generateInvoicePdfAndOpen(
         try {
             val file = File(
                 context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-                "Order_Report_${order.Customer.FirstName.orEmpty()}.pdf"
+                "Order_Report_${order.Customer.FirstName} ${order.Customer.LastName.orEmpty()}.pdf"
             )
             document.writeTo(FileOutputStream(file))
             document.close()
@@ -3713,6 +3411,7 @@ fun generateInvoicePdfAndOpen(
         }
     }
 }
+
 fun upscaleBitmap(original: Bitmap, scaleFactor: Float = 2f): Bitmap {
     val width = (original.width * scaleFactor).toInt()
     val height = (original.height * scaleFactor).toInt()
@@ -3758,16 +3457,19 @@ fun upscaleBitmap(original: Bitmap, scaleFactor: Float = 2f): Bitmap {
 suspend fun loadBitmapFromUrl(urlString: String): Bitmap? = withContext(Dispatchers.IO) {
     try {
         val url = URL(urlString)
-        val inputStream = url.openStream()
-        val bitmap = BitmapFactory.decodeStream(inputStream)
-        inputStream.close()
-        bitmap
+        val connection = url.openConnection() as HttpURLConnection
+        connection.doInput = true
+        connection.connect()
+        val inputStream = connection.inputStream
+        BitmapFactory.decodeStream(inputStream).also {
+            inputStream.close()
+            connection.disconnect()
+        }
     } catch (e: Exception) {
         e.printStackTrace()
         null
     }
 }
-
 
 
 

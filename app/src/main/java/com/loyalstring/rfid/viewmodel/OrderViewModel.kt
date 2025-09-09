@@ -255,7 +255,7 @@ class OrderViewModel @Inject constructor(
             FineSilver = this.FineSilver.orEmpty(),
             ClientCode = this.ClientCode.orEmpty(),
             VendorId = this.VendorId ?: 0,
-            AddToVendor = this.AddToVendor ?: false,
+            AddToVendor = this.AddToVendor == true,
             CustomerSlabId = this.CustomerSlabId ?: 0,
             CreditPeriodId = this.CreditPeriodId ?: 0,
             RateOfInterestId = this.RateOfInterestId ?: 0,
@@ -358,7 +358,7 @@ class OrderViewModel @Inject constructor(
 
                     //repository.clearLastOrderNo()
                     for (order in response.body()!!) {
-                        val request = order.toRequest()
+                        order.toRequest()
                         //4   repository.saveCustomerOrder(request)
                     }
                     Log.d("OrderViewModel", "get All order list: ${response.body()}")
@@ -368,7 +368,7 @@ class OrderViewModel @Inject constructor(
                     val localData = repository.getAllCustomerOrders(request.clientcode.toString())
 
 // Assuming you need to map CustomerOrderRequest to CustomerOrderResponse
-                    val mappedData = localData.map { customerOrderRequest ->
+                    localData.map { customerOrderRequest ->
                         CustomOrderResponse(
                             CustomOrderId = customerOrderRequest.CustomOrderId,
                             CustomerId = customerOrderRequest.CustomerId.toInt(),
@@ -463,97 +463,99 @@ class OrderViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e("OrderViewModel", "Exception: ${e.message}")
-                val localData = repository.getAllCustomerOrders(request.clientcode.toString())
+                repository.getAllCustomerOrders(request.clientcode.toString())
 
 // Assuming you need to map CustomerOrderRequest to CustomerOrderResponse
-                val mappedData = localData.map { customerOrderRequest ->
-                    CustomOrderResponse(
-                        CustomOrderId = customerOrderRequest.CustomOrderId,
-                        CustomerId = customerOrderRequest.CustomerId.toInt(),
-                        ClientCode = customerOrderRequest.ClientCode,
-                        OrderId = customerOrderRequest.OrderId,
-                        TotalAmount = customerOrderRequest.TotalAmount,
-                        PaymentMode = customerOrderRequest.PaymentMode,
-                        Offer = customerOrderRequest.Offer,
-                        Qty = customerOrderRequest.Qty,
-                        GST = customerOrderRequest.GST,
-                        OrderStatus = customerOrderRequest.OrderStatus,
-                        MRP = customerOrderRequest.MRP,
-                        VendorId = customerOrderRequest.VendorId,
-                        TDS = customerOrderRequest.TDS,
-                        PurchaseStatus = customerOrderRequest.PurchaseStatus,
-                        GSTApplied = customerOrderRequest.GSTApplied,
-                        Discount = customerOrderRequest.Discount,
-                        TotalNetAmount = customerOrderRequest.TotalNetAmount,
-                        TotalGSTAmount = customerOrderRequest.TotalGSTAmount,
-                        TotalPurchaseAmount = customerOrderRequest.TotalPurchaseAmount,
-                        ReceivedAmount = customerOrderRequest.ReceivedAmount,
-                        TotalBalanceMetal = customerOrderRequest.TotalBalanceMetal,
-                        BalanceAmount = customerOrderRequest.BalanceAmount,
-                        TotalFineMetal = customerOrderRequest.TotalFineMetal,
-                        CourierCharge = customerOrderRequest.CourierCharge,
-                        SaleType = customerOrderRequest.SaleType,
-                        OrderDate = customerOrderRequest.OrderDate,
-                        OrderCount = customerOrderRequest.OrderCount,
-                        AdditionTaxApplied = customerOrderRequest.AdditionTaxApplied,
-                        CategoryId = customerOrderRequest.CategoryId,
-                        OrderNo = customerOrderRequest.OrderNo,
-                        DeliveryAddress = customerOrderRequest.DeliveryAddress,
-                        BillType = customerOrderRequest.BillType,
-                        UrdPurchaseAmt = customerOrderRequest.UrdPurchaseAmt,
-                        BilledBy = customerOrderRequest.BilledBy,
-                        SoldBy = customerOrderRequest.SoldBy,
-                        CreditSilver = customerOrderRequest.CreditSilver,
-                        CreditGold = customerOrderRequest.CreditGold,
-                        CreditAmount = customerOrderRequest.CreditAmount,
-                        BalanceAmt = customerOrderRequest.BalanceAmt,
-                        BalanceSilver = customerOrderRequest.BalanceSilver,
-                        BalanceGold = customerOrderRequest.BalanceGold,
-                        TotalSaleGold = customerOrderRequest.TotalSaleGold,
-                        TotalSaleSilver = customerOrderRequest.TotalSaleSilver,
-                        TotalSaleUrdGold = customerOrderRequest.TotalSaleUrdGold,
-                        TotalSaleUrdSilver = customerOrderRequest.TotalSaleUrdSilver,
-                        FinancialYear = customerOrderRequest.FinancialYear,
-                        BaseCurrency = customerOrderRequest.BaseCurrency,
-                        TotalStoneWeight = customerOrderRequest.TotalStoneWeight,
-                        TotalStoneAmount = customerOrderRequest.TotalStoneAmount,
-                        TotalStonePieces = customerOrderRequest.TotalStonePieces,
-                        TotalDiamondWeight = customerOrderRequest.TotalDiamondWeight,
-                        TotalDiamondPieces = customerOrderRequest.TotalDiamondPieces,
-                        TotalDiamondAmount = customerOrderRequest.TotalDiamondAmount,
-                        FineSilver = customerOrderRequest.FineSilver,
-                        FineGold = customerOrderRequest.FineGold,
-                        DebitSilver = customerOrderRequest.DebitSilver,
-                        DebitGold = customerOrderRequest.DebitGold,
-                        PaidMetal = customerOrderRequest.PaidMetal,
-                        PaidAmount = customerOrderRequest.PaidAmount,
-                        TotalAdvanceAmt = customerOrderRequest.TotalAdvanceAmt,
-                        TaxableAmount = customerOrderRequest.TaxableAmount,
-                        TDSAmount = customerOrderRequest.TDSAmount,
-                        CreatedOn = customerOrderRequest.CreatedOn.toString(),
-                        LastUpdated = customerOrderRequest.LastUpdated.toString(),
-                        StatusType = customerOrderRequest.StatusType!!,
-                        FineMetal = customerOrderRequest.FineMetal,
-                        BalanceMetal = customerOrderRequest.BalanceMetal,
-                        AdvanceAmt = customerOrderRequest.AdvanceAmt,
-                        PaidAmt = customerOrderRequest.PaidAmt,
-                        TaxableAmt = customerOrderRequest.TaxableAmt,
-                        GstAmount = customerOrderRequest.GstAmount,
-                        GstCheck = customerOrderRequest.GstCheck,
-                        Category = customerOrderRequest.Category,
-                        TDSCheck = customerOrderRequest.TDSCheck,
-                        Remark = customerOrderRequest.Remark,
-                        OrderItemId = customerOrderRequest.OrderItemId!!.toInt(),
-                        StoneStatus = customerOrderRequest.StoneStatus,
-                        DiamondStatus = customerOrderRequest.DiamondStatus,
-                        BulkOrderId = customerOrderRequest.BulkOrderId,
-                        CustomOrderItem = customerOrderRequest.CustomOrderItem,
-                        Payments = customerOrderRequest.Payments,
-                        Customer = customerOrderRequest.Customer,
-                        syncStatus = customerOrderRequest.syncStatus,
-                        ProductName = ""
-                    )
-                }
+                /*
+                                val mappedData = localData.map { customerOrderRequest ->
+                                    CustomOrderResponse(
+                                        CustomOrderId = customerOrderRequest.CustomOrderId,
+                                        CustomerId = customerOrderRequest.CustomerId.toInt(),
+                                        ClientCode = customerOrderRequest.ClientCode,
+                                        OrderId = customerOrderRequest.OrderId,
+                                        TotalAmount = customerOrderRequest.TotalAmount,
+                                        PaymentMode = customerOrderRequest.PaymentMode,
+                                        Offer = customerOrderRequest.Offer,
+                                        Qty = customerOrderRequest.Qty,
+                                        GST = customerOrderRequest.GST,
+                                        OrderStatus = customerOrderRequest.OrderStatus,
+                                        MRP = customerOrderRequest.MRP,
+                                        VendorId = customerOrderRequest.VendorId,
+                                        TDS = customerOrderRequest.TDS,
+                                        PurchaseStatus = customerOrderRequest.PurchaseStatus,
+                                        GSTApplied = customerOrderRequest.GSTApplied,
+                                        Discount = customerOrderRequest.Discount,
+                                        TotalNetAmount = customerOrderRequest.TotalNetAmount,
+                                        TotalGSTAmount = customerOrderRequest.TotalGSTAmount,
+                                        TotalPurchaseAmount = customerOrderRequest.TotalPurchaseAmount,
+                                        ReceivedAmount = customerOrderRequest.ReceivedAmount,
+                                        TotalBalanceMetal = customerOrderRequest.TotalBalanceMetal,
+                                        BalanceAmount = customerOrderRequest.BalanceAmount,
+                                        TotalFineMetal = customerOrderRequest.TotalFineMetal,
+                                        CourierCharge = customerOrderRequest.CourierCharge,
+                                        SaleType = customerOrderRequest.SaleType,
+                                        OrderDate = customerOrderRequest.OrderDate,
+                                        OrderCount = customerOrderRequest.OrderCount,
+                                        AdditionTaxApplied = customerOrderRequest.AdditionTaxApplied,
+                                        CategoryId = customerOrderRequest.CategoryId,
+                                        OrderNo = customerOrderRequest.OrderNo,
+                                        DeliveryAddress = customerOrderRequest.DeliveryAddress,
+                                        BillType = customerOrderRequest.BillType,
+                                        UrdPurchaseAmt = customerOrderRequest.UrdPurchaseAmt,
+                                        BilledBy = customerOrderRequest.BilledBy,
+                                        SoldBy = customerOrderRequest.SoldBy,
+                                        CreditSilver = customerOrderRequest.CreditSilver,
+                                        CreditGold = customerOrderRequest.CreditGold,
+                                        CreditAmount = customerOrderRequest.CreditAmount,
+                                        BalanceAmt = customerOrderRequest.BalanceAmt,
+                                        BalanceSilver = customerOrderRequest.BalanceSilver,
+                                        BalanceGold = customerOrderRequest.BalanceGold,
+                                        TotalSaleGold = customerOrderRequest.TotalSaleGold,
+                                        TotalSaleSilver = customerOrderRequest.TotalSaleSilver,
+                                        TotalSaleUrdGold = customerOrderRequest.TotalSaleUrdGold,
+                                        TotalSaleUrdSilver = customerOrderRequest.TotalSaleUrdSilver,
+                                        FinancialYear = customerOrderRequest.FinancialYear,
+                                        BaseCurrency = customerOrderRequest.BaseCurrency,
+                                        TotalStoneWeight = customerOrderRequest.TotalStoneWeight,
+                                        TotalStoneAmount = customerOrderRequest.TotalStoneAmount,
+                                        TotalStonePieces = customerOrderRequest.TotalStonePieces,
+                                        TotalDiamondWeight = customerOrderRequest.TotalDiamondWeight,
+                                        TotalDiamondPieces = customerOrderRequest.TotalDiamondPieces,
+                                        TotalDiamondAmount = customerOrderRequest.TotalDiamondAmount,
+                                        FineSilver = customerOrderRequest.FineSilver,
+                                        FineGold = customerOrderRequest.FineGold,
+                                        DebitSilver = customerOrderRequest.DebitSilver,
+                                        DebitGold = customerOrderRequest.DebitGold,
+                                        PaidMetal = customerOrderRequest.PaidMetal,
+                                        PaidAmount = customerOrderRequest.PaidAmount,
+                                        TotalAdvanceAmt = customerOrderRequest.TotalAdvanceAmt,
+                                        TaxableAmount = customerOrderRequest.TaxableAmount,
+                                        TDSAmount = customerOrderRequest.TDSAmount,
+                                        CreatedOn = customerOrderRequest.CreatedOn.toString(),
+                                        LastUpdated = customerOrderRequest.LastUpdated.toString(),
+                                        StatusType = customerOrderRequest.StatusType!!,
+                                        FineMetal = customerOrderRequest.FineMetal,
+                                        BalanceMetal = customerOrderRequest.BalanceMetal,
+                                        AdvanceAmt = customerOrderRequest.AdvanceAmt,
+                                        PaidAmt = customerOrderRequest.PaidAmt,
+                                        TaxableAmt = customerOrderRequest.TaxableAmt,
+                                        GstAmount = customerOrderRequest.GstAmount,
+                                        GstCheck = customerOrderRequest.GstCheck,
+                                        Category = customerOrderRequest.Category,
+                                        TDSCheck = customerOrderRequest.TDSCheck,
+                                        Remark = customerOrderRequest.Remark,
+                                        OrderItemId = customerOrderRequest.OrderItemId!!.toInt(),
+                                        StoneStatus = customerOrderRequest.StoneStatus,
+                                        DiamondStatus = customerOrderRequest.DiamondStatus,
+                                        BulkOrderId = customerOrderRequest.BulkOrderId,
+                                        CustomOrderItem = customerOrderRequest.CustomOrderItem,
+                                        Payments = customerOrderRequest.Payments,
+                                        Customer = customerOrderRequest.Customer,
+                                        syncStatus = customerOrderRequest.syncStatus,
+                                        ProductName = ""
+                                    )
+                                }
+                */
 
                 //  _getAllOrderList.value = mappedData
                 // _getAllOrderList.value = localData
@@ -733,7 +735,7 @@ class OrderViewModel @Inject constructor(
     fun getAllOrders(clientCode: String) {
         viewModelScope.launch {
             try {
-                val orders = repository.getAllCustomerOrders(clientCode)
+                repository.getAllCustomerOrders(clientCode)
                 // _orderResponse.value = (orders)
             } catch (e: Exception) {
                 // _orderResponse.value =("Failed to fetch orders: ${e.message}")
