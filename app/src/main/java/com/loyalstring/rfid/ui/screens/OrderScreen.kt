@@ -701,6 +701,7 @@ fun OrderScreenContent(
             // ✅ Clear search so new customer shows in list
             customerName = ""
             productList.clear()
+          orderViewModel.clearAddEmpResponse()
 
         }
     }
@@ -714,8 +715,8 @@ fun OrderScreenContent(
                 itemCodeList.filter {
                     val query = itemCode.text.trim()
                     //it.ItemCode?.contains(itemCode.text.trim(), ignoreCase = true) == true
-                    it.ItemCode?.contains(query, ignoreCase = true) == true ||
-                            it.RFIDCode?.contains(query, ignoreCase = true) == true
+                    it.ItemCode!!.startsWith(query, ignoreCase = true) ||
+                            it.RFIDCode!!.startsWith(query, ignoreCase = true)
 
                 }
             }
@@ -1379,6 +1380,7 @@ fun OrderScreenContent(
 
                                             CustomOrderItem(
                                                 CustomOrderId = 0,
+                                                RFIDCode =selectedItem?.RFIDCode.toString(),
                                                 // OrderDate = product.orderDate,
                                                 // DeliverDate = product.deliverDate,
                                                 SKUId = 0,
@@ -1508,7 +1510,7 @@ fun OrderScreenContent(
                                             CreatedOn = "2025-07-08",
                                             LastUpdated = "2025-07-08",
                                             StatusType = true
-                                        )
+                                        ),
                                     )
                                     if (isOnline) {
                                         orderViewModel.addOrderCustomer(request)
@@ -1632,6 +1634,7 @@ fun OrderScreenContent(
 
                                         CustomOrderItem(
                                             CustomOrderId = 0,
+                                            RFIDCode =selectedItem?.RFIDCode.toString(),
                                             // OrderDate = product.orderDate,
                                             // DeliverDate = product.deliverDate,
                                             SKUId = 0,
@@ -2582,7 +2585,7 @@ fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
         Payments = this.Payments,
         Customer = this.Customer,
         syncStatus = this.syncStatus,
-        ProductName = "",
+        ProductName = ""
     )
 }
 

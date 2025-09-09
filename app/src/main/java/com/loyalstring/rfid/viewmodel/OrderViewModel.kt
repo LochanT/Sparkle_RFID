@@ -816,6 +816,10 @@ class OrderViewModel @Inject constructor(
         _orderUpdateResponse.value = null
     }
 
+    fun clearAddEmpResponse() {
+        _addEmpResponse.value = null
+    }
+
     /*update customer Order*/
     /*customer order*/
     fun getDailyRate(request: ClientCodeRequest) {
