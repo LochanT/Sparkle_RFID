@@ -101,9 +101,11 @@ import com.itextpdf.kernel.geom.PageSize
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.layout.Document
+import com.itextpdf.layout.element.AreaBreak
 import com.itextpdf.layout.element.Image
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
+import com.itextpdf.layout.properties.AreaBreakType
 import com.itextpdf.layout.properties.HorizontalAlignment
 import com.itextpdf.layout.properties.TextAlignment
 import com.itextpdf.layout.properties.UnitValue
@@ -3164,6 +3166,17 @@ fun OrderItemTableScreen(
 
     }
 
+    val allItems by orderViewModel.allOrderItems.collectAsState()
+    if(allItems!=null)
+    {
+
+    }
+
+    LaunchedEffect(Unit) {
+        orderViewModel.getAllOrderItemsFromRoom() // ✅ triggers fetching/updating
+    }
+
+
     // Totals
     val totalGrWt = productList.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }
     val totalNetWt = productList.sumOf { it.nWt?.toDoubleOrNull() ?: 0.0 }
@@ -4698,78 +4711,60 @@ suspend fun loadImageBytesFromUrl(urlString: String): ByteArray? = withContext(D
 }
 
 suspend fun generateTablePdfWithImages(context: Context, order: CustomOrderResponse) {
-
     val file = File(
         context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOCUMENTS),
         "Order_${order.Customer.FirstName}.pdf"
     )
-
     val writer = PdfWriter(file)
     val pdf = PdfDocument(writer)
     val doc = Document(pdf, PageSize.A4)
     doc.setMargins(20f, 20f, 20f, 20f)
-
     val header = Paragraph("Customer Order")
         .setTextAlignment(TextAlignment.CENTER)
         .setBold()
         .setFontSize(18f)
-
     doc.add(header)
     doc.add(Paragraph("\n"))
-
     for ((index, item) in order.CustomOrderItem.withIndex()) {
-        // --- Two column layout (no borders) ---
+        // Two column layout (no borders)
         val infoTable = Table(UnitValue.createPercentArray(floatArrayOf(1f, 1f)))
         infoTable.setWidth(UnitValue.createPercentValue(100f))
-        infoTable.setBorder(null) // ❌ no outer border
-
-        // Left column text
+        infoTable.setBorder(null)
         val leftText = """
-            Name     : ${order.Customer.FirstName} ${order.Customer.LastName}                               
+            Name     : ${order.Customer.FirstName} ${order.Customer.LastName}
             Order No : ${item.OrderNo ?: "-"}
             Design   : ${item.DesignName ?: "-"}
-            RFID No : ${item.RFIDCode ?: "-"}
-            
+            RFID No  : ${item.RFIDCode ?: "-"}
         """.trimIndent()
-
-        // Right column text
         val rightText = """
             Gross Wt : ${item.GrossWt ?: "-"}
             Stone Wt : ${item.StoneWt ?: "-"}
             Net Wt   : ${item.NetWt ?: "-"}
-            Remark  : ${item.Remark ?: "-"}
+            Remark   : ${item.Remark ?: "-"}
         """.trimIndent()
-
         infoTable.addCell(Paragraph(leftText).setBorder(null))
         infoTable.addCell(Paragraph(rightText).setBorder(null))
-
         doc.add(infoTable)
         doc.add(Paragraph("\n"))
-
-        // --- Big Image Below ---
+        // Big Image Below
         val imgBytes = loadImageBytesFromUrl("https://rrgold.loyalstring.co.in/" + item.Image)
         if (imgBytes != null) {
             val imgData = ImageDataFactory.create(imgBytes)
             val img = Image(imgData)
                 .setAutoScale(true)
                 .setWidth(UnitValue.createPercentValue(100f))
-                .setHorizontalAlignment(HorizontalAlignment.CENTER)// iText scales it correctly without quality loss
+                .setHorizontalAlignment(HorizontalAlignment.CENTER)
             doc.add(img)
         } else {
             doc.add(Paragraph("Image not available").setItalic())
         }
-
-        // spacing or new page between items
+        // Add page break after each item except the last one
         if (index != order.CustomOrderItem.lastIndex) {
-            doc.add(Paragraph("\n\n"))
-            // Or new page per item:
-            // doc.add(com.itextpdf.layout.element.AreaBreak())
+            doc.add(AreaBreak(AreaBreakType.NEXT_PAGE))
         }
     }
-
     doc.close()
-
-    // --- Open PDF ---
+    // Open PDF
     val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
     val intent = Intent(Intent.ACTION_VIEW).apply {
         setDataAndType(uri, "application/pdf")
@@ -4777,6 +4772,7 @@ suspend fun generateTablePdfWithImages(context: Context, order: CustomOrderRespo
     }
     context.startActivity(Intent.createChooser(intent, "Open PDF with..."))
 }
+
 
 
 
