@@ -67,6 +67,10 @@ import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.OrderViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -111,7 +115,7 @@ fun OrderLisrScreen(
         }
     } else allItems
 
-    val visibleData = filteredData.take(visibleItems)
+    val visibleData = filteredData.sortedByDescending { it.CustomOrderId }
 
     val headerTitles = listOf(
         "O.No",
@@ -221,6 +225,16 @@ fun SearchBar(value: String, onValueChange: (String) -> Unit) {
                     .padding(end = if (value.isNotEmpty()) 36.dp else 12.dp),
                 keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search)
             )
+            if (value.isEmpty()) {
+                Text(
+                    text = "Search by order no. and name",
+                    color = Color.Gray,
+                    fontSize = 16.sp,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 4.dp)
+                )
+            }
             if (value.isNotEmpty()) {
                 IconButton(
                     onClick = { onValueChange("") },
@@ -379,7 +393,9 @@ fun OrderTableWithPagination(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(onClick = {
-                                generateInvoicePdfAndOpen(context, row, employee, itemCodeList)
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    generateTablePdfWithImages(context, row)
+                                }
                             },
                                 modifier = Modifier.size(28.dp) ) {
                                 Icon(Icons.Default.Print, contentDescription = "Print", tint = Color.DarkGray,

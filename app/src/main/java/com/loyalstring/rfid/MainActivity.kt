@@ -85,7 +85,9 @@ import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.OrderViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 
@@ -205,11 +207,13 @@ private fun SetupNavigation(
 
     LaunchedEffect(employee?.clientCode) {
         employee?.clientCode?.let { clientCode ->
-            orderViewModel1.getAllEmpList(clientCode)
-            orderViewModel1.getAllItemCodeList(ClientCodeRequest(clientCode))
-            singleProductViewModel.getAllBranches(ClientCodeRequest(clientCode))
-            singleProductViewModel.getAllPurity(ClientCodeRequest(clientCode))
-            singleProductViewModel.getAllSKU(ClientCodeRequest(clientCode))
+            withContext(Dispatchers.IO) {
+                orderViewModel1.getAllEmpList(clientCode)
+                orderViewModel1.getAllItemCodeList(ClientCodeRequest(clientCode))
+                singleProductViewModel.getAllBranches(ClientCodeRequest(clientCode))
+                singleProductViewModel.getAllPurity(ClientCodeRequest(clientCode))
+                singleProductViewModel.getAllSKU(ClientCodeRequest(clientCode))
+            }
         }
     }
 

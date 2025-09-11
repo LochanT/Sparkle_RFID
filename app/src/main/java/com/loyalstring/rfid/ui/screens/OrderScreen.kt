@@ -1,5 +1,6 @@
 package com.loyalstring.rfid.ui.screens
 
+
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -7,7 +8,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Paint
-import android.graphics.pdf.PdfDocument
+
 import android.os.Build
 import android.os.Environment
 import android.util.Log
@@ -26,7 +27,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -48,6 +48,9 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -72,11 +75,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -90,6 +96,17 @@ import androidx.navigation.NavHostController
 import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.google.gson.Gson
+import com.itextpdf.io.image.ImageDataFactory
+import com.itextpdf.kernel.geom.PageSize
+import com.itextpdf.kernel.pdf.PdfDocument
+import com.itextpdf.kernel.pdf.PdfWriter
+import com.itextpdf.layout.Document
+import com.itextpdf.layout.element.Image
+import com.itextpdf.layout.element.Paragraph
+import com.itextpdf.layout.element.Table
+import com.itextpdf.layout.properties.HorizontalAlignment
+import com.itextpdf.layout.properties.TextAlignment
+import com.itextpdf.layout.properties.UnitValue
 import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
@@ -166,6 +183,18 @@ fun OrderScreen(
 
             // ✅ remove after consuming so it won’t run again
 
+        }
+    }
+
+    LaunchedEffect(employee?.clientCode) {
+        employee?.clientCode?.let { clientCode ->
+            withContext(Dispatchers.IO) {
+                orderViewModel.getAllEmpList(clientCode)
+                orderViewModel.getAllItemCodeList(ClientCodeRequest(clientCode))
+                singleProductViewModel.getAllBranches(ClientCodeRequest(clientCode))
+                singleProductViewModel.getAllPurity(ClientCodeRequest(clientCode))
+                singleProductViewModel.getAllSKU(ClientCodeRequest(clientCode))
+            }
         }
     }
     //selectedCustomer = editOrder?.Customer?.toEmployeeList()
@@ -265,6 +294,7 @@ private fun Customer?.toEmployeeList(): EmployeeList? {
 }
 
 
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun OrderScreenContent(
     navController: NavHostController,
@@ -657,7 +687,7 @@ fun OrderScreenContent(
 
                 orderViewModel.setOrderResponse(orderResponse)
                 Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
-                generateInvoicePdfAndOpen(context, orderResponse, employee, itemCodeList)
+                generateTablePdfWithImages(context, orderResponse)
                 showInvoice = true
                 orderViewModel.clearOrderItems()
                 customerName = ""
@@ -677,7 +707,7 @@ fun OrderScreenContent(
             if (!isEditMode) {
                 orderViewModel.setOrderResponse(it)
                 Toast.makeText(context, "Order Placed Successfully!", Toast.LENGTH_SHORT).show()
-                generateInvoicePdfAndOpen(context, it, employee, itemCodeList)
+                generateTablePdfWithImages(context, it)
                 showInvoice = true
                 orderViewModel.clearOrderItems()
                 /* itemCode.text=""
@@ -718,8 +748,8 @@ fun OrderScreenContent(
                     val rfid = it.RFIDCode?.trim().orEmpty()
 
                     // check only the first character
-                    code.startsWith(firstChar, ignoreCase = true) ||
-                            rfid.startsWith(firstChar, ignoreCase = true)
+                    code.contains(firstChar, ignoreCase = true) ||
+                            rfid.contains(firstChar, ignoreCase = true)
                 }
             }
         }
@@ -868,10 +898,22 @@ fun OrderScreenContent(
                             )
 
                             // Insert the new product into the database
-                            if (!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") {
-                                orderViewModel.insertOrderItemToRoom(newProduct)
-                                productList.add(newProduct)
+                            if ((!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") ||
+                                (!newProduct.rfidCode.isNullOrBlank() && newProduct.rfidCode != "null")) {
 
+                                val alreadyExists = productList.any {
+                                    it.itemCode == newProduct.itemCode ||
+                                            it.rfidCode == newProduct.rfidCode ||
+                                            it.tid == newProduct.tid
+                                }
+
+                                if (!alreadyExists) {
+                                    orderViewModel.insertOrderItemToRoom(newProduct)
+                                    productList.add(newProduct)
+                                    Log.d("Added", "New product added: ${newProduct.itemCode} / ${newProduct.rfidCode}")
+                                } else {
+                                    Log.d("Duplicate", "Skipped duplicate: ${newProduct.itemCode} / ${newProduct.rfidCode}")
+                                }
                             }
                         } else {
                             Log.d(
@@ -985,10 +1027,22 @@ fun OrderScreenContent(
             )
 
             // Insert the new product into the database
-            if (!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") {
-                orderViewModel.insertOrderItemToRoom(newProduct)
-                productList.add(newProduct)
+            if ((!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") ||
+                (!newProduct.rfidCode.isNullOrBlank() && newProduct.rfidCode != "null")) {
 
+                val alreadyExists = productList.any {
+                    it.itemCode == newProduct.itemCode ||
+                            it.rfidCode == newProduct.rfidCode ||
+                            it.tid == newProduct.tid
+                }
+
+                if (!alreadyExists) {
+                    orderViewModel.insertOrderItemToRoom(newProduct)
+                    productList.add(newProduct)
+                    Log.d("Added", "New product added: ${newProduct.itemCode} / ${newProduct.rfidCode}")
+                } else {
+                    Log.d("Duplicate", "Skipped duplicate: ${newProduct.itemCode} / ${newProduct.rfidCode}")
+                }
             }
             }
 
@@ -1139,10 +1193,22 @@ fun OrderScreenContent(
                         )
 
                         // Insert the new product into the database
-                        if (!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") {
-                            orderViewModel.insertOrderItemToRoom(newProduct)
-                          //  productList.add(newProduct)
+                        if ((!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") ||
+                            (!newProduct.rfidCode.isNullOrBlank() && newProduct.rfidCode != "null")) {
 
+                            val alreadyExists = productList.any {
+                                it.itemCode == newProduct.itemCode ||
+                                        it.rfidCode == newProduct.rfidCode ||
+                                        it.tid == newProduct.tid
+                            }
+
+                            if (!alreadyExists) {
+                                orderViewModel.insertOrderItemToRoom(newProduct)
+                                productList.add(newProduct)
+                                Log.d("Added", "New product added: ${newProduct.itemCode} / ${newProduct.rfidCode}")
+                            } else {
+                                Log.d("Duplicate", "Skipped duplicate: ${newProduct.itemCode} / ${newProduct.rfidCode}")
+                            }
                         }
                     } else {
                         Log.d(
@@ -1584,7 +1650,7 @@ fun OrderScreenContent(
                                     OrderCount = "1",
                                     AdditionTaxApplied = AdditionTaxApplied.toString(),
                                     CategoryId = 2,
-                                    OrderNo = nextOrderNo.toString(),
+                                    OrderNo = editOrder?.OrderNo.toString(),
                                     DeliveryAddress = "123 Street, Mumbai",
                                     BillType = "Retail",
                                     UrdPurchaseAmt = null,
@@ -3288,11 +3354,13 @@ fun OrderItemTableScreen(
                                             )
                                             Spacer(Modifier.width(4.dp))
                                             Text(
-                                                item.productName,
+                                                text = item.productName,
                                                 fontSize = 13.sp,
                                                 color = Color.Black,
                                                 maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.fillMaxWidth(),   // take full width of its cell
+                                                textAlign = TextAlign.Start           // align left
                                             )
                                         }
 
@@ -3678,7 +3746,7 @@ fun validateBeforeShowingDialog(
     }
 }
 
-@Composable
+/*@Composable
 fun ItemCodeInputRow(
     itemCode: TextFieldValue,
     onItemCodeChange: (TextFieldValue) -> Unit,
@@ -3893,9 +3961,224 @@ fun ItemCodeInputRow(
             )
         }
     }
+}*/
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ItemCodeInputRow(
+    itemCode: TextFieldValue,
+    onItemCodeChange: (TextFieldValue) -> Unit,
+    showDropdown: Boolean,
+    setShowDropdown: (Boolean) -> Unit,
+    context: Context,
+    onScanClicked: () -> Unit,
+    onClearClicked: () -> Unit,
+    onAddOrderClicked: () -> Unit,
+    validateBeforeShowingDialog: () -> Boolean,
+    filteredList: List<ItemCodeResponse>,
+    isLoading: Boolean,
+    onItemSelected: (ItemCodeResponse) -> Unit,
+    modifier: Modifier = Modifier,
+    saveToDb: (ItemCodeResponse) -> Unit,
+    selectedCustomer: EmployeeList?,
+    productList: List<OrderItem>,
+    customerId: Int?,
+    selectedItem: ItemCodeResponse?,
+    bulkViewModel: BulkViewModel,
+) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    var showOrderDialog by remember { mutableStateOf(false) }
+    val singleProductViewModel: SingleProductViewModel = hiltViewModel()
+
+    Spacer(modifier = Modifier.height(5.dp))
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(40.dp)
+            .padding(horizontal = 10.dp)
+    ) {
+        // Item Code Input Box with ExposedDropdownMenuBox
+        ExposedDropdownMenuBox(
+            expanded = showDropdown && filteredList.isNotEmpty(),
+            onExpandedChange = { setShowDropdown(it) },
+            modifier = Modifier.weight(1.1f)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
+                    .height(35.dp)
+                    .gradientBorderBox()
+                    .padding(horizontal = 8.dp)
+            ) {
+                BasicTextField(
+                    value = itemCode,
+                    onValueChange = {
+                        onItemCodeChange(it)
+                        setShowDropdown(it.text.isNotEmpty())
+                    },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    textStyle = TextStyle(fontSize = 14.sp, color = Color.Black),
+                    decorationBox = { innerTextField ->
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (itemCode.text.isEmpty()) {
+                                Text(
+                                    "Enter RFID / Itemcode",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
+                )
+
+                IconButton(
+                    onClick = {
+                        if (itemCode.text.isNotEmpty()) {
+                            onClearClicked()
+                            setShowDropdown(false)
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        } else onScanClicked()
+                    },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    if (itemCode.text.isNotEmpty()) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Clear",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(id = R.drawable.svg_qr),
+                            contentDescription = "Scan",
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable {
+                                    bulkViewModel.startBarcodeScanning(context)
+                                    setShowDropdown(false)
+                                },
+                            tint = Color.Unspecified
+                        )
+                    }
+                }
+            }
+
+            // Dropdown
+            ExposedDropdownMenu(
+                expanded = showDropdown && filteredList.isNotEmpty(),
+                onDismissRequest = { setShowDropdown(false) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (isLoading) {
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Loading...", fontSize = 13.sp)
+                            }
+                        },
+                        onClick = {}
+                    )
+                } else {
+                    filteredList.forEach { item ->
+                        DropdownMenuItem(
+                            text = {
+                                val query = itemCode.text.trim()
+                                val match = when {
+                                    item.ItemCode?.contains(query, true) == true -> item.ItemCode
+                                    item.RFIDCode?.contains(query, true) == true -> item.RFIDCode
+                                    else -> ""
+                                }
+                                Text(match.orEmpty(), fontSize = 14.sp)
+                            },
+                            onClick = {
+                                val query = itemCode.text.trim()
+                                val selectedValue = when {
+                                    item.ItemCode?.contains(query, true) == true -> item.ItemCode
+                                    item.RFIDCode?.contains(query, true) == true -> item.RFIDCode
+                                    else -> ""
+                                }
+
+                                onItemCodeChange(TextFieldValue(selectedValue.orEmpty()))
+                                onItemSelected(item)
+
+                                // ✅ prevent duplicate save
+                                val alreadyExists = productList.any {
+                                    it.itemCode == item.ItemCode || it.rfidCode == item.RFIDCode
+                                }
+                                if (!alreadyExists) {
+                                    saveToDb(item)
+                                }
+
+                                setShowDropdown(false)
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                            }
+
+                        )
+                    }
+
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Order Details Button
+        Box(
+            modifier = Modifier
+                .weight(0.8f)
+                .height(35.dp)
+                .gradientBorderBox()
+                .padding(horizontal = 8.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable {
+                    if (validateBeforeShowingDialog()) {
+                        showOrderDialog = true
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Order Details", fontSize = 13.sp, color = Color.Black)
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    painter = painterResource(id = R.drawable.vector_add),
+                    contentDescription = "Add",
+                    modifier = Modifier.size(20.dp),
+                    tint = Color.Unspecified
+                )
+            }
+        }
+
+        if (showOrderDialog && selectedItem != null) {
+            val branchList = singleProductViewModel.branches
+
+            OrderDetailsDialog(
+                customerId,
+                selectedCustomer,
+                selectedItem,
+                branchList,
+                onDismiss = { showOrderDialog = false },
+                onSave = { showOrderDialog = false }
+            )
+        }
+    }
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerNameInput(
     customerName: String,
@@ -3910,28 +4193,33 @@ fun CustomerNameInput(
     expanded: Boolean
 ) {
     var expandedState by remember { mutableStateOf(false) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
-    Box(
+    ExposedDropdownMenuBox(
+        expanded = expandedState && filteredCustomers.isNotEmpty(),
+        onExpandedChange = { expandedState = it },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 10.dp, end = 10.dp, top = 3.dp, bottom = 3.dp)
+            .padding(horizontal = 10.dp, vertical = 3.dp)
     ) {
+        // 🔹 Custom BasicTextField styled like before
         Row(
             modifier = Modifier
+                .menuAnchor() // anchor for dropdown
                 .fillMaxWidth()
                 .height(40.dp)
                 .gradientBorderBox()
-                .padding(1.dp) // border thickness
+                .padding(1.dp)
                 .background(Color.White, RoundedCornerShape(8.dp))
                 .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Input field
             BasicTextField(
                 value = customerName,
                 onValueChange = {
                     onCustomerNameChange(it)
-                    expandedState = true
+                    expandedState = it.isNotEmpty()
                 },
                 singleLine = true,
                 textStyle = TextStyle(fontSize = 15.sp, color = Color.Black),
@@ -3943,15 +4231,17 @@ fun CustomerNameInput(
                 },
                 modifier = Modifier
                     .weight(1f)
-                    .padding(vertical = 6.dp) // compact padding
+                    .padding(vertical = 6.dp)
             )
 
             // Right-side icon: + when empty, × when text entered
             if (customerName.isEmpty()) {
-                IconButton(onClick = { onAddCustomerClick() },
-                    modifier = Modifier
-                        .size(36.dp)
-                        .padding(end = 2.dp)
+                IconButton(
+                    onClick = {
+                        onAddCustomerClick()
+                        expandedState = false
+                    },
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.vector_add),
@@ -3961,12 +4251,14 @@ fun CustomerNameInput(
                     )
                 }
             } else {
-                IconButton(onClick = {
-                    onClear()
-                    expandedState = false
-                },  modifier = Modifier
-                    .size(36.dp)
-                    .padding(end = 2.dp)
+                IconButton(
+                    onClick = {
+                        onClear()
+                        expandedState = false
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    },
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -3977,49 +4269,38 @@ fun CustomerNameInput(
             }
         }
 
-        // Dropdown anchored below
-        DropdownMenu(
+        // 🔹 Dropdown (Material3)
+        ExposedDropdownMenu(
             expanded = expandedState && filteredCustomers.isNotEmpty(),
-            onDismissRequest = { expandedState = false },
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = 200.dp) // reduced height
+            onDismissRequest = { expandedState = false }
         ) {
             if (isLoading) {
-                DropdownMenuItem(onClick = {}) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Loading...", fontSize = 13.sp)
-                }
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Loading...", fontSize = 13.sp)
+                        }
+                    },
+                    onClick = {}
+                )
             } else {
                 filteredCustomers.forEach { customer ->
-                    DropdownMenuItem(onClick = {
-                        onCustomerSelected(customer)
-                        expandedState = false
-                    }) {
-                        Text("${customer.FirstName} ${customer.LastName}")
-                    }
+                    DropdownMenuItem(
+                        text = { Text("${customer.FirstName} ${customer.LastName}") },
+                        onClick = {
+                            onCustomerSelected(customer)
+                            expandedState = false
+                            focusManager.clearFocus()
+                            keyboardController?.hide() // hide only after selection
+                        }
+                    )
                 }
             }
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4334,160 +4615,7 @@ fun Modifier.gradientBorderBox(
         }
     }
 }*/
-fun generateInvoicePdfAndOpen(
-    context: Context,
-    order: CustomOrderResponse,
-    employee: Employee?,
-    itemCodeList: List<ItemCodeResponse>
-) {
 
-    CoroutineScope(Dispatchers.Main).launch {
-        val imageBitmaps = mutableListOf<Bitmap?>()
-        for (item in order.CustomOrderItem) {
-            Log.d("@@@","lastImagePath"+item.Image+" "+itemCodeList)
-            if (item.Image != "" && item.Image != "https://rrgold.loyalstring.co.in/null") {
-                val bitmap = loadBitmapFromUrl(item.Image)
-                imageBitmaps.add(bitmap)
-            }else
-            {
-
-                for (x in itemCodeList) {
-                    if (item.ItemCode.equals(x.ItemCode))
-                    {
-
-                        val imageString = x.Images.toString()
-                        val lastImagePath =
-                            imageString.split(",").lastOrNull()?.trim()
-                        Log.d("@@","lastImagePath"+lastImagePath)
-                        val bitmap = loadBitmapFromUrl("https://rrgold.loyalstring.co.in/"+lastImagePath.toString())
-                        imageBitmaps.add(bitmap)
-                        break
-                    }
-                }
-            }
-        }
-
-        val document = PdfDocument()
-        val paint = Paint()
-
-        val pageWidth = 595
-        val pageHeight = 842
-        val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create()
-
-        var currentPage = document.startPage(pageInfo)
-        var canvas = currentPage.canvas
-
-        val boldTextSize = 12f
-        val regularTextSize = 11f
-        val marginTop = 30
-        val marginBottom = 30
-        var y = marginTop
-
-        // Header
-        paint.textSize = boldTextSize
-        paint.isFakeBoldText = true
-        canvas.drawText("Bill Report", 20f, y.toFloat(), paint)
-        y += 20
-        paint.textSize = regularTextSize
-        paint.isFakeBoldText = false
-
-        val leftX = 25f
-        val rightX = 320f
-
-        for ((index, item) in order.CustomOrderItem.withIndex()) {
-            val boxHeight = 80
-            val imageHeight = 600
-            val spaceNeeded = boxHeight + 10 + imageHeight + 10
-
-            if (y + spaceNeeded > pageHeight - marginBottom) {
-                document.finishPage(currentPage)
-                currentPage = document.startPage(pageInfo)
-                canvas = currentPage.canvas
-                y = marginTop
-            }
-
-            // Draw box
-            val boxLeft = 20f
-            val boxTop = y.toFloat()
-            val boxRight = 575f
-            val boxBottom = boxTop + boxHeight
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 1f
-            canvas.drawRect(boxLeft, boxTop, boxRight, boxBottom, paint)
-
-            // Left Column
-            paint.style = Paint.Style.FILL
-            var leftTextY = y + 15f
-            canvas.drawText(
-                "Customer Name : ${order.Customer.FirstName.orEmpty()} ${order.Customer.LastName.orEmpty()}",
-                leftX,
-                leftTextY,
-                paint
-            )
-            leftTextY += 18
-            canvas.drawText("Order No       : ${item.OrderNo}", leftX, leftTextY, paint)
-            leftTextY += 18
-            canvas.drawText("Itemcode       : ${item.ItemCode}", leftX, leftTextY, paint)
-            leftTextY += 18
-            canvas.drawText("Notes          : ${""}", leftX, leftTextY, paint)
-
-            // Right Column
-            var rightTextY = y + 15f
-            canvas.drawText("T wt  : ${item.GrossWt}", rightX, rightTextY, paint)
-            rightTextY += 18
-            canvas.drawText("S wt  : ${item.StoneWt}", rightX, rightTextY, paint)
-            rightTextY += 18
-            canvas.drawText("N Wt  : ${item.NetWt}", rightX, rightTextY, paint)
-
-            y += boxHeight + 10
-
-            // Image
-            imageBitmaps.getOrNull(index)?.let { bitmap ->
-                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 400, 600, true)
-                val imageX = (pageWidth - scaledBitmap.width) / 2f
-
-                if (y + scaledBitmap.height > pageHeight - marginBottom) {
-                    document.finishPage(currentPage)
-                    currentPage = document.startPage(pageInfo)
-                    canvas = currentPage.canvas
-                    y = marginTop
-                }
-
-                canvas.drawBitmap(scaledBitmap, imageX, y.toFloat(), null)
-                y += scaledBitmap.height + 10
-            }
-        }
-
-        document.finishPage(currentPage)
-
-        try {
-            val file = File(
-                context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-                "Order_Report_${order.Customer.FirstName.orEmpty()}.pdf"
-            )
-            document.writeTo(FileOutputStream(file))
-            document.close()
-
-            val uri = FileProvider.getUriForFile(
-                context,
-                context.packageName + ".provider",
-                file
-            )
-
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/pdf")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-
-            context.startActivity(Intent.createChooser(intent, "Open PDF with..."))
-        } catch (e: IOException) {
-            e.printStackTrace()
-            Toast.makeText(context, "Error saving PDF: ${e.message}", Toast.LENGTH_LONG).show()
-        } catch (e: ActivityNotFoundException) {
-            Toast.makeText(context, "No PDF viewer found", Toast.LENGTH_SHORT).show()
-        }
-    }
-}
 
 /*
 fun editOrder(
@@ -4557,6 +4685,97 @@ suspend fun loadBitmapFromUrl(urlString: String): Bitmap? = withContext(Dispatch
         e.printStackTrace()
         null
     }
+}
+
+suspend fun loadImageBytesFromUrl(urlString: String): ByteArray? = withContext(Dispatchers.IO) {
+    try {
+        val url = URL(urlString)
+        url.openStream().use { it.readBytes() }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+suspend fun generateTablePdfWithImages(context: Context, order: CustomOrderResponse) {
+
+    val file = File(
+        context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOCUMENTS),
+        "Order_${order.Customer.FirstName}.pdf"
+    )
+
+    val writer = PdfWriter(file)
+    val pdf = PdfDocument(writer)
+    val doc = Document(pdf, PageSize.A4)
+    doc.setMargins(20f, 20f, 20f, 20f)
+
+    val header = Paragraph("Customer Order")
+        .setTextAlignment(TextAlignment.CENTER)
+        .setBold()
+        .setFontSize(18f)
+
+    doc.add(header)
+    doc.add(Paragraph("\n"))
+
+    for ((index, item) in order.CustomOrderItem.withIndex()) {
+        // --- Two column layout (no borders) ---
+        val infoTable = Table(UnitValue.createPercentArray(floatArrayOf(1f, 1f)))
+        infoTable.setWidth(UnitValue.createPercentValue(100f))
+        infoTable.setBorder(null) // ❌ no outer border
+
+        // Left column text
+        val leftText = """
+            Name     : ${order.Customer.FirstName} ${order.Customer.LastName}                               
+            Order No : ${item.OrderNo ?: "-"}
+            Design   : ${item.DesignName ?: "-"}
+            RFID No : ${item.RFIDCode ?: "-"}
+            
+        """.trimIndent()
+
+        // Right column text
+        val rightText = """
+            Gross Wt : ${item.GrossWt ?: "-"}
+            Stone Wt : ${item.StoneWt ?: "-"}
+            Net Wt   : ${item.NetWt ?: "-"}
+            Remark  : ${item.Remark ?: "-"}
+        """.trimIndent()
+
+        infoTable.addCell(Paragraph(leftText).setBorder(null))
+        infoTable.addCell(Paragraph(rightText).setBorder(null))
+
+        doc.add(infoTable)
+        doc.add(Paragraph("\n"))
+
+        // --- Big Image Below ---
+        val imgBytes = loadImageBytesFromUrl("https://rrgold.loyalstring.co.in/" + item.Image)
+        if (imgBytes != null) {
+            val imgData = ImageDataFactory.create(imgBytes)
+            val img = Image(imgData)
+                .setAutoScale(true)
+                .setWidth(UnitValue.createPercentValue(100f))
+                .setHorizontalAlignment(HorizontalAlignment.CENTER)// iText scales it correctly without quality loss
+            doc.add(img)
+        } else {
+            doc.add(Paragraph("Image not available").setItalic())
+        }
+
+        // spacing or new page between items
+        if (index != order.CustomOrderItem.lastIndex) {
+            doc.add(Paragraph("\n\n"))
+            // Or new page per item:
+            // doc.add(com.itextpdf.layout.element.AreaBreak())
+        }
+    }
+
+    doc.close()
+
+    // --- Open PDF ---
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(uri, "application/pdf")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, "Open PDF with..."))
 }
 
 
