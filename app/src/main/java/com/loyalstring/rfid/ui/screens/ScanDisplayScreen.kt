@@ -168,19 +168,20 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
             }
         }
     }
-    remember(allItems, filterTypeName, filterValue) {
-        if (filterTypeName.isNullOrEmpty() || filterValue.isNullOrEmpty()) {
-            allItems
-        } else {
-            when (filterTypeName.lowercase()) {
-                "box" -> allItems.filter { it.boxName == filterValue }
-                "counter" -> allItems.filter { it.counterName == filterValue }
-                "branch" -> allItems.filter { it.branchName == filterValue }
-                "exhibition" -> allItems.filter { it.branchType == filterTypeName && it.branchName == filterValue }
-                else -> allItems
-            }
-        }
-    }
+    /*  remember(allItems, filterTypeName, filterValue) {
+          if (filterTypeName.isNullOrEmpty() || filterValue.isNullOrEmpty()) {
+              allItems
+          } else {
+              when (filterTypeName.lowercase()) {
+                  "box" -> allItems.filter { it.boxName == filterValue }
+                  "counter" -> allItems.filter { it.counterName == filterValue }
+                  "branch" -> allItems.filter { it.branchName == filterValue }
+                  "branch" -> allItems.filter { it.branchName == filterValue }
+                  "exhibition" -> allItems.filter { it.branchType == filterTypeName && it.branchName == filterValue }
+                  else -> allItems
+              }
+          }
+      }*/
 
     // Multi-select filters
     val selectedCategories = remember { mutableStateListOf<String>() }
@@ -227,7 +228,8 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     var showMenu by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
     var filterType by remember { mutableStateOf("Category") }
-    var selectedMenu by rememberSaveable { mutableStateOf("All") }
+
+    var selectedMenu by rememberSaveable { mutableStateOf(MENU_ALL) }
 
 
     var selectedItem by remember { mutableStateOf<BulkItem?>(null) }
@@ -627,6 +629,7 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         }
                         // In ScanDisplayScreen
                         "Search" -> {
+                            isScanning = false
                             val scanMap = bulkViewModel.scannedFilteredItems.value
                                 .associateBy { it.epc?.trim()?.uppercase() ?: "" }
 
@@ -1010,7 +1013,11 @@ fun TableDataRow(row: TableRow, currentLevel: String, onRowClick: () -> Unit) {
         TableCell(formatTo3Decimals(grossWeight), colWeightWidth)
         TableCell("$matchedQty", colMatchedQtyWidth)
         TableCell(formatTo3Decimals(matchedWeight), colMatchedWtWidth)
-        val status = row.items.firstOrNull()?.scannedStatus ?: "Unmatched"
+        val status = when {
+            row.items.all { it.scannedStatus == "Matched" } -> "Matched"
+            row.items.all { it.scannedStatus == "Unmatched" } -> "Unmatched"
+            else -> "Unmatched"
+        }
         StatusIconCell(status, colStatusWidth)
     }
 
