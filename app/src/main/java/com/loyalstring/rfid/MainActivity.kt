@@ -389,7 +389,7 @@ private fun SetupNavigation(
             },
             content = { innerPadding ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    AppNavigation(navController, drawerState, scope, context, userPreferences,orderViewModel1,singleProductViewModel)
+                    AppNavigation(navController, drawerState, scope, userPreferences,orderViewModel1,singleProductViewModel)
                 }
 
 
