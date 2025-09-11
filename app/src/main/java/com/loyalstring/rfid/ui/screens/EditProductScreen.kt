@@ -57,6 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
@@ -128,6 +129,7 @@ fun EditProductScreen(
     }
 
 
+    var compressedImagePath by remember { mutableStateOf<String?>(null) }
     val cameraFile = remember {
         File(
             context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
@@ -138,7 +140,12 @@ fun EditProductScreen(
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) {
-                localPath = cameraFile.absolutePath
+                compressAndSetImage(
+                    cameraFile.toUri(), context, cacheDir, item.itemCode ?: "image"
+                ) { file ->
+                    compressedImagePath = file.absolutePath
+                    localPath = file.absolutePath
+                }
             }
         }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -159,12 +166,10 @@ fun EditProductScreen(
     val galleryLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let {
-                val inputStream = context.contentResolver.openInputStream(it)
-                val file = File(cacheDir, "${item.itemCode ?: "image"}.jpg")
-                inputStream?.use { input ->
-                    file.outputStream().use { output -> input.copyTo(output) }
+                compressAndSetImage(it, context, cacheDir, item.itemCode ?: "image") { file ->
+                    compressedImagePath = file.absolutePath
+                    localPath = file.absolutePath
                 }
-                localPath = file.absolutePath
             }
         }
     var productName by remember { mutableStateOf(item.productName.orEmpty()) }
