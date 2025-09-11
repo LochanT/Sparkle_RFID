@@ -629,7 +629,6 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         }
                         // In ScanDisplayScreen
                         "Search" -> {
-                            isScanning = false
                             val scanMap = bulkViewModel.scannedFilteredItems.value
                                 .associateBy { it.epc?.trim()?.uppercase() ?: "" }
 

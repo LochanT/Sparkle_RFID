@@ -352,10 +352,9 @@ class BulkViewModel @Inject constructor(
     fun startScanningInventory(selectedPower: Int) {
         if (!success || _isScanning.value) return
         scanJob?.cancel()
-        // scannedEpcList.clear()
         _isScanning.value = true
 
-        readerManager.startInventoryTag(selectedPower,false)
+        readerManager.startInventoryTag(selectedPower, false)
         readerManager.playSound(1)
 
         scanJob = viewModelScope.launch(Dispatchers.IO) {
@@ -370,16 +369,10 @@ class BulkViewModel @Inject constructor(
                             val scannedSet = scannedEpcList.toSet()
                             val updatedList = _scannedFilteredItems.value.map { item ->
                                 val dbEpc = item.epc?.trim()?.uppercase()
-                                when {
-                                    dbEpc != null && scannedSet.contains(dbEpc) -> {
-                                        Log.d(
-                                            "SCAN_MATCH",
-                                            "Matched DB EPC: $dbEpc with Scanned EPC: $scannedEpc"
-                                        )
-                                        item.copy(scannedStatus = "Matched")
-                                    }
-
-                                    else -> item.copy(scannedStatus = "Unmatched")
+                                if (dbEpc != null && scannedSet.contains(dbEpc)) {
+                                    item.copy(scannedStatus = "Matched")
+                                } else {
+                                    item.copy(scannedStatus = "Unmatched")
                                 }
                             }
                             _scannedFilteredItems.value = updatedList
