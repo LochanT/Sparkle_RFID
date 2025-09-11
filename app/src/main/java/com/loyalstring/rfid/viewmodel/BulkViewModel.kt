@@ -975,7 +975,7 @@ class BulkViewModel @Inject constructor(
                 _syncStatusText.value = "Fetching data..."
                 val response = bulkRepository.syncBulkItemsFromServer(request)
                 val bulkItems = response
-                    .filter { it.status == "ApiActive" || it.status == "Active" }
+                    .filter { (it.status == "ApiActive" || it.status == "Active") && !it.rfidCode.isNullOrBlank() }
                     .map { it.toBulkItem() }
 
                 val total = bulkItems.size

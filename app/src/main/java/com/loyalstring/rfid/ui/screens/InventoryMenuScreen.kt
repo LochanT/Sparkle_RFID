@@ -6,21 +6,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -250,39 +249,50 @@ fun InventoryMenuScreen(
     }
 }
 
-
 @Composable
-fun MenuButton(title: String, icon: Int, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B363E)),
-        shape = MaterialTheme.shapes.medium,
+fun MenuButton(
+    title: String,
+    icon: Int,
+    onClick: () -> Unit
+) {
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+            .height(80.dp)
+            .background(
+                color = Color(0xFF3B363E),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .clickable { onClick() },
+        contentAlignment = Alignment.CenterStart // anchor from start
     ) {
         Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 85.dp), // 🔥 adjust this value until it looks visually centered
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 painter = painterResource(id = icon),
                 contentDescription = title,
                 tint = Color.White,
-                modifier = Modifier
-                    .size(75.dp)
-                    .padding(end = 16.dp)
+                modifier = Modifier.size(32.dp)
             )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
             Text(
                 text = title,
                 color = Color.White,
-                fontSize = 22.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
                 fontFamily = poppins
             )
         }
     }
 }
+
+
 @Composable
 fun SelectionDialog(
     title: String,

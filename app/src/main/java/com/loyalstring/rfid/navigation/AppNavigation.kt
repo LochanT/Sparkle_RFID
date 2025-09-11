@@ -1,11 +1,5 @@
 package com.loyalstring.rfid.navigation
-
-//import com.loyalstring.rfid.ui.screens.ScanBoxScreeen
-//import com.loyalstring.rfid.ui.screens.ScanBranchScreen
-//import com.loyalstring.rfid.ui.screens.ScanCounterScreen
-//import com.loyalstring.rfid.ui.screens.ScanExhibitionScreen
 import android.annotation.SuppressLint
-import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.material3.DrawerState
@@ -46,7 +40,6 @@ fun AppNavigation(
     navController: NavHostController,
     drawerState: DrawerState,
     scope: CoroutineScope,
-    context: Context,
     userPreferences: UserPreferences,
     orderViewModel1: OrderViewModel,
     singleProductViewModel: SingleProductViewModel,
@@ -88,9 +81,7 @@ fun AppNavigation(
         composable(Screens.ImportExcelScreen.route) {
             ImportExcelScreen(onBack = { navController.popBackStack() }, navController)
         }
-//        composable(Screens.ExportExcelScreen.route) {
-//            ExportExcelScreen(onBack = { navController.popBackStack() }, navController)
-//        }
+
         composable(Screens.ProductListScreen.route) {
             ProductListScreen(onBack = { navController.popBackStack() }, navController)
         }
@@ -103,18 +94,7 @@ fun AppNavigation(
         composable(Screens.ScanDisplayScreen.route) {
             ScanDisplayScreen(onBack = { navController.popBackStack() }, navController)
         }
-        //  composable(Screens.ScanCounterScreen.route) {
-        //      ScanCounterScreen(onBack = { navController.popBackStack() }, navController)
-        //  }
-        //  composable(Screens.ScanBranchScreen.route) {
-        //      ScanBranchScreen(onBack = { navController.popBackStack() }, navController)
-        //  }
-        //  composable(Screens.ScanExhibitionScreen.route) {
-        //      ScanExhibitionScreen(onBack = { navController.popBackStack() }, navController)
-        //  }
-        //  composable(Screens.ScanBoxScreen.route) {
-        //      ScanBoxScreeen(onBack = { navController.popBackStack() }, navController)
-        //  }
+
         composable(Screens.SearchScreen.route) {
             SearchScreen(
                 onBack = { navController.popBackStack() },

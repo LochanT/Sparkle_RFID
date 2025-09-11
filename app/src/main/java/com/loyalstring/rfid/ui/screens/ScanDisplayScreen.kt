@@ -628,25 +628,52 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         // In ScanDisplayScreen
                         "Search" -> {
                             val scanMap = bulkViewModel.scannedFilteredItems.value
-                                .associateBy { it.rfid?.trim()?.uppercase() }
+                                .associateBy { it.epc?.trim()?.uppercase() ?: "" }
+
+                            println("=== scanMap contents ===")
+                            scanMap.values.forEach {
+                                println("EPC: '${it.epc}', status: '${it.scannedStatus}'")
+                            }
 
                             val latestUnmatched = scopeItems
-                                .map { original ->
-                                    val key = original.rfid?.trim()?.uppercase()
-                                    scanMap[key] ?: original
+                                .mapNotNull { original ->
+                                    val key = original.epc?.trim()?.uppercase() ?: ""
+                                    val matched = scanMap[key]
+                                    println("Mapping original EPC: '${original.epc}', key: '$key' -> matched: ${matched?.epc ?: "null"}, status: ${matched?.scannedStatus ?: "null"}")
+                                    matched
                                 }
-                                .filter { it.scannedStatus == "Unmatched" }
+                                .filter {
+                                    val status = it.scannedStatus?.trim()
+                                    val keep = status.equals("Unmatched", ignoreCase = true)
+                                    println("Filtering EPC: '${it.epc}', status: '$status', keep = $keep")
+                                    keep
+                                }
+                                .distinctBy { it.epc?.trim()?.uppercase() }
 
-                            // ✅ Set on the *current entry* before navigation
-                            navController.currentBackStackEntry?.savedStateHandle?.set(
-                                "unmatchedItems",
-                                ArrayList(latestUnmatched) // ⚠️ must be ArrayList if BulkItem implements Serializable/Parcelable
-                            )
+                            println("=== Result: latestUnmatched ===")
+                            latestUnmatched.forEach {
+                                println("EPC: '${it.epc}', status: '${it.scannedStatus}'")
+                            }
 
+                            println("Total unmatched items = ${latestUnmatched.size}")
+
+// ✅ Pass unmatched items via savedStateHandle
+                            if (latestUnmatched.isNotEmpty()) {
+                                navController.currentBackStackEntry?.savedStateHandle?.set(
+                                    "unmatchedItems",
+                                    ArrayList(latestUnmatched) // ⚠️ Make sure BulkItem implements Serializable or Parcelable
+                                )
+                            } else {
+                                println("No unmatched items found")
+                            }
+
+// ✅ Navigate to SearchScreen
                             navController.navigate(Screens.SearchScreen.route) {
                                 launchSingleTop = true
                                 restoreState = true
                             }
+
+
                         }
 
 
