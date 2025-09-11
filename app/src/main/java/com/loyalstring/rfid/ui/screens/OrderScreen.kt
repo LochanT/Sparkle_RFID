@@ -2,15 +2,11 @@ package com.loyalstring.rfid.ui.screens
 
 
 import android.annotation.SuppressLint
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Paint
-
 import android.os.Build
-import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -101,9 +97,11 @@ import com.itextpdf.kernel.geom.PageSize
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.layout.Document
+import com.itextpdf.layout.element.AreaBreak
 import com.itextpdf.layout.element.Image
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
+import com.itextpdf.layout.properties.AreaBreakType
 import com.itextpdf.layout.properties.HorizontalAlignment
 import com.itextpdf.layout.properties.TextAlignment
 import com.itextpdf.layout.properties.UnitValue
@@ -134,8 +132,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
 import java.net.URL
 
 @RequiresApi(Build.VERSION_CODES.R)
@@ -335,7 +331,6 @@ fun OrderScreenContent(
     var firstPress by remember { mutableStateOf(false) }
     var isGstChecked by remember { mutableStateOf(false) }
     var totalAmount by remember { mutableStateOf("0.000") }
-    var order by remember { mutableStateOf("0.000") }
     var totalAMt by remember { mutableStateOf(0.0) }
     var quantity by remember { mutableStateOf("") }
     var gst by remember { mutableStateOf("") }
@@ -359,7 +354,6 @@ fun OrderScreenContent(
 
 // Collecting states from ViewModel
     val isLoading by orderViewModel.isItemCodeLoading.collectAsState()
-    val isLoadingEmp by orderViewModel.isEmpListLoading.collectAsState()
     val lastOrder by orderViewModel.lastOrderNoresponse.collectAsState()
     val orderSuccess by orderViewModel.orderResponse.collectAsState()
     val items by bulkViewModel.scannedItems.collectAsState()
@@ -520,7 +514,7 @@ fun OrderScreenContent(
     var refreshKey by remember { mutableStateOf(0) }
 
 // Scroll and coroutine scope
-    val scrollState = rememberScrollState()
+    rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
 
 // Handle Order Confirmation
@@ -578,15 +572,11 @@ fun OrderScreenContent(
     var country by remember { mutableStateOf("") }
     var state by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf("") }
 
     val addEmpResponse by orderViewModel.addEmpReposnes.observeAsState()
-    var expandedCity by remember { mutableStateOf(false) }
-    var expandedState by remember { mutableStateOf(false) }
-    var expandedCountry by remember { mutableStateOf(false) }
 
 // Dropdown lists for address
-    val cityOptions = listOf(
+    listOf(
         "Ahmedabad", "Bengaluru", "Chandigarh", "Chennai", "Delhi", "Hyderabad",
         "Jaipur", "Kolkata", "Lucknow", "Mumbai", "Nagpur", "Pune", "Surat", "Vadodara",
         "Bhopal", "Indore", "Coimbatore", "Patna", "Kochi", "Vijayawada", "Agra", "Faridabad",
@@ -608,7 +598,6 @@ fun OrderScreenContent(
     val countryOptions = listOf("USA", "Canada", "Mexico", "UK", "India")
     var expandedCustomer by remember { mutableStateOf(false) }
     var showDropdownItemcode by remember { mutableStateOf(false) }
-    var showOrderDialog by remember { mutableStateOf(false) }
     var showEditOrderDialog by remember { mutableStateOf(false) }
 
 
@@ -793,7 +782,7 @@ fun OrderScreenContent(
                             val imageString = selectedItem?.Images.toString()
                             val lastImagePath =
                                 imageString.split(",").lastOrNull()?.trim()
-                            val fullImageUrl = "$baseUrl$lastImagePath"
+                            "$baseUrl$lastImagePath"
 
                             val netWt: Double = (selectedItem?.GrossWt?.toDoubleOrNull()
                                 ?: 0.0) - (selectedItem?.TotalStoneWeight?.toDoubleOrNull()
@@ -804,8 +793,7 @@ fun OrderScreenContent(
                                 selectedItem?.WastagePercent?.toDoubleOrNull() ?: 0.0
 
 
-                            val finewt: Double =
-                                ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
+                            ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
                             val metalAmt: Double = (selectedItem?.NetWt?.toDoubleOrNull()
                                 ?: 0.0) * (selectedItem?.TodaysRate?.toDoubleOrNull() ?: 0.0)
 
@@ -963,7 +951,7 @@ fun OrderScreenContent(
             val imageString = selectedItem?.Images.toString()
             val lastImagePath =
                 imageString.split(",").lastOrNull()?.trim()
-            val fullImageUrl = "$baseUrl$lastImagePath"
+            "$baseUrl$lastImagePath"
             val newProduct = OrderItem(
                 branchId = selectedItem?.BranchId.toString(),
                 branchName = selectedItem?.BranchName.toString(),
@@ -1088,8 +1076,7 @@ fun OrderScreenContent(
                             selectedItem?.WastagePercent?.toDoubleOrNull() ?: 0.0
 
 
-                        val finewt: Double =
-                            ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
+                        ((finePercent / 100.0) * netWt) + ((wastagePercent / 100.0) * netWt)
                         val metalAmt: Double =
                             (selectedItem?.NetWt?.toDoubleOrNull()
                                 ?: 0.0) * (selectedItem?.TodaysRate?.toDoubleOrNull()
@@ -1127,7 +1114,7 @@ fun OrderScreenContent(
                         val imageString = selectedItem?.Images.toString()
                         val lastImagePath =
                             imageString.split(",").lastOrNull()?.trim()
-                        val fullImageUrl = "$baseUrl$lastImagePath"
+                        "$baseUrl$lastImagePath"
                         // If the product doesn't exist in productList, add it and insert into database
                         val newProduct = OrderItem(
                             branchId = selectedItem?.BranchId.toString(),
@@ -1306,8 +1293,7 @@ fun OrderScreenContent(
                             if (!isEditMode) {
 
                                 // Fetch last order number from API
-                                val lastOrderResponse =
-                                    orderViewModel.fetchLastOrderNo(ClientCodeRequest(clientCode))
+                                orderViewModel.fetchLastOrderNo(ClientCodeRequest(clientCode))
 
                                 // Parse response safely
                                 var attempts = 0
@@ -2250,7 +2236,6 @@ fun OrderScreenContent(
                             // Dropdown control states
                             var expandedCountry by remember { mutableStateOf(false) }
                             var expandedState by remember { mutableStateOf(false) }
-                            var expandedCity by remember { mutableStateOf(false) }
 
                             @Composable
                             fun textInput(
@@ -2639,7 +2624,7 @@ fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
         TDSAmount = this.TDSAmount ?: "",
         CreatedOn = this.CreatedOn ?: "",
         LastUpdated = this.LastUpdated ?: "",
-        StatusType = this.StatusType ?: true,
+        StatusType = this.StatusType != false,
         FineMetal = this.FineMetal.toString(),
         BalanceMetal = this.BalanceMetal,
         AdvanceAmt = this.AdvanceAmt,
@@ -4718,26 +4703,23 @@ suspend fun generateTablePdfWithImages(context: Context, order: CustomOrderRespo
     doc.add(Paragraph("\n"))
 
     for ((index, item) in order.CustomOrderItem.withIndex()) {
-        // --- Two column layout (no borders) ---
+        // Two column layout (no borders)
         val infoTable = Table(UnitValue.createPercentArray(floatArrayOf(1f, 1f)))
         infoTable.setWidth(UnitValue.createPercentValue(100f))
-        infoTable.setBorder(null) // ❌ no outer border
+        infoTable.setBorder(null)
 
-        // Left column text
         val leftText = """
             Name     : ${order.Customer.FirstName} ${order.Customer.LastName}                               
             Order No : ${item.OrderNo ?: "-"}
             Design   : ${item.DesignName ?: "-"}
-            RFID No : ${item.RFIDCode ?: "-"}
-            
+            RFID No  : ${item.RFIDCode ?: "-"}
         """.trimIndent()
 
-        // Right column text
         val rightText = """
             Gross Wt : ${item.GrossWt ?: "-"}
             Stone Wt : ${item.StoneWt ?: "-"}
             Net Wt   : ${item.NetWt ?: "-"}
-            Remark  : ${item.Remark ?: "-"}
+            Remark   : ${item.Remark ?: "-"}
         """.trimIndent()
 
         infoTable.addCell(Paragraph(leftText).setBorder(null))
@@ -4746,30 +4728,28 @@ suspend fun generateTablePdfWithImages(context: Context, order: CustomOrderRespo
         doc.add(infoTable)
         doc.add(Paragraph("\n"))
 
-        // --- Big Image Below ---
+        // Big Image Below
         val imgBytes = loadImageBytesFromUrl("https://rrgold.loyalstring.co.in/" + item.Image)
         if (imgBytes != null) {
             val imgData = ImageDataFactory.create(imgBytes)
             val img = Image(imgData)
                 .setAutoScale(true)
                 .setWidth(UnitValue.createPercentValue(100f))
-                .setHorizontalAlignment(HorizontalAlignment.CENTER)// iText scales it correctly without quality loss
+                .setHorizontalAlignment(HorizontalAlignment.CENTER)
             doc.add(img)
         } else {
             doc.add(Paragraph("Image not available").setItalic())
         }
 
-        // spacing or new page between items
+        // Add page break after each item except the last one
         if (index != order.CustomOrderItem.lastIndex) {
-            doc.add(Paragraph("\n\n"))
-            // Or new page per item:
-            // doc.add(com.itextpdf.layout.element.AreaBreak())
+            doc.add(AreaBreak(AreaBreakType.NEXT_PAGE))
         }
     }
 
     doc.close()
 
-    // --- Open PDF ---
+    // Open PDF
     val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
     val intent = Intent(Intent.ACTION_VIEW).apply {
         setDataAndType(uri, "application/pdf")
