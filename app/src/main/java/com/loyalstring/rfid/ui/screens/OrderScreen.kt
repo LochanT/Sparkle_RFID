@@ -133,6 +133,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URL
+import java.text.DecimalFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -311,7 +312,7 @@ fun OrderScreenContent(
         NetworkUtils.isNetworkAvailable(context)
     }
 
-
+    val df = DecimalFormat("#.00")
 // Retrieve logged-in employee from preferences
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
     var isEditMode by remember { mutableStateOf(false) }
@@ -1400,7 +1401,7 @@ fun OrderScreenContent(
                                         GSTApplied = isGstApplied.toString(),
                                         Discount = "",
                                         TotalNetAmount = taxableAmt.toString(),
-                                        TotalGSTAmount = gstAmt.toString(),
+                                        TotalGSTAmount =  String.format("%.2f", gstAmt),
                                         TotalPurchaseAmount = calculatedTotalAmount.toString(),
                                         ReceivedAmount = "",
                                         TotalBalanceMetal = "",
@@ -1453,7 +1454,7 @@ fun OrderScreenContent(
                                         AdvanceAmt = "0",
                                         PaidAmt = "25000",
                                         TaxableAmt = taxableAmt.toString(),
-                                        GstAmount = gstAmt.toString(),
+                                        GstAmount =  String.format("%.2f", gstAmt),
                                         GstCheck = isGstChecked.toString(),
                                         Category = "Ring",
                                         TDSCheck = "false",
@@ -1654,7 +1655,7 @@ fun OrderScreenContent(
                                     GSTApplied = isGstApplied.toString(),
                                     Discount = "",
                                     TotalNetAmount = taxableAmt.toString(),
-                                    TotalGSTAmount = gstAmt.toString(),
+                                    TotalGSTAmount = String.format("%.2f", gstAmt),
                                     TotalPurchaseAmount = calculatedTotalAmount.toString(),
                                     ReceivedAmount = "",
                                     TotalBalanceMetal = "",
@@ -1707,7 +1708,7 @@ fun OrderScreenContent(
                                     AdvanceAmt = "0",
                                     PaidAmt = "25000",
                                     TaxableAmt = taxableAmt.toString(),
-                                    GstAmount = gstAmt.toString(),
+                                    GstAmount =  String.format("%.2f", gstAmt),
                                     GstCheck = isGstChecked.toString(),
                                     Category = "Ring",
                                     TDSCheck = "false",
