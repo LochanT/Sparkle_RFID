@@ -224,7 +224,7 @@ fun OrderDetailsDialogEditAndDisplay(
     // Inside @Composable
 
     val calendar = Calendar.getInstance()
-    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+    val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
     var orderDate by remember { mutableStateOf(dateFormatter.format(calendar.time)) }
 
     val context = LocalContext.current

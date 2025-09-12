@@ -133,6 +133,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URL
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @RequiresApi(Build.VERSION_CODES.R)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -194,8 +196,8 @@ fun OrderScreen(
         }
     }
     //selectedCustomer = editOrder?.Customer?.toEmployeeList()
-   // val navController = rememberNavController()
-   // val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+    // val navController = rememberNavController()
+    // val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
 
     Scaffold(
         topBar = {
@@ -233,7 +235,7 @@ fun OrderScreen(
                 singleProductViewModel=singleProductViewModel,
                 editOrder=editOrder,
 
-            )
+                )
         }
     }
 }
@@ -366,11 +368,11 @@ fun OrderScreenContent(
 
     //val productList by orderViewModel.allOrderItems.collectAsState()
     val productList = remember { mutableStateListOf<OrderItem>() }
-   /* LaunchedEffect(Unit) {
-        customerName = ""
-        itemCode = TextFieldValue("")
-        orderViewModel.clearOrderItems()
-    }*/
+    /* LaunchedEffect(Unit) {
+         customerName = ""
+         itemCode = TextFieldValue("")
+         orderViewModel.clearOrderItems()
+     }*/
 
 
     LaunchedEffect(Unit) {
@@ -423,6 +425,20 @@ fun OrderScreenContent(
 
             // ✅ Prefill product list in Room/State
             orderViewModel.clearOrderItems()
+            gst = editOrder.GST ?: "false"
+            gstApplied = editOrder.GSTApplied ?: "false"
+
+            // ✅ Sync checkbox with saved GST
+            isGstChecked = gstApplied.equals("true", ignoreCase = true)
+
+            // ✅ Recalculate total amount if GST was applied
+            val gstPercent = 3.0
+            val taxableAmt = totalAMt
+            if (isGstChecked) {
+                val gstAmt = taxableAmt * gstPercent / 100
+                totalAMt = taxableAmt + gstAmt
+                totalGstAmt = gstAmt.toString()
+            }
             editOrder.CustomOrderItem.forEach { coItem ->
                 val orderItem = OrderItem(
                     branchId = "",
@@ -720,7 +736,7 @@ fun OrderScreenContent(
             // ✅ Clear search so new customer shows in list
             customerName = ""
             productList.clear()
-          orderViewModel.clearAddEmpResponse()
+            orderViewModel.clearAddEmpResponse()
 
         }
     }
@@ -913,9 +929,9 @@ fun OrderScreenContent(
                     } else {
                         Log.d("No Match", "No item matched with scanned TID")
                     }
-                    }
                 }
             }
+        }
 
     }
 
@@ -1032,7 +1048,7 @@ fun OrderScreenContent(
                     Log.d("Duplicate", "Skipped duplicate: ${newProduct.itemCode} / ${newProduct.rfidCode}")
                 }
             }
-            }
+        }
 
 
     }
@@ -1215,11 +1231,11 @@ fun OrderScreenContent(
     var nextOrderNo = remember { mutableStateOf(0) }
     LaunchedEffect(lastOrder) {
         if (!isEditMode) {
-        lastOrder.LastOrderNo.toIntOrNull()?.let { last ->
-            nextOrderNo.value = last + 1
-            Log.d("Order", "Last order number: $last")
-            Log.d("Order", "Next order number: ${nextOrderNo.value}")
-        }
+            lastOrder.LastOrderNo.toIntOrNull()?.let { last ->
+                nextOrderNo.value = last + 1
+                Log.d("Order", "Last order number: $last")
+                Log.d("Order", "Next order number: ${nextOrderNo.value}")
+            }
         }
     }
     LaunchedEffect(productList) {
@@ -1253,6 +1269,16 @@ fun OrderScreenContent(
     }
 
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val allItems by orderViewModel.allOrderItems.collectAsState()
+    if(allItems!=null)
+    {
+
+    }
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+    LaunchedEffect(Unit) {
+        orderViewModel.getAllOrderItemsFromRoom() // ✅ triggers fetching/updating
+    }
 
     Scaffold(
         bottomBar = {
@@ -1263,7 +1289,9 @@ fun OrderScreenContent(
                     totalAmount = totalAMt, // required
                     onTotalAmountChange = { totalAMt = it }, // required
                     isGstChecked = isGstChecked, // optional but you're overriding it
-                    onGstCheckedChange = { isGstChecked = it } // optional but you're overriding it
+                    onGstCheckedChange = { isGstChecked = it
+                        gstApplied = isGstChecked.toString()
+                    } // optional but you're overriding it
                 )
                 Spacer(modifier = Modifier.height(5.dp))
                 ScanBottomBar(
@@ -1350,8 +1378,10 @@ fun OrderScreenContent(
                                         AdditionTaxApplied = false
 
                                     }
-                                    Log.d("@@", "" + calculatedTotalAmount)
-
+                                    Log.d("@@ TOTAL AMOUNT", "TAX" + calculatedTotalAmount+" TAX is "+gstAmt+"   gstApplied"+gstApplied)
+                                    val orderDate: String = productList.firstOrNull()?.orderDate
+                                        ?.takeIf { !it.isNullOrBlank() }  // only use if not null/empty
+                                        ?: LocalDate.now().format(formatter)
                                     val request = CustomOrderRequest(
                                         CustomOrderId = 0,
                                         CustomerId = selectedCustomer.Id.toString(),
@@ -1378,7 +1408,7 @@ fun OrderScreenContent(
                                         TotalFineMetal = totalFinemetal,
                                         CourierCharge = null,
                                         SaleType = null,
-                                        OrderDate = "2025-07-08",
+                                        OrderDate =  orderDate,
                                         OrderCount = "1",
                                         AdditionTaxApplied = AdditionTaxApplied.toString(),
                                         CategoryId = 2,
@@ -1588,7 +1618,7 @@ fun OrderScreenContent(
                                 var GST = false
                                 var AdditionTaxApplied = false
 
-                                if (gstApplied == "true") {
+                                if (editOrder?.GSTApplied == "true") {
                                     gstAmt = taxableAmt * gstPercent / 100
                                     taxableAmt = totalAMt ?: 0.0
                                     calculatedTotalAmount = taxableAmt + gstAmt
@@ -1604,7 +1634,7 @@ fun OrderScreenContent(
                                     AdditionTaxApplied = false
 
                                 }
-                                Log.d("@@", "" + calculatedTotalAmount)
+                                Log.d("@@", "" + calculatedTotalAmount +"editOrder?.GSTApplied"+editOrder?.GSTApplied +" gstAmt"+gstAmt)
 
                                 val request = CustomOrderRequest(
                                     CustomOrderId = editOrder?.CustomOrderId?.toInt() ?: 0,
@@ -2035,7 +2065,7 @@ fun OrderScreenContent(
                 .fillMaxSize()
                 .zIndex(0f)
                 /*.verticalScroll(scrollState)*/
-                   .padding(bottom = screenHeight * 0.01f)
+                .padding(bottom = screenHeight * 0.01f)
         ) {
             Spacer(modifier = Modifier.height(4.dp))
             /*CustomerNameInput(
@@ -2101,12 +2131,12 @@ fun OrderScreenContent(
                 },
                 coroutineScope = coroutineScope, // ✅ Required argument
                 fetchSuggestions = {
-                 //   orderViewModel.getAllEmpList(employee?.clientCode ?: "")
+                    //   orderViewModel.getAllEmpList(employee?.clientCode ?: "")
                 },
 
                 expanded = false,
 
-            )
+                )
 
 
 
@@ -2131,10 +2161,10 @@ fun OrderScreenContent(
 
                 saveToDb = {
 
-                              val orderItem = mapItemCodeToOrderItem(it, dailyRates)
+                    val orderItem = mapItemCodeToOrderItem(it, dailyRates)
 
-                  if (!orderItem.itemCode.isNullOrBlank() && orderItem.itemCode != "null") {
-                      Log.d("itemAmt","itemAmt"+orderItem.itemAmt)
+                    if (!orderItem.itemCode.isNullOrBlank() && orderItem.itemCode != "null") {
+                        Log.d("itemAmt","itemAmt"+orderItem.itemAmt)
                         orderViewModel.insertOrderItemToRoom(orderItem)
                         productList.add(orderItem)
 
@@ -2173,13 +2203,13 @@ fun OrderScreenContent(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-     /*       GstRowView(
-                gstPercent = 3.0, // optional because of default value
-                totalAmount = totalAMt, // required
-                onTotalAmountChange = { totalAMt = it }, // required
-                isGstChecked = isGstChecked, // optional but you're overriding it
-                onGstCheckedChange = { isGstChecked = it } // optional but you're overriding it
-            )*/
+            /*       GstRowView(
+                       gstPercent = 3.0, // optional because of default value
+                       totalAmount = totalAMt, // required
+                       onTotalAmountChange = { totalAMt = it }, // required
+                       isGstChecked = isGstChecked, // optional but you're overriding it
+                       onGstCheckedChange = { isGstChecked = it } // optional but you're overriding it
+                   )*/
             Spacer(modifier = Modifier.height(4.dp))
         }
     }
@@ -2397,14 +2427,14 @@ fun OrderScreenContent(
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             textInput(city, { city = it }, "City")
-                      /*      dropdownInput(
-                                city,
-                                { city = it },
-                                "City",
-                                cityOptions,
-                                expandedCity,
-                                { expandedCity = it },
-                                modifier = Modifier.fillMaxWidth())*/
+                            /*      dropdownInput(
+                                      city,
+                                      { city = it },
+                                      "City",
+                                      cityOptions,
+                                      expandedCity,
+                                      { expandedCity = it },
+                                      modifier = Modifier.fillMaxWidth())*/
 
                         }
 
@@ -2543,10 +2573,10 @@ fun OrderScreenContent(
             branchList,
             onDismiss = { showEditOrderDialog = false },
             //  onConfirm = onConfirmOrderDetails,
-         /*   onSave = {
-                // handle saved data
-                showOrderDialog = false
-            },*/
+            /*   onSave = {
+                   // handle saved data
+                   showOrderDialog = false
+               },*/
             edit = 1,
             onSave = { updatedItem ->
                 onSaveEditedItem(updatedItem)   // updates productList in parent
@@ -2650,11 +2680,11 @@ fun CustomOrderRequest.toCustomOrderResponse(): CustomOrderResponse {
 
 fun resetScan(model: BulkViewModel, firstPress: Boolean) {
     // Add logic to stop or clear scanning state
- //   model.resetData()
+    //   model.resetData()
     model.stopBarcodeScanner()
     model.stopScanning()  // Make sure scanning stops properly
-     // Reset any data that might be lingering
-  //  firstPress=false;
+    // Reset any data that might be lingering
+    //  firstPress=false;
 }
 
 @Composable
@@ -2679,7 +2709,7 @@ fun GstRowView(
             .height(45.dp)
             .background(Color(0xFFF3F2F2))
             .padding(horizontal = 8.dp, vertical = 6.dp),
-            //  .heightIn(min = 40.dp), // Ensure enough height for checkbox
+        //  .heightIn(min = 40.dp), // Ensure enough height for checkbox
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
