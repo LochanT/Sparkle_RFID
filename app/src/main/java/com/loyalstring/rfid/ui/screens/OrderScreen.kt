@@ -106,6 +106,7 @@ import com.itextpdf.layout.properties.HorizontalAlignment
 import com.itextpdf.layout.properties.TextAlignment
 import com.itextpdf.layout.properties.UnitValue
 import com.loyalstring.rfid.R
+import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.local.entity.OrderItem
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.login.Employee
@@ -129,13 +130,26 @@ import com.loyalstring.rfid.viewmodel.UiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.time.debounce
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URL
 import java.text.DecimalFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import androidx.compose.runtime.*
+
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.onEach
+
+import kotlinx.coroutines.withContext
+
 
 @RequiresApi(Build.VERSION_CODES.R)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -308,6 +322,20 @@ fun OrderScreenContent(
     val isOnline = remember {
         NetworkUtils.isNetworkAvailable(context)
     }
+    val localItemList by bulkViewModel.scannedFilteredItems
+
+    Log.d("localItemList","localItemList"+localItemList)
+
+    // Decide which list to use
+    val finalItemList = if (itemCodeList.isNotEmpty()) {
+        itemCodeList
+    } else {
+        // if empty, trigger local fetch
+        LaunchedEffect(Unit) {
+            bulkViewModel.getAllItems(context)
+        }
+        localItemList
+    }
 
     val df = DecimalFormat("#.00")
 // Retrieve logged-in employee from preferences
@@ -442,7 +470,7 @@ fun OrderScreenContent(
                     deliverDate = "",
                     productName = coItem.ProductName.orEmpty(),
                     itemCode = coItem.ItemCode.orEmpty(),
-                    rfidCode = "",
+                    rfidCode = coItem.RFIDCode.orEmpty(),
                     itemAmt = coItem.Amount,
                     grWt = coItem.GrossWt,
                     nWt = coItem.NetWt,
@@ -710,16 +738,16 @@ fun OrderScreenContent(
         }
     }
 
-    val filteredList by remember(itemCode.text, itemCodeList, isLoading) {
+ /*   val filteredList by remember(itemCode.text, finalItemList, isLoading) {
         derivedStateOf {
             val query = itemCode.text.trim()
             if (query.isEmpty() || itemCodeList.isEmpty() || isLoading) {
                 emptyList()
             } else {
                 val firstChar = query.first().toString() // 👈 only take first letter
-                itemCodeList.filter {
-                    val code = it.ItemCode?.trim().orEmpty()
-                    val rfid = it.RFIDCode?.trim().orEmpty()
+                finalItemList.filter {
+                    val code = it.itemcode?.trim().orEmpty()
+                    val rfid = it.rfid?.trim().orEmpty()
 
                     // check only the first character
                     code.contains(firstChar, ignoreCase = true) ||
@@ -728,6 +756,129 @@ fun OrderScreenContent(
             }
         }
     }
+*/
+    val filteredApiList = remember(itemCode.text, itemCodeList, isLoading) {
+        derivedStateOf {
+            val query = itemCode.text.trim()
+            if (query.isEmpty() || itemCodeList.isEmpty() || isLoading) {
+                emptyList()
+            } else {
+                val firstChar = query.first().toString()
+                itemCodeList.filter {
+                    it.ItemCode?.contains(firstChar, ignoreCase = true) == true ||
+                            it.RFIDCode?.contains(firstChar, ignoreCase = true) == true
+                }
+            }
+        }
+    }
+
+    var searchQuery by remember { mutableStateOf("") }
+
+// whenever itemCode.text changes, debounce it
+   /* LaunchedEffect(itemCode.text) {
+        // cancel previous job if still running
+        delay(300) // adjust debounce delay (ms)
+        searchQuery = itemCode.text
+    }
+
+    val filteredBulkList = remember(searchQuery, localItemList, isLoading) {
+        derivedStateOf<List<BulkItem>> {
+            val query = searchQuery.trim()
+
+            if (query.isBlank() || localItemList.isNullOrEmpty() || isLoading) {
+                emptyList()
+            } else {
+                localItemList.filter {
+                    val code = it.itemCode.orEmpty()
+                    val rfid = it.rfid.orEmpty()
+
+                    code.contains(query, ignoreCase = true) ||
+                            rfid.contains(query, ignoreCase = true)
+                }
+            }
+        }
+    }*/
+   // var searchQuery by remember { mutableStateOf("") }
+    var filteredBulkList by remember { mutableStateOf<List<BulkItem>>(emptyList()) }
+    var isFiltering by remember { mutableStateOf(false) }
+
+    LaunchedEffect(itemCode.text, localItemList, isLoading) {
+        snapshotFlow { itemCode.text.trim() }
+            .onEach {
+                // 🚀 Show loading immediately as soon as text changes
+                isFiltering = true
+            }
+            .debounce(300)
+            .distinctUntilChanged()
+            .collectLatest { query ->
+                if (query.isBlank() || localItemList.isNullOrEmpty() || isLoading) {
+                    filteredBulkList = emptyList()
+                    isFiltering = false
+                } else {
+                    withContext(Dispatchers.Default) {
+                        val results = localItemList.filter {
+                            val code = it.itemCode.orEmpty()
+                            val rfid = it.rfid.orEmpty()
+                            code.contains(query, ignoreCase = true) ||
+                                    rfid.contains(query, ignoreCase = true)
+                        }.take(50)
+                        withContext(Dispatchers.Main) {
+                            filteredBulkList = results
+                            isFiltering = false
+                        }
+                    }
+                }
+            }
+    }
+
+
+
+    fun BulkItem.toItemCodeResponse(): ItemCodeResponse {
+        return ItemCodeResponse(
+            Id = this.id ?: 0,
+            ProductTitle = this.productName.orEmpty(),
+            ItemCode = this.itemCode.orEmpty(),
+            RFIDCode = this.rfid.orEmpty(),
+            GrossWt = this.grossWeight.orEmpty(),
+            NetWt = this.netWeight.orEmpty(),
+            TotalStoneWeight = this.stoneWeight.orEmpty(),
+            TotalDiamondWeight = this.diamondWeight.orEmpty(),
+            CategoryName = this.category.orEmpty(),
+            DesignName = this.design.orEmpty(),
+            PurityName = this.purity.orEmpty(),
+            MakingPerGram = this.makingPerGram.orEmpty(),
+            MakingPercentage = this.makingPercent.orEmpty(),
+            MakingFixedAmt = this.fixMaking.orEmpty(),
+            MakingFixedWastage = this.fixWastage.orEmpty(),
+            TotalStoneAmount = this.stoneAmount.orEmpty(),
+            TotalDiamondAmount = this.diamondAmount.orEmpty(),
+            SKU = this.sku.orEmpty(),
+            TIDNumber = this.tid.orEmpty(),
+            BoxId = this.boxId ?: 0,
+            BoxName = this.boxName.orEmpty(),
+            BranchId = this.branchId ?: 0,
+            BranchName = this.branchName.orEmpty(),
+            PacketId = this.packetId ?: 0,
+            PacketName = this.packetName.orEmpty(),
+            VendorName = this.vendor.orEmpty(),
+            Images = this.imageUrl.orEmpty(),
+            Pieces = this.pcs?.toString().orEmpty(),
+            TotalWeight = this.totalGwt ?: 0.0,
+            MRP = this.mrp?.toString().orEmpty(),
+            CounterId = this.counterId ?: 0,
+            Stones = emptyList(),
+            Diamonds = emptyList()
+        )
+    }
+
+
+    val filteredList: List<ItemCodeResponse> =
+        filteredApiList.value +
+                filteredBulkList.map { it.toItemCodeResponse() }
+
+    Log.d("itemcode list","size"+filteredList.size)
+
+
 
 
     LaunchedEffect(tags) {
@@ -1686,7 +1837,7 @@ fun OrderScreenContent(
 
                                         CustomOrderItem(
                                             CustomOrderId = 0,
-                                            RFIDCode =selectedItem?.RFIDCode.toString(),
+                                            RFIDCode =product?.rfidCode.toString(),
                                             // OrderDate = product.orderDate,
                                             // DeliverDate = product.deliverDate,
                                             SKUId = 0,
@@ -1757,7 +1908,7 @@ fun OrderScreenContent(
                                             Exhibition = product.exhibition,
                                             CounterId = product.counterId.toString(),
                                             EmployeeId = 0,
-                                            OrderNo = nextOrderNo.toString(),
+                                            OrderNo = editOrder?.OrderNo.toString(),
                                             OrderStatus = "",
                                             DueDate = "",
                                             Remark = product.remark,
@@ -1949,7 +2100,8 @@ fun OrderScreenContent(
                 productList = productList,
                 customerId = customerId,
                 selectedItem = selectedItem,
-                bulkViewModel = bulkViewModel
+                bulkViewModel = bulkViewModel,
+                isFiltering=isFiltering
             )
             Spacer(modifier = Modifier.height(4.dp))
             //table row
@@ -2948,6 +3100,7 @@ fun ItemCodeInputRow(
     customerId: Int?,
     selectedItem: ItemCodeResponse?,
     bulkViewModel: BulkViewModel,
+    isFiltering: Boolean
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -3039,62 +3192,81 @@ fun ItemCodeInputRow(
 
             // Dropdown
             ExposedDropdownMenu(
-                expanded = showDropdown && filteredList.isNotEmpty(),
+                expanded = showDropdown && (isLoading || isFiltering || filteredList.isNotEmpty()),
                 onDismissRequest = { setShowDropdown(false) },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (isLoading) {
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("Loading...", fontSize = 13.sp)
-                            }
-                        },
-                        onClick = {}
-                    )
-                } else {
-                    filteredList.forEach { item ->
+                when {
+                    // 🔹 Show spinner while API loading OR local search in progress
+                    isLoading || isFiltering -> {
                         DropdownMenuItem(
                             text = {
-                                val query = itemCode.text.trim()
-                                val match = when {
-                                    item.ItemCode?.contains(query, true) == true -> item.ItemCode
-                                    item.RFIDCode?.contains(query, true) == true -> item.RFIDCode
-                                    else -> ""
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    CircularProgressIndicator(modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("Searching...", fontSize = 13.sp)
                                 }
-                                Text(match.orEmpty(), fontSize = 14.sp)
                             },
-                            onClick = {
-                                val query = itemCode.text.trim()
-                                val selectedValue = when {
-                                    item.ItemCode?.contains(query, true) == true -> item.ItemCode
-                                    item.RFIDCode?.contains(query, true) == true -> item.RFIDCode
-                                    else -> ""
-                                }
-
-                                onItemCodeChange(TextFieldValue(selectedValue.orEmpty()))
-                                onItemSelected(item)
-
-                                // ✅ prevent duplicate save
-                                val alreadyExists = productList.any {
-                                    it.itemCode == item.ItemCode || it.rfidCode == item.RFIDCode
-                                }
-                                if (!alreadyExists) {
-                                    saveToDb(item)
-                                }
-
-                                setShowDropdown(false)
-                                focusManager.clearFocus()
-                                keyboardController?.hide()
-                            }
-
+                            onClick = {}
                         )
                     }
 
+                    // 🔹 Show "no results" message
+                    filteredList.isEmpty() -> {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "No results found",
+                                    fontSize = 13.sp,
+                                    color = Color.Gray
+                                )
+                            },
+                            onClick = {}
+                        )
+                    }
+
+                    // 🔹 Show actual results
+                    else -> {
+                        filteredList.forEach { item ->
+                            DropdownMenuItem(
+                                text = {
+                                    val query = itemCode.text.trim()
+                                    val match = when {
+                                        item.ItemCode?.contains(query, true) == true -> item.ItemCode
+                                        item.RFIDCode?.contains(query, true) == true -> item.RFIDCode
+                                        else -> ""
+                                    }
+                                    Text(match.orEmpty(), fontSize = 14.sp)
+                                },
+                                onClick = {
+                                    val query = itemCode.text.trim()
+                                    val selectedValue = when {
+                                        item.ItemCode?.contains(query, true) == true -> item.ItemCode
+                                        item.RFIDCode?.contains(query, true) == true -> item.RFIDCode
+                                        else -> ""
+                                    }
+
+                                    onItemCodeChange(TextFieldValue(selectedValue.orEmpty()))
+                                    onItemSelected(item)
+
+                                    val alreadyExists = productList.any {
+                                        it.itemCode == item.ItemCode || it.rfidCode == item.RFIDCode
+                                    }
+                                    if (!alreadyExists) {
+                                        saveToDb(item)
+                                    }
+
+                                    setShowDropdown(false)
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                }
+                            )
+                        }
+                    }
                 }
             }
+
+
         }
 
         Spacer(modifier = Modifier.width(8.dp))
