@@ -139,6 +139,11 @@ class BulkRepositoryImpl @Inject constructor(
             emptyList()
         }
     }
+
+
+    fun getAllTagsFlow(): Flow<List<EpcDto>> {
+        return epcDao.getAllTagsFlow()
+    }
 }
 
 

@@ -60,12 +60,14 @@ import com.loyalstring.rfid.ui.utils.BackgroundGradient
 import com.loyalstring.rfid.ui.utils.NetworkUtils
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
+import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.LoginViewModel
-import com.rscja.deviceapi.RFIDWithUHFUART
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltViewModel()) {
     val context = LocalContext.current
+    val bulkviewmodel: BulkViewModel = hiltViewModel()
     val userPrefs = remember { UserPreferences(context) }
 
     var username by remember { mutableStateOf("") }
@@ -94,6 +96,10 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltVi
                 userPrefs.saveEmployee(response.employee)
                 userPrefs.setLoggedIn(true)
                 userPrefs.saveClient(response.employee?.clients!!)
+
+                launch {
+                    bulkviewmodel.syncRFIDDataIfNeeded(context)
+                }
                 navController.navigate(Screens.HomeScreen.route)
             }
         }
@@ -182,12 +188,17 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltVi
                             return@clickable
                         }
                         if (!NetworkUtils.isNetworkAvailable(context)) {
-                            Toast.makeText(context, "Please Check Your Internet Connection", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "Please Check Your Internet Connection",
+                                Toast.LENGTH_SHORT
+                            ).show()
                             return@clickable
                         }
 
                         viewModel.login(LoginRequest(username, password), rememberMe)
                         userPrefs.saveLoginCredentials(username, password, rememberMe)
+
                     },
                 contentAlignment = Alignment.Center
             ) {
