@@ -1004,33 +1004,24 @@ class BulkViewModel @Inject constructor(
         bulkRepository.getAllRFIDTags()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    suspend fun syncRFIDDataIfNeeded(context: Context) {
-        if (syncedRFIDMap != null) return
+    suspend fun syncRFIDDataIfNeeded(context: Context) = withContext(Dispatchers.IO) {
+        if (syncedRFIDMap != null) return@withContext
 
         val employee = userPreferences.getEmployee(Employee::class.java)
-        val clientCode = employee?.clientCode ?: return
+        val clientCode = employee?.clientCode ?: return@withContext
 
         val response = bulkRepository.syncRFIDItemsFromServer(ClientCodeRequest(clientCode))
 
-     /*   if (response.isNullOrEmpty()) {
-            // ❌ No RFID data found
-            android.widget.Toast.makeText(
-                context,
-                "RFID sheet is not uploaded. Please upload it first.",
-                android.widget.Toast.LENGTH_LONG
-            ).show()
-            return
-        }*/
-
-        // ✅ Save in DB
+        // Save in DB
         bulkRepository.insertRFIDTags(response)
 
-        // ✅ Build RFID → EPC map
+        // Build RFID → EPC map
         syncedRFIDMap = response.associateBy(
             { it.BarcodeNumber.orEmpty().trim().uppercase() },
             { it.TidValue.orEmpty().trim().uppercase() }
         )
     }
+
 
 
 

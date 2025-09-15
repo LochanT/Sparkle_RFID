@@ -6,14 +6,17 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.loyalstring.rfid.data.local.entity.BulkItem
+import com.loyalstring.rfid.data.local.entity.EpcDto
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.repository.BulkRepository
+import com.loyalstring.rfid.repository.BulkRepositoryImpl
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.opencsv.CSVReader
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -33,8 +36,24 @@ data class ImportProgress(
 @HiltViewModel
 class ImportExcelViewModel @Inject constructor(
     private val bulkRepository: BulkRepository,
+    private val repository: BulkRepositoryImpl,
     private val userPreferences: UserPreferences,
 ) : ViewModel() {
+
+    val allTagsFlow: Flow<List<EpcDto>> = repository.getAllTagsFlow()
+    private val _dbRFIDMap = MutableStateFlow<Map<String, String>>(emptyMap())
+    val dbRFIDMap: StateFlow<Map<String, String>> = _dbRFIDMap
+
+    init {
+        // collect local tags from DB
+        viewModelScope.launch(Dispatchers.IO) {
+            allTagsFlow.collect { tags ->
+                _dbRFIDMap.value = tags.associate { dto ->
+                    dto.BarcodeNumber.orEmpty().trim().uppercase() to dto.TidValue.orEmpty().trim().uppercase()
+                }
+            }
+        }
+    }
 
     private val _importProgress = MutableStateFlow(
         ImportProgress(0, 0, emptyList())
@@ -404,8 +423,15 @@ class ImportExcelViewModel @Inject constructor(
         )
     }
 
-    fun syncAndMapRow(itemCode: String): String {
+  /*  fun syncAndMapRow(itemCode: String): String {
         return syncedRFIDMap?.get(itemCode) ?: ""
+    }*/
+
+    fun syncAndMapRow(itemCode: String): String {
+        val key = itemCode.trim().uppercase()
+        return syncedRFIDMap?.get(key)
+            ?: dbRFIDMap.value[key]
+            ?: ""
     }
 
     suspend fun syncRFIDDataIfNeeded(context: Context) {
@@ -443,5 +469,7 @@ class ImportExcelViewModel @Inject constructor(
         val cell = row.getCell(index) ?: return ""
         return getCellValue(cell).trim()
     }
+
+
 
 }

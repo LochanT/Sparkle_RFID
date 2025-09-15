@@ -171,7 +171,7 @@ fun OrderScreen(
     val bulkViewModel: BulkViewModel = hiltViewModel()
     var selectedPower by remember { mutableStateOf(30) }
     var selectedCustomer by remember { mutableStateOf<EmployeeList?>(null) }
-    val itemCodeList by orderViewModel.itemCodeResponse.collectAsState()
+    //val itemCodeList by orderViewModel.itemCodeResponse.collectAsState()
     val customerSuggestions by orderViewModel.empListFlow.collectAsState(UiState.Loading)
 
     LaunchedEffect(customerSuggestions) {
@@ -237,7 +237,7 @@ fun OrderScreen(
         Box(modifier = Modifier.padding(innerPadding)) {
             OrderScreenContent(
                 navController = navController,
-                itemCodeList = itemCodeList,
+              //  itemCodeList = itemCodeList,
                 userPreferences = userPreferences,
                 bulkViewModel = bulkViewModel,
                 selectedCustomer = selectedCustomer,
@@ -308,7 +308,7 @@ private fun Customer?.toEmployeeList(): EmployeeList? {
 @Composable
 fun OrderScreenContent(
     navController: NavHostController,
-    itemCodeList: List<ItemCodeResponse>,
+   // itemCodeList: List<ItemCodeResponse>,
     userPreferences: UserPreferences,
     bulkViewModel: BulkViewModel,
     selectedCustomer: EmployeeList?,
@@ -318,24 +318,35 @@ fun OrderScreenContent(
     orderViewModel: OrderViewModel,
     editOrder: CustomOrderResponse?
 ) {
+    var itemCodeList by remember { mutableStateOf<List<ItemCodeResponse>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        orderViewModel.itemCodeResponse.collect { items ->
+            itemCodeList = items   // assign collected items into your mutable state
+        }
+    }
+   //var itemCodeList by orderViewModel.itemCodeResponse.collectAsState()
     val context = LocalContext.current
     val isOnline = remember {
         NetworkUtils.isNetworkAvailable(context)
     }
-    val localItemList by bulkViewModel.scannedFilteredItems
+    //val localItemList by bulkViewModel.scannedFilteredItems
+    // collect as state directly from BulkViewModel
+    LaunchedEffect(Unit) {
+        bulkViewModel.getAllItems(context)   // triggers DB fetch
+    }
+
+    val localItemList = bulkViewModel.scannedFilteredItems.value
+
+    if (localItemList.isNotEmpty()) {
+        Log.d("@@", "Got ${localItemList.size} items from DB")
+
+    }
 
     Log.d("localItemList","localItemList"+localItemList)
 
-    // Decide which list to use
-    val finalItemList = if (itemCodeList.isNotEmpty()) {
-        itemCodeList
-    } else {
-        // if empty, trigger local fetch
-        LaunchedEffect(Unit) {
-            bulkViewModel.getAllItems(context)
-        }
-        localItemList
-    }
+
+
+
 
     val df = DecimalFormat("#.00")
 // Retrieve logged-in employee from preferences
@@ -738,25 +749,7 @@ fun OrderScreenContent(
         }
     }
 
- /*   val filteredList by remember(itemCode.text, finalItemList, isLoading) {
-        derivedStateOf {
-            val query = itemCode.text.trim()
-            if (query.isEmpty() || itemCodeList.isEmpty() || isLoading) {
-                emptyList()
-            } else {
-                val firstChar = query.first().toString() // 👈 only take first letter
-                finalItemList.filter {
-                    val code = it.itemcode?.trim().orEmpty()
-                    val rfid = it.rfid?.trim().orEmpty()
 
-                    // check only the first character
-                    code.contains(firstChar, ignoreCase = true) ||
-                            rfid.contains(firstChar, ignoreCase = true)
-                }
-            }
-        }
-    }
-*/
     val filteredApiList = remember(itemCode.text, itemCodeList, isLoading) {
         derivedStateOf {
             val query = itemCode.text.trim()
@@ -774,30 +767,6 @@ fun OrderScreenContent(
 
     var searchQuery by remember { mutableStateOf("") }
 
-// whenever itemCode.text changes, debounce it
-   /* LaunchedEffect(itemCode.text) {
-        // cancel previous job if still running
-        delay(300) // adjust debounce delay (ms)
-        searchQuery = itemCode.text
-    }
-
-    val filteredBulkList = remember(searchQuery, localItemList, isLoading) {
-        derivedStateOf<List<BulkItem>> {
-            val query = searchQuery.trim()
-
-            if (query.isBlank() || localItemList.isNullOrEmpty() || isLoading) {
-                emptyList()
-            } else {
-                localItemList.filter {
-                    val code = it.itemCode.orEmpty()
-                    val rfid = it.rfid.orEmpty()
-
-                    code.contains(query, ignoreCase = true) ||
-                            rfid.contains(query, ignoreCase = true)
-                }
-            }
-        }
-    }*/
    // var searchQuery by remember { mutableStateOf("") }
     var filteredBulkList by remember { mutableStateOf<List<BulkItem>>(emptyList()) }
     var isFiltering by remember { mutableStateOf(false) }
@@ -867,8 +836,17 @@ fun OrderScreenContent(
             MRP = this.mrp?.toString().orEmpty(),
             CounterId = this.counterId ?: 0,
             Stones = emptyList(),
-            Diamonds = emptyList()
+            Diamonds = emptyList(),
+            ProductName = this.productName.orEmpty()
         )
+    }
+    if (localItemList.isNotEmpty()) {
+
+        itemCodeList = remember(localItemList) {
+            localItemList.map { it.toItemCodeResponse() }
+
+        }
+
     }
 
 
@@ -891,7 +869,7 @@ fun OrderScreenContent(
 
                 // Check if EPC exists before processing
                 tag.epc?.let { scannedEpc ->
-                    Log.d("Scanned EPC", "Processing EPC: $scannedEpc")
+                    Log.d("Scanned EPC", "Processing EPC: $scannedEpc" +itemCodeList.get(1).TIDNumber)
 
                     // Find the matched item based on TID from itemCodeList
                     val matchedItem = itemCodeList.find { item ->
@@ -902,7 +880,7 @@ fun OrderScreenContent(
                     }
 
                     if (matchedItem != null) {
-                        Log.d("Match Found", "Item: ${matchedItem.ItemCode}")
+                        Log.d("Match Found", "Item: ${matchedItem.ProductName}")
 
                         // Check if the product already exists in the productList based on TID
                         val existingProduct = productList.find { product ->
@@ -974,7 +952,7 @@ fun OrderScreenContent(
                                 wastage = selectedItem?.WastagePercent.toString(),
                                 orderDate = "",
                                 deliverDate = "",
-                                productName = selectedItem?.ProductName.toString(),
+                                productName = selectedItem?.ProductName?:"",
                                 itemCode = selectedItem?.ItemCode ?: "",
                                 rfidCode = selectedItem?.RFIDCode.toString(),
                                 itemAmt = itemAmt.toString(),
@@ -995,22 +973,22 @@ fun OrderScreenContent(
                                 diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
                                 categoryId = selectedItem?.CategoryId?.toString(),
                                 categoryName = selectedItem?.CategoryName!!,
-                                productId = selectedItem?.ProductId!!,
-                                productCode = selectedItem?.ProductCode!!,
-                                skuId = selectedItem?.SKUId!!,
-                                designid = selectedItem?.DesignId!!,
-                                designName = selectedItem?.DesignName!!,
-                                purityid = selectedItem?.PurityId!!,
-                                counterId = selectedItem?.CounterId!!,
-                                counterName = "",
-                                companyId = 0,
-                                epc = selectedItem?.TIDNumber!!,
-                                tid = selectedItem?.TIDNumber!!,
-                                todaysRate = selectedItem?.TodaysRate.toString(),
-                                makingPercentage = selectedItem?.MakingPercentage.toString(),
-                                makingFixedAmt = selectedItem?.MakingFixedAmt.toString(),
-                                makingFixedWastage = selectedItem?.MakingFixedWastage.toString(),
-                                makingPerGram = selectedItem?.MakingPerGram.toString()
+                                productId = selectedItem?.ProductId ?: 0,
+                                productCode = selectedItem?.ProductCode ?: "",
+                                skuId            = selectedItem?.SKUId ?: 0,
+                                designid         = selectedItem?.DesignId ?: 0,
+                                designName       = selectedItem?.DesignName ?: "",
+                                purityid         = selectedItem?.PurityId ?: 0,
+                                counterId        = selectedItem?.CounterId ?: 0,
+                                counterName      = "",
+                                companyId        = selectedItem?.CompanyId ?: 0,
+                                epc              = selectedItem?.TIDNumber ?: "",
+                                tid              = selectedItem?.TIDNumber ?: "",
+                                todaysRate       = selectedItem?.TodaysRate?.toString() ?: "0",
+                                makingPercentage = selectedItem?.MakingPercentage?.toString() ?: "0",
+                                makingFixedAmt   = selectedItem?.MakingFixedAmt?.toString() ?: "0",
+                                makingFixedWastage = selectedItem?.MakingFixedWastage?.toString() ?: "0",
+                                makingPerGram    = selectedItem?.MakingPerGram?.toString() ?: "0"
                             )
                             Log.d(
                                 "Added to Product List",
