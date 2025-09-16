@@ -519,9 +519,11 @@ fun OrderScreenContent(
                 )
 
                 if (!orderItem.itemCode.isNullOrBlank() && orderItem.itemCode != "null") {
-                    orderViewModel.insertOrderItemToRoom(orderItem)
-                    productList.add(orderItem)
-
+                    val alreadyExists = productList.any { it.itemCode == orderItem.itemCode }
+                    if (!alreadyExists) {
+                        orderViewModel.insertOrderItemToRoom(orderItem)
+                        productList.add(orderItem)
+                    }
                 }
             }
         }else
@@ -971,7 +973,7 @@ fun OrderScreenContent(
                                 image = lastImagePath.toString(),
                                 netAmt = "",
                                 diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
-                                categoryId = selectedItem?.CategoryId?.toString(),
+                                categoryId = selectedItem?.CategoryId,
                                 categoryName = selectedItem?.CategoryName!!,
                                 productId = selectedItem?.ProductId ?: 0,
                                 productCode = selectedItem?.ProductCode ?: "",
@@ -1096,7 +1098,7 @@ fun OrderScreenContent(
                 image = lastImagePath.toString(),
                 netAmt = "",
                 diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
-                categoryId = selectedItem?.CategoryId?.toString(),
+                categoryId = selectedItem?.CategoryId,
 
                 categoryName = selectedItem?.CategoryName ?: "",
                 productId = selectedItem?.ProductId ?: 0,
@@ -1260,7 +1262,7 @@ fun OrderScreenContent(
                             image = lastImagePath.toString(),
                             netAmt = "",
                             diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
-                            categoryId = selectedItem?.CategoryId?.toString(),
+                            categoryId = selectedItem?.CategoryId,
 
                             categoryName = selectedItem?.CategoryName ?: "",
                             productId = selectedItem?.ProductId ?: 0,
@@ -1566,7 +1568,7 @@ fun OrderScreenContent(
                                                 // DeliverDate = product.deliverDate,
                                                 SKUId = 0,
                                                 SKU = product.sku,
-                                                CategoryId = product.categoryId?.toString(),
+                                                CategoryId = product.categoryId,
                                                 VendorId = 0,
                                                 CategoryName = product.categoryName,
                                                 CustomerName = selectedCustomer.FirstName,
@@ -1820,7 +1822,7 @@ fun OrderScreenContent(
                                             // DeliverDate = product.deliverDate,
                                             SKUId = 0,
                                             SKU = product.sku,
-                                            CategoryId = product.categoryId?.toString(),
+                                            CategoryId = selectedItem?.CategoryId,
                                             VendorId = 0,
                                             CategoryName = product.categoryName,
                                             CustomerName = selectedCustomer.FirstName,
@@ -2065,11 +2067,18 @@ fun OrderScreenContent(
 
                     val orderItem = mapItemCodeToOrderItem(it, dailyRates)
 
-                    if (!orderItem.itemCode.isNullOrBlank() && orderItem.itemCode != "null") {
+                  /*  if (!orderItem.itemCode.isNullOrBlank() && orderItem.itemCode != "null") {
                         Log.d("itemAmt","itemAmt"+orderItem.itemAmt)
-                        orderViewModel.insertOrderItemToRoom(orderItem)
+                       // orderViewModel.insertOrderItemToRoom(orderItem)
                         productList.add(orderItem)
 
+                    }*/
+                    if (!orderItem.itemCode.isNullOrBlank() && orderItem.itemCode != "null") {
+                        val alreadyExists = productList.any { it.itemCode == orderItem.itemCode }
+                        if (!alreadyExists) {
+                            orderViewModel.insertOrderItemToRoom(orderItem)
+                            productList.add(orderItem)
+                        }
                     }
 
                 },
@@ -2715,7 +2724,7 @@ fun mapItemCodeToOrderItem(
         image = item.Images ?: "",
         netAmt = "",
         diamondAmt = item.TotalDiamondAmount ?: "",
-        categoryId = item.CategoryId.toString(),
+        categoryId = item.CategoryId,
         categoryName = item.CategoryName ?: "",
         productId = item.ProductId ?: 0,
         productCode = item.ProductCode ?: "",
@@ -2868,7 +2877,7 @@ fun OrderItemTableScreen(
                                                             Description = "",
                                                             ProductCode = item.productCode,
                                                             MetalName = "",
-                                                            CategoryId = item.categoryId.toString(),
+                                                            CategoryId = item.categoryId,
                                                             ProductId = item.productId,
                                                             DesignId = item.designid,
                                                             PurityId = item.purityid,
