@@ -123,7 +123,7 @@ interface OrderItemDao {
         image: String,
         netAmt: String,
         diamondAmt: String,
-        categoryId: String?,
+        categoryId: Int?,
         categoryName: String,
         productId: Int,
         productCode: String,

@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -147,28 +148,30 @@ fun OrderDetailsDialogEditAndDisplay(
     var itemAmt by remember { mutableStateOf("") }
 
 
+
+
     LaunchedEffect(selectedItem) {
         branch = selectedItem?.branchName.toString()
         productName = selectedItem?.productName.toString()
         itemCode = selectedItem?.itemCode.toString()
         totalWt = selectedItem?.totalWt.toString()
         stoneWt = selectedItem?.stoneWt.toString()
-        dimondWt = selectedItem?.dimondWt.toString()
+        dimondWt = selectedItem?.dimondWt.takeIf { !it.equals("null", ignoreCase = true) } ?: ""
         NetWt = selectedItem?.nWt.toString()
         exhibition = selectedItem?.exhibition.toString()
         sku = selectedItem?.sku.toString()
         purity = selectedItem?.purity.toString()
-        size = selectedItem?.size.toString()
+        size = selectedItem?.size.takeIf { !it.equals("null", ignoreCase = true) } ?: ""
         length = selectedItem?.length.toString()
         stoneAmt = selectedItem?.stoneAmt.toString()
-        packingWt = selectedItem?.packingWt.toString()
+        packingWt = selectedItem?.packingWt.takeIf { !it.equals("null", ignoreCase = true) } ?: ""
         NetWt = selectedItem?.nWt.toString()
         remark = selectedItem?.remark.toString()
-        typeOfColors = selectedItem?.typeOfColor.toString()
+        typeOfColors = selectedItem?.typeOfColor.takeIf { !it.equals("null", ignoreCase = true) } ?: "Select color"
         screwType = selectedItem?.screwType.toString()
         polishType = selectedItem?.polishType.toString()
-        finePercentage = selectedItem?.finePer.toString()
-        wastagePer = selectedItem?.wastage.toString()
+        finePercentage = selectedItem?.finePer.takeIf { !it.equals("null", ignoreCase = true) } ?: ""
+        wastagePer = selectedItem?.wastage?.takeIf { !it.equals("null", ignoreCase = true) } ?: ""
         //   orderDate = selectedItem?.orderDate.toString()
         deliverDate = selectedItem?.deliverDate.toString()
       //  qty = selectedItem?.qty.toString()
@@ -176,19 +179,25 @@ fun OrderDetailsDialogEditAndDisplay(
         mrp = selectedItem?.mrp.toString()
         ratePerGRam = selectedItem?.todaysRate.toString()
         grossWT=selectedItem?.grWt.toString()
-        itemAmt=selectedItem?.itemAmt.toString()
+        itemAmt = if (selectedItem?.mrp.isNullOrEmpty()) {
+            selectedItem?.itemAmt?.toString().orEmpty()
+        } else {
+            selectedItem.mrp.orEmpty()
+        }
+
+        itemAmt = (String.format("%.2f", itemAmt.toDoubleOrNull() ?: 0.0) + hallMarkAmt)
         finePlusWt=selectedItem?.finePlusWt.toString()
 
         Log.d("SelectedItem",  selectedItem?.qty.toString())
 // or for plain console apps
         println(selectedItem)
 
-
-
-        qty = if (selectedItem?.qty.isNullOrBlank() || selectedItem.qty == "0") {
-            "1"
-        } else {
-            selectedItem.qty
+        qty = when {
+            selectedItem?.qty == null -> ""   // really null → empty
+            selectedItem.qty.equals("null", ignoreCase = true) -> "1" // stored as string "null"
+            selectedItem.qty.isBlank() -> ""  // empty string → empty
+            selectedItem.qty == "0" -> "1"    // default case
+            else -> selectedItem.qty
         }
     }
 
@@ -247,7 +256,8 @@ fun OrderDetailsDialogEditAndDisplay(
 
             val net = NetWt.toDoubleOrNull() ?: 0.0
             val rate = ratePerGRam.toDoubleOrNull() ?: 0.0
-            val totalRate= net * rate
+            val hallmark = hallMarkAmt.toDoubleOrNull() ?: 0.0
+            val totalRate= (net * rate)+hallmark
             itemAmt = "%.2f".format(totalRate)
         }
     }
@@ -312,7 +322,7 @@ fun OrderDetailsDialogEditAndDisplay(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center // Center horizontally
                     ) {
-                        AsyncImage(
+                       AsyncImage(
 
                             model =baseUrl+selectedItem?.image,
                             contentDescription = "Image from URL",
@@ -320,6 +330,15 @@ fun OrderDetailsDialogEditAndDisplay(
                             error = painterResource(R.drawable.add_photo),       // Optional
                             modifier = Modifier.size(100.dp)
                         )
+                       /* AsyncImage(
+                            model = baseUrl + selectedItem?.image,
+                            contentDescription = "Image from URL",
+                            placeholder = painterResource(R.drawable.add_photo),
+                            error = painterResource(R.drawable.add_photo),
+                            modifier = Modifier.fillMaxWidth(),
+                            contentScale = ContentScale.FillBounds  // ✅ maintains ratio, auto height
+                        )*/
+
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     // Use your DropdownMenuField & input rows here
@@ -1342,8 +1361,8 @@ fun OrderDetailsDialogEditAndDisplay(
                             }
 
                             BasicTextField(
-                                value = wastage,
-                                onValueChange = { wastage = it },
+                                value = wastagePer,
+                                onValueChange = { wastagePer = it },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
@@ -1592,7 +1611,17 @@ fun OrderDetailsDialogEditAndDisplay(
 
                             BasicTextField(
                                 value = hallMarkAmt,
-                                onValueChange = { hallMarkAmt = it },
+                                onValueChange = { newValue ->
+                                    val newHallMark = newValue.toDoubleOrNull() ?: 0.0
+                                    val oldHallMark = selectedItem?.hallmarkAmt?.toDoubleOrNull() ?: 0.0
+                                    val currentAmt = itemAmt.toDoubleOrNull() ?: 0.0
+
+                                    // rollback old hallmark from current total
+                                    val baseAmt = currentAmt - oldHallMark
+
+                                    // add new hallmark
+                                    itemAmt = String.format("%.2f", baseAmt + newHallMark)
+                                },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
@@ -1641,7 +1670,16 @@ fun OrderDetailsDialogEditAndDisplay(
 
                             BasicTextField(
                                 value = mrp,
-                                onValueChange = { mrp = it },
+                                onValueChange = { newValue ->
+                                    mrp = newValue
+
+                                    // ✅ Update item amount directly when MRP is entered
+                                    val mrpValue = newValue.toDoubleOrNull()
+                                    if (mrpValue != null && mrpValue > 0) {
+                                        val mrpValue = mrp.toDoubleOrNull() ?: 0.0
+                                        itemAmt = String.format("%.2f", mrpValue)
+                                    }
+                                },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
@@ -1734,6 +1772,13 @@ fun OrderDetailsDialogEditAndDisplay(
                     val finePlusWt = ((fineVal / 100.0) * netWtVal) + ((wastageVal / 100.0) * netWtVal)
 
                     Log.d("itemAmt", "itemAmt.toString()" + itemAmt)
+
+                     itemAmt = (if (mrp.isNotEmpty()) {
+                         mrp.toDoubleOrNull() ?: 0.0
+                     } else {
+                         itemAmt ?: 0.0
+                     }).toString()
+
 
                     GradientButtonIcon(
                         text = "OK",

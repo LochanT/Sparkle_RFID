@@ -791,7 +791,7 @@ fun OrderDetailsDialog(
                                 image = selectedItem?.Images.toString(),
                                 netAmt = "",
                                 diamondAmt = selectedItem?.TotalDiamondAmount.toString(),
-                                categoryId = selectedItem?.CategoryId?.toString(),
+                                categoryId = selectedItem?.CategoryId,
                                 categoryName = selectedItem?.CategoryName ?: "",
                                 productId = selectedItem?.ProductId ?: 0,
                                 productCode = selectedItem?.ProductCode ?: "",

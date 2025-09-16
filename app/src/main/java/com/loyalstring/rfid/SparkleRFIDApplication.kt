@@ -4,8 +4,36 @@ import android.app.Application
 import android.util.Log
 import com.rscja.deviceapi.RFIDWithUHFUART
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
 
 @HiltAndroidApp
+class SparkleRFIDApplication : Application() {
+    var mReader: RFIDWithUHFUART? = null
+
+    override fun onCreate() {
+        super.onCreate()
+
+        // Initialize RFID reader in background
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val reader = RFIDWithUHFUART.getInstance()
+                if (reader != null && reader.init()) {
+                    mReader = reader
+                    Log.d("SparkleRFID", "RFID Reader initialized successfully")
+                } else {
+                    Log.e("SparkleRFID", "Failed to initialize RFID Reader")
+                }
+            } catch (ex: Exception) {
+                Log.e("SparkleRFID", "Exception initializing RFID: ${ex.message}")
+            }
+        }
+    }
+}
+
+/*@HiltAndroidApp
 class SparkleRFIDApplication : Application() {
     var mReader: RFIDWithUHFUART? = null
     init {
@@ -20,10 +48,10 @@ class SparkleRFIDApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-/*
+*//*
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             Log.e("UncaughtException", "App crashed with: ${throwable.message}", throwable)
-        }*/
+        }*//*
     }
 
-}
+}*/

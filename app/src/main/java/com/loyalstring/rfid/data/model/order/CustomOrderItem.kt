@@ -11,7 +11,7 @@ data class CustomOrderItem(
     //val DeliverDate: String,
     val SKUId: Int,
     val SKU: String,
-    val CategoryId: String?,
+    val CategoryId: Int?,
     val VendorId: Int?,
     val CategoryName: String,
     val CustomerName: String?,
