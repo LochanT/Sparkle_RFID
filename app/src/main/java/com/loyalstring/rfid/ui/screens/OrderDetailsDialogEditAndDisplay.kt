@@ -172,6 +172,7 @@ fun OrderDetailsDialogEditAndDisplay(
         polishType = selectedItem?.polishType.toString()
         finePercentage = selectedItem?.finePer.takeIf { !it.equals("null", ignoreCase = true) } ?: ""
         wastagePer = selectedItem?.wastage?.takeIf { !it.equals("null", ignoreCase = true) } ?: ""
+        wastage = selectedItem?.wastage?.takeIf { !it.equals("null", ignoreCase = true) } ?: ""
         //   orderDate = selectedItem?.orderDate.toString()
         deliverDate = selectedItem?.deliverDate.toString()
       //  qty = selectedItem?.qty.toString()
@@ -1361,8 +1362,8 @@ fun OrderDetailsDialogEditAndDisplay(
                             }
 
                             BasicTextField(
-                                value = wastagePer,
-                                onValueChange = { wastagePer = it },
+                                value = wastage,
+                                onValueChange = { wastage = it },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 13.sp, color = Color.Black),
                                 modifier = Modifier
