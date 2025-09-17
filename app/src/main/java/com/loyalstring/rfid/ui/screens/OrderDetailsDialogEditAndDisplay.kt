@@ -1613,14 +1613,13 @@ fun OrderDetailsDialogEditAndDisplay(
                             BasicTextField(
                                 value = hallMarkAmt,
                                 onValueChange = { newValue ->
+                                    hallMarkAmt = newValue  // <-- keep text field editable
+
                                     val newHallMark = newValue.toDoubleOrNull() ?: 0.0
-                                    val oldHallMark = selectedItem?.hallmarkAmt?.toDoubleOrNull() ?: 0.0
                                     val currentAmt = itemAmt.toDoubleOrNull() ?: 0.0
 
-                                    // rollback old hallmark from current total
-                                    val baseAmt = currentAmt - oldHallMark
-
-                                    // add new hallmark
+                                    // calculate new item amount
+                                    val baseAmt = (NetWt.toDoubleOrNull() ?: 0.0) * (ratePerGRam.toDoubleOrNull() ?: 0.0)
                                     itemAmt = String.format("%.2f", baseAmt + newHallMark)
                                 },
                                 singleLine = true,

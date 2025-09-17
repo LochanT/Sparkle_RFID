@@ -2297,7 +2297,7 @@ fun OrderScreenContent(
                                 10
                             )
                             textInput(email, { email = it }, "Email")
-                            textInput(panNumber, { panNumber = it }, "PAN Number")
+                            textInput(panNumber, { panNumber = it.uppercase()  }, "PAN Number")
                             textInput(gstNumber, { gstNumber = it }, "GST Number")
                             textInput(street, { street = it }, "Street")
 
