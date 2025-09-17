@@ -264,14 +264,17 @@ class ImportExcelViewModel @Inject constructor(
 
                     _importProgress.value = ImportProgress(total, imported, failed.toList())
 
-                    _syncStatusText.value = "Sync completed successfully!"
+
                 }
 
                 bulkRepository.clearAllItems()
                 bulkRepository.insertBulkItems(items)
 
+
                 delay(200) // give UI time to catch progress
                 _isImportDone.value = true
+                Log.e("ImportSheet", "Successfully imported sheet!")
+                _syncStatusText.value = "✅ Google Sheet import completed successfully!"
 
             } catch (e: Exception) {
                 Log.e("ImportSheet", "Sheet import failed", e)
@@ -283,6 +286,7 @@ class ImportExcelViewModel @Inject constructor(
     fun resetImportState() {
         _isImportDone.value = false
         _importProgress.value = ImportProgress(0, 0, emptyList())
+
     }
 
     // ✅ Parse Google Sheet CSV

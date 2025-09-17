@@ -86,11 +86,22 @@ fun ProductManagementScreen(
     val scaffoldState = rememberScaffoldState()
     var selectedCount by remember { mutableIntStateOf(1) }
     var selectedPower by remember { mutableIntStateOf(1) }
+    val importProgress by importViewModel.importProgress.collectAsState()
 
     var excelColumns by remember { mutableStateOf(listOf<String>()) }
     var showMappingDialog by remember { mutableStateOf(false) }
     var showProgress by remember { mutableStateOf(false) }
     var showOverlay by remember { mutableStateOf(false) }
+
+
+    val isGoogleSheetDone by importViewModel.syncStatusText.collectAsState(initial = "")
+
+    val isImportDone by importViewModel.isImportDone.collectAsState()
+
+    var isError by remember { mutableStateOf(false) }
+
+
+    var dialogMessage by remember { mutableStateOf<String?>(null) }
     remember(navController) { navController.currentBackStackEntry!! }
     val syncStatus by viewModel.syncStatusText.collectAsStateWithLifecycle(initialValue = "")
 
@@ -146,6 +157,37 @@ fun ProductManagementScreen(
 
 
     var showSuccessDialog by remember { mutableStateOf(false) }
+    /*google sheet*/
+    Log.d("isGoogleSheetDone","isGoogleSheetDone"+isGoogleSheetDone)
+   // Log.d("isGoogleSheetDone","isGoogleSheetDone"+isImportDone)
+
+    LaunchedEffect(isGoogleSheetDone) {
+        if (isGoogleSheetDone.isNotBlank()) {   // ✅ check status text, not isImportDone
+            showOverlay = false
+            showProgress = false
+
+            if (importProgress.failedFields.isEmpty() && importProgress.importedFields != 0) {
+                dialogMessage = "✅ Google Sheet imported successfully: ${importProgress.importedFields} fields"
+                isError = false
+                importViewModel.resetImportState()
+            } else {
+                dialogMessage = "⚠️ Imported with errors: ${importProgress.failedFields.joinToString()}"
+                isError = true
+            }
+        }
+    }
+
+
+
+    if (dialogMessage != null) {
+        ImportResultDialog(
+            message = dialogMessage!!,
+            isError = isError,
+            navController = navController,
+            onDismiss = { dialogMessage = null }
+        )
+    }
+
 
 
 
@@ -360,6 +402,19 @@ fun ProductManagementScreen(
                 isLoading = isLoading,
                 progress = progress,
                 status = status
+            )
+        }
+    }
+
+    if (isImportDone) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            ExcelImportProgressOverlay(
+                importProgress = importProgress
             )
         }
     }
