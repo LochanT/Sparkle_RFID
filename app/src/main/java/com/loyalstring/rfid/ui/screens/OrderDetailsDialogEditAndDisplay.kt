@@ -5,6 +5,7 @@ package com.loyalstring.rfid.ui.screens
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,8 @@ import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.OrderViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -108,9 +111,21 @@ fun OrderDetailsDialogEditAndDisplay(
     onSave: (OrderItem) -> Unit
 ) {
     Log.e("TAG", "RFID Code: ${selectedItem?.rfidCode+" image url"+selectedItem?.image.toString()}")
-
     val orderViewModel: OrderViewModel = hiltViewModel()
     val singleProductViewModel: SingleProductViewModel = hiltViewModel()
+    val context = LocalContext.current
+    val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            orderViewModel.getAllEmpList(employee?.clientCode.toString())
+            orderViewModel.getAllItemCodeList(ClientCodeRequest(employee?.clientCode.toString()))
+            singleProductViewModel.getAllBranches(ClientCodeRequest(employee?.clientCode.toString()))
+            singleProductViewModel.getAllPurity(ClientCodeRequest(employee?.clientCode.toString()))
+            singleProductViewModel.getAllSKU(ClientCodeRequest(employee?.clientCode.toString()))
+        }
+    }
+
+
     // Form state
     var branch by remember { mutableStateOf("") }
     var exhibition by remember { mutableStateOf("") }
@@ -123,7 +138,7 @@ fun OrderDetailsDialogEditAndDisplay(
     var polishType by remember { mutableStateOf("") }
     var finePercentage by remember { mutableStateOf("") }
     var wastage by remember { mutableStateOf("") }
-    // var orderDate by remember { mutableStateOf("") }
+     var orderDate by remember { mutableStateOf("") }
     var deliverDate by remember { mutableStateOf("") }
 
     var productName by remember { mutableStateOf("") }
@@ -147,10 +162,30 @@ fun OrderDetailsDialogEditAndDisplay(
 
     var itemAmt by remember { mutableStateOf("") }
 
+    val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val inputFormats = listOf(
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()),
+        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()),
+        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    )
 
+    fun formatDateSafe(dateString: String?): String {
+        if (dateString.isNullOrBlank() || dateString.equals("null", true)) return ""
+        for (format in inputFormats) {
+            try {
+                val parsed = format.parse(dateString)
+                if (parsed != null) {
+                    return dateFormatter.format(parsed)
+                }
+            } catch (_: Exception) { }
+        }
+        return ""
+    }
 
 
     LaunchedEffect(selectedItem) {
+
+
         branch = selectedItem?.branchName.toString()
         productName = selectedItem?.productName.toString()
         itemCode = selectedItem?.itemCode.toString()
@@ -173,8 +208,8 @@ fun OrderDetailsDialogEditAndDisplay(
         finePercentage = selectedItem?.finePer.takeIf { !it.equals("null", ignoreCase = true) } ?: ""
         wastagePer = selectedItem?.wastage?.takeIf { !it.equals("null", ignoreCase = true) } ?: ""
         wastage = selectedItem?.wastage?.takeIf { !it.equals("null", ignoreCase = true) } ?: ""
-        //   orderDate = selectedItem?.orderDate.toString()
-        deliverDate = selectedItem?.deliverDate.toString()
+        orderDate = formatDateSafe(selectedItem?.orderDate.toString())
+        deliverDate = formatDateSafe(selectedItem?.deliverDate.toString())
       //  qty = selectedItem?.qty.toString()
         hallMarkAmt = selectedItem?.hallmarkAmt.toString()
         mrp = selectedItem?.mrp.toString()
@@ -234,11 +269,14 @@ fun OrderDetailsDialogEditAndDisplay(
     // Inside @Composable
 
     val calendar = Calendar.getInstance()
-    val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
-    var orderDate by remember { mutableStateOf(dateFormatter.format(calendar.time)) }
+ //   val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+    orderDate = if (!selectedItem?.orderDate.isNullOrBlank()) {
+        formatDateSafe(selectedItem?.orderDate.toString())
+    } else {
+        dateFormatter.format(calendar.time) // only set when null
+    }
 
-    val context = LocalContext.current
-    val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
+
     /*  LaunchedEffect(Unit) {
           employee?.clientCode?.let {
               orderViewModel.getAllBranchList(ClientCodeRequest(it))
@@ -1085,11 +1123,12 @@ fun OrderDetailsDialogEditAndDisplay(
                                 expandedPurity,
                                 { purity = it },
                                 { expandedPurity = it },
-                                getOptionLabel = { it.PurityName.toString() },
-                                enabled = false
+                                getOptionLabel = { it.PurityName },
+                                enabled = true
                             )
                         }
                     }
+                    Log.d("@@","purityList"+purityList)
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Row(
@@ -1781,9 +1820,13 @@ fun OrderDetailsDialogEditAndDisplay(
 
 
                     GradientButtonIcon(
+
                         text = "OK",
                         onClick = {
-
+                            if (deliverDate.isBlank()) {
+                                Toast.makeText(context, "Please enter Delivery Date", Toast.LENGTH_SHORT).show()
+                                return@GradientButtonIcon   // 🚀 stop execution
+                            }
                             val orderItem = OrderItem(
                                 branchId = selectedItem?.branchId.toString(),
                                 branchName = branch,

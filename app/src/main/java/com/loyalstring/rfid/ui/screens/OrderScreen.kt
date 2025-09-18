@@ -318,6 +318,9 @@ fun OrderScreenContent(
     orderViewModel: OrderViewModel,
     editOrder: CustomOrderResponse?
 ) {
+    // PAN state
+    var panError by remember { mutableStateOf(false) }
+    var gstError by remember { mutableStateOf(false) }
     var itemCodeList by remember { mutableStateOf<List<ItemCodeResponse>>(emptyList()) }
     LaunchedEffect(Unit) {
         orderViewModel.itemCodeResponse.collect { items ->
@@ -408,7 +411,31 @@ fun OrderScreenContent(
 
         snapshotFlow { productList.toList() } // observe contents
             .collect { list ->
-                totalAMt = list.sumOf { it.itemAmt?.toDoubleOrNull() ?: 0.0 }
+                totalAMt = list.sumOf {orderItem ->
+                    val amt = orderItem.itemAmt?.toDoubleOrNull() ?: 0.0
+                    if (amt > 0.0) {
+                        amt
+                    } else {
+                        // 🔹 Calculate dynamically if no valid itemAmt
+                        val netWt = orderItem.nWt?.toDoubleOrNull() ?: 0.0
+                        val rate = dailyRates.find { it.PurityName.equals(orderItem.purity, ignoreCase = true) }?.Rate?.toDoubleOrNull() ?: 0.0
+                        //val rate = orderItem.todaysRate?.toDoubleOrNull() ?: 0.0
+                        val stoneAmt = orderItem.stoneAmt?.toDoubleOrNull() ?: 0.0
+                        val diamondAmt = orderItem.diamondAmt?.toDoubleOrNull() ?: 0.0
+
+                        val makingPercent = orderItem.makingPercentage?.toDoubleOrNull() ?: 0.0
+                        val fixMaking = orderItem.makingFixedAmt?.toDoubleOrNull() ?: 0.0
+                        val fixWastage = orderItem.makingFixedWastage?.toDoubleOrNull() ?: 0.0
+
+                        val makingAmt = (makingPercent / 100.0) * netWt + fixMaking + fixWastage
+
+                        (netWt * rate) + stoneAmt + diamondAmt + makingAmt
+
+                    }
+
+
+                }
+                Log.d("@@","@@ totalAMt"+totalAMt)
                 totalGrWt = list.sumOf { it.grWt?.toDoubleOrNull() ?: 0.0 }.toString()
                 totalFinemetal = list.sumOf {
                     val finePer = it.finePer.toDoubleOrNull() ?: 0.0
@@ -476,9 +503,9 @@ fun OrderScreenContent(
                     screwType = coItem.ScrewType.orEmpty(),
                     polishType = coItem.Polish.orEmpty(),
                     finePer = coItem.FinePercentage.orEmpty(),
-                    wastage = "",
-                    orderDate = "",
-                    deliverDate = "",
+                    wastage = coItem.MakingFixedWastage,
+                    orderDate = coItem.OrderDate,
+                    deliverDate = coItem.DeliverDate,
                     productName = coItem.ProductName.orEmpty(),
                     itemCode = coItem.ItemCode.orEmpty(),
                     rfidCode = coItem.RFIDCode.orEmpty(),
@@ -683,6 +710,14 @@ fun OrderScreenContent(
                 ?.savedStateHandle
                 ?.remove<CustomOrderResponse>("editOrder")
             navController.navigate("order_list")
+
+            withContext(Dispatchers.IO) {
+                orderViewModel.getAllEmpList(employee?.clientCode.toString())
+                orderViewModel.getAllItemCodeList(ClientCodeRequest(employee?.clientCode.toString()))
+                singleProductViewModel.getAllBranches(ClientCodeRequest(employee?.clientCode.toString()))
+                singleProductViewModel.getAllPurity(ClientCodeRequest(employee?.clientCode.toString()))
+                singleProductViewModel.getAllSKU(ClientCodeRequest(employee?.clientCode.toString()))
+            }
 
         }
     }
@@ -934,9 +969,10 @@ fun OrderScreenContent(
                                 selectedItem?.DiamondPurchaseAmount?.toDoubleOrNull() ?: 0.0
                             val safeMetalAmt = metalAmt
                             val safeMakingAmt = makingAmt
+                            val rate = dailyRates.find { it.PurityName.equals(selectedItem?.PurityName, ignoreCase = true) }?.Rate?.toDoubleOrNull() ?: 0.0
 
-                            val itemAmt: Double =
-                                totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt
+                            val itemAmt: Double = (selectedItem?.NetWt?.toDoubleOrNull() ?: 0.0) * rate
+                                //totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt
 
                             // Create new OrderItem with necessary details
                             val newProduct = OrderItem(
@@ -1217,10 +1253,9 @@ fun OrderScreenContent(
                                 ?: 0.0
                         val safeMetalAmt = metalAmt
                         val safeMakingAmt = makingAmt
+                        val rate = dailyRates.find { it.PurityName.equals(selectedItem?.PurityName, ignoreCase = true) }?.Rate?.toDoubleOrNull() ?: 0.0
 
-                        val itemAmt: Double =
-                            totalStoneAmount + diamondAmount + safeMetalAmt + safeMakingAmt
-
+                        val itemAmt: Double = (selectedItem?.NetWt?.toDoubleOrNull() ?: 0.0) * rate
                         val baseUrl =
                             "https://rrgold.loyalstring.co.in/" // Replace with actual base URL
                         val imageString = selectedItem?.Images.toString()
@@ -1564,8 +1599,8 @@ fun OrderScreenContent(
                                             CustomOrderItem(
                                                 CustomOrderId = 0,
                                                 RFIDCode =selectedItem?.RFIDCode.toString(),
-                                                // OrderDate = product.orderDate,
-                                                // DeliverDate = product.deliverDate,
+                                                OrderDate = product.orderDate,
+                                                 DeliverDate = product.deliverDate,
                                                 SKUId = 0,
                                                 SKU = product.sku,
                                                 CategoryId = product.categoryId,
@@ -1743,7 +1778,7 @@ fun OrderScreenContent(
                                     Qty = quantity,
                                     GST = GST.toString(),
                                     OrderStatus = "Order Received",
-                                    MRP = "",
+                                    MRP = editOrder?.MRP,
                                     VendorId = 12,
                                     TDS = null,
                                     PurchaseStatus = null,
@@ -1818,8 +1853,8 @@ fun OrderScreenContent(
                                         CustomOrderItem(
                                             CustomOrderId = 0,
                                             RFIDCode =product?.rfidCode.toString(),
-                                            // OrderDate = product.orderDate,
-                                            // DeliverDate = product.deliverDate,
+                                             OrderDate = product.orderDate,
+                                             DeliverDate = product.deliverDate,
                                             SKUId = 0,
                                             SKU = product.sku,
                                             CategoryId = selectedItem?.CategoryId,
@@ -1841,11 +1876,11 @@ fun OrderScreenContent(
                                             Length = product.length,
                                             TypesOdColors = product.typeOfColor,
                                             Quantity = product.qty,
-                                            RatePerGram = "",
-                                            MakingPerGram = "",
-                                            MakingFixed = "",
+                                            RatePerGram =product.todaysRate,
+                                            MakingPerGram = product.makingPerGram,
+                                            MakingFixed = product.makingFixedAmt,
                                             FixedWt = "",
-                                            MakingPercentage = "",
+                                            MakingPercentage = product.makingPercentage,
                                             DiamondPieces = "",
                                             DiamondRate = "",
                                             DiamondAmount = product.diamondAmt,
@@ -2076,8 +2111,24 @@ fun OrderScreenContent(
                     if (!orderItem.itemCode.isNullOrBlank() && orderItem.itemCode != "null") {
                         val alreadyExists = productList.any { it.itemCode == orderItem.itemCode }
                         if (!alreadyExists) {
-                            orderViewModel.insertOrderItemToRoom(orderItem)
-                            productList.add(orderItem)
+
+                            val netWt = orderItem.nWt?.toDoubleOrNull() ?: 0.0
+                            val stoneAmt = orderItem.stoneAmt?.toDoubleOrNull() ?: 0.0
+                            val diamondAmt = orderItem.diamondAmt?.toDoubleOrNull() ?: 0.0
+                            val makingAmt = orderItem.makingPerGram?.toDoubleOrNull() ?: 0.0
+                            val rate = dailyRates.find { it.PurityName.equals(orderItem?.purity, ignoreCase = true) }?.Rate?.toDoubleOrNull() ?: 0.0
+
+                            val calculatedAmt = (netWt * rate)
+                            Log.d("@@","calculatedAmt"+calculatedAmt)
+                            Log.d("@@","calculatedAmt"+calculatedAmt +",  netWt"+netWt+",  rate"+rate)
+
+                            // ✅ Copy orderItem with new itemAmt
+                            val orderItemNew = orderItem.copy(
+                                itemAmt  = calculatedAmt.toString()
+
+                            )
+                            orderViewModel.insertOrderItemToRoom(orderItemNew)
+                            productList.add(orderItemNew)
                         }
                     }
 
@@ -2297,8 +2348,32 @@ fun OrderScreenContent(
                                 10
                             )
                             textInput(email, { email = it }, "Email")
-                            textInput(panNumber, { panNumber = it.uppercase()  }, "PAN Number")
-                            textInput(gstNumber, { gstNumber = it }, "GST Number")
+                            textInput(panNumber, {
+                                if (it.length <= 10) {
+                                    panNumber = it.uppercase()
+                                    panError = it.length != 10 && it.isNotEmpty()
+                                }
+                            }, "PAN Number")
+                            if (panError) {
+                                Text(
+                                    text = "PAN must be exactly 10 characters",
+                                    color = Color.Red,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            textInput(gstNumber,  {
+                                if (it.length <= 15) {              // ✅ restrict max 15 chars
+                                    gstNumber = it.uppercase()      // ✅ always uppercase
+                                    gstError = it.length != 15 && it.isNotEmpty() // show error if not exactly 15
+                                }
+                            }, "GST Number")
+                            if (gstError) {
+                                Text(
+                                    text = "GST must be exactly 15 characters",
+                                    color = Color.Red,
+                                    fontSize = 12.sp
+                                )
+                            }
                             textInput(street, { street = it }, "Street")
 
 
@@ -2766,7 +2841,7 @@ fun OrderItemTableScreen(
 
     // Shared column definitions
     val columnDefinitions = listOf(
-        "Product Name" to 140.dp,   // keep product wider
+        "Product Name" to 110.dp,   // keep product wider
         "Item Code" to 80.dp,
         "Gr. Wt" to 70.dp,
         "N. Wt" to 70.dp,
@@ -2858,140 +2933,17 @@ fun OrderItemTableScreen(
                                 ) {
                                     when (colIndex) {
                                         // Product Name column has radio + text
-                                        0 -> Row(
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            RadioButton(
-                                                selected = selectedIndex.value == index,
-                                                onClick = {
-                                                    selectedIndex.value = index
-                                                    onItemSelected(
-                                                        ItemCodeResponse(
-                                                            Id = 0,
-                                                            SKUId = item.skuId,
-                                                            ProductTitle = item.productName,
-                                                            ClipWeight = "",
-                                                            ClipQuantity = "",
-                                                            ItemCode = item.itemCode,
-                                                            HSNCode = "",
-                                                            Description = "",
-                                                            ProductCode = item.productCode,
-                                                            MetalName = "",
-                                                            CategoryId = item.categoryId,
-                                                            ProductId = item.productId,
-                                                            DesignId = item.designid,
-                                                            PurityId = item.purityid,
-                                                            Colour = item.typeOfColor,
-                                                            Size = item.size,
-                                                            WeightCategory = "",
-                                                            GrossWt = item.grWt ?: "",
-                                                            NetWt = item.nWt ?: "",
-                                                            CollectionName = "",
-                                                            OccassionName = "",
-                                                            Gender = "",
-                                                            MakingFixedAmt = item.itemAmt ?: "",
-                                                            MakingPerGram = item.makingPerGram,
-                                                            MakingFixedWastage = item.makingFixedWastage,
-                                                            MakingPercentage = item.makingPercentage,
-                                                            TotalStoneWeight = item.stoneWt,
-                                                            TotalStoneAmount = item.stoneAmt ?: "",
-                                                            TotalStonePieces = "",
-                                                            TotalDiamondWeight = "",
-                                                            TotalDiamondPieces = "",
-                                                            TotalDiamondAmount = "",
-                                                            Featured = "",
-                                                            Pieces = "",
-                                                            HallmarkAmount = "",
-                                                            HUIDCode = "",
-                                                            MRP = "",
-                                                            VendorId = 0,
-                                                            VendorName = "",
-                                                            FirmName = "",
-                                                            BoxId = 0,
-                                                            TIDNumber = item.tid,
-                                                            RFIDCode = item.rfidCode,
-                                                            FinePercent = item.finePlusWt ?: "",
-                                                            WastagePercent = item.wastage,
-                                                            Images = "",
-                                                            BlackBeads = "",
-                                                            Height = "",
-                                                            Width = "",
-                                                            OrderedItemId = "",
-                                                            CuttingGrossWt = "",
-                                                            CuttingNetWt = "",
-                                                            MetalRate = "",
-                                                            LotNumber = "",
-                                                            DeptId = 0,
-                                                            PurchaseCost = "",
-                                                            Margin = "",
-                                                            BranchName = item.branchName,
-                                                            BoxName = "",
-                                                            EstimatedDays = "",
-                                                            OfferPrice = "",
-                                                            Rating = "",
-                                                            SKU = item.sku,
-                                                            Ranking = "",
-                                                            CompanyId = item.companyId,
-                                                            CounterId = item.counterId,
-                                                            BranchId = item.branchId.toIntOrNull() ?: 0,
-                                                            EmployeeId = 0,
-                                                            Status = "",
-                                                            ClientCode = employee?.clientCode,
-                                                            UpdatedFrom = "",
-                                                            count = 0,
-                                                            MetalId = 0,
-                                                            WarehouseId = 0,
-                                                            CreatedOn = "",
-                                                            LastUpdated = "",
-                                                            TaxId = 0,
-                                                            TaxPercentage = "",
-                                                            OtherWeight = "",
-                                                            PouchWeight = "",
-                                                            CategoryName = item.categoryName,
-                                                            PurityName = item.purity,
-                                                            TodaysRate = item.todaysRate,
-                                                            ProductName = item.productName,
-                                                            DesignName = item.designName,
-                                                            DiamondSize = "",
-                                                            DiamondWeight = "",
-                                                            DiamondPurchaseRate = "",
-                                                            DiamondSellRate = "",
-                                                            DiamondClarity = "",
-                                                            DiamondColour = "",
-                                                            DiamondShape = "",
-                                                            DiamondCut = "",
-                                                            DiamondSettingType = "",
-                                                            DiamondCertificate = "",
-                                                            DiamondPieces = "",
-                                                            DiamondPurchaseAmount = "",
-                                                            DiamondSellAmount = "",
-                                                            DiamondDescription = "",
-                                                            TagWeight = "",
-                                                            FindingWeight = "",
-                                                            LanyardWeight = "",
-                                                            PacketId = 0,
-                                                            PacketName = "",
-                                                            CollectionId = 0,
-                                                            CollectionNameSKU = "",
-                                                            PackingWeight = 0,
-                                                            TotalWeight = 0.0,
-                                                            Stones = emptyList(),
-                                                            Diamonds = emptyList()
-                                                        )
-                                                    )
-                                                }
-                                            )
-                                            Spacer(Modifier.width(4.dp))
-                                            Text(
-                                                text = item.productName,
-                                                fontSize = 13.sp,
-                                                color = Color.Black,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.fillMaxWidth(),   // take full width of its cell
-                                                textAlign = TextAlign.Start           // align left
-                                            )
-                                        }
+                                        0 -> Text(
+                                            text = item.productName,
+                                            fontSize = 13.sp,
+                                            color = Color.Black,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(start = 6.dp, end = 4.dp),
+                                            textAlign = TextAlign.Center
+                                        )
 
                                         // Other columns map directly
                                         1 -> Text(item.itemCode, fontSize = 13.sp)

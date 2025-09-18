@@ -7,8 +7,8 @@ import kotlinx.parcelize.Parcelize
 data class CustomOrderItem(
     val CustomOrderId: Int,
     val  RFIDCode :String,
-   //val OrderDate: String,
-    //val DeliverDate: String,
+   val OrderDate: String,
+    val DeliverDate: String,
     val SKUId: Int,
     val SKU: String,
     val CategoryId: Int?,
