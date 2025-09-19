@@ -492,9 +492,9 @@ fun OrderScreenContent(
             }
             editOrder.CustomOrderItem.forEach { coItem ->
                 val orderItem = OrderItem(
-                    branchId = "",
-                    branchName = "",
-                    exhibition = "",
+                    branchId = coItem.BranchId.toString(),
+                    branchName = coItem.BranchName.orEmpty(),
+                    exhibition = coItem.Exhibition.orEmpty(),
                     remark = coItem.Remark.orEmpty(),
                     purity = coItem.PurityName.orEmpty(),
                     size = coItem.Size.orEmpty(),
@@ -717,6 +717,7 @@ fun OrderScreenContent(
                 singleProductViewModel.getAllBranches(ClientCodeRequest(employee?.clientCode.toString()))
                 singleProductViewModel.getAllPurity(ClientCodeRequest(employee?.clientCode.toString()))
                 singleProductViewModel.getAllSKU(ClientCodeRequest(employee?.clientCode.toString()))
+                singleProductViewModel.getAllBranches(ClientCodeRequest(employee?.clientCode.toString()))
             }
 
         }
@@ -1679,6 +1680,7 @@ fun OrderScreenContent(
                                                 Purity = product.purity,
                                                 Status = "",
                                                 URDNo = "",
+                                                HallmarkAmt=product.hallmarkAmt,
                                                 Stones = emptyList(),
                                                 Diamond = emptyList()
                                             )
@@ -1932,6 +1934,7 @@ fun OrderScreenContent(
                                             Purity = product.purity,
                                             Status = "",
                                             URDNo = "",
+                                            HallmarkAmt=product.hallmarkAmt,
                                             Stones = emptyList(),
                                             Diamond = emptyList()
                                         )

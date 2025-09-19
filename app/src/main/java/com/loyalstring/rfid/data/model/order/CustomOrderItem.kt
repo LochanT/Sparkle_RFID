@@ -85,6 +85,7 @@ data class CustomOrderItem(
     val Purity: String,
     val Status: String?,
     val URDNo: String?,
+    val HallmarkAmt: String?,
     val Stones: List<Stone>,
     val Diamond: List<Diamond>
 ) : Parcelable

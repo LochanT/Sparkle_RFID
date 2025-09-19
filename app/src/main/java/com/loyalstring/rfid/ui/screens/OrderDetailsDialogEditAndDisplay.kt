@@ -122,6 +122,17 @@ fun OrderDetailsDialogEditAndDisplay(
             singleProductViewModel.getAllBranches(ClientCodeRequest(employee?.clientCode.toString()))
             singleProductViewModel.getAllPurity(ClientCodeRequest(employee?.clientCode.toString()))
             singleProductViewModel.getAllSKU(ClientCodeRequest(employee?.clientCode.toString()))
+            singleProductViewModel.getAllBranches(ClientCodeRequest(employee?.clientCode.toString()))
+        }
+    }
+
+    if (branchList.isEmpty()) {
+        //Text("Loading branches...", modifier = Modifier.padding(8.dp))
+        LaunchedEffect(Unit) {
+            withContext(Dispatchers.IO) {
+
+                singleProductViewModel.getAllBranches(ClientCodeRequest(employee?.clientCode.toString()))
+            }
         }
     }
 
@@ -186,7 +197,8 @@ fun OrderDetailsDialogEditAndDisplay(
     LaunchedEffect(selectedItem) {
 
 
-        branch = selectedItem?.branchName.toString()
+        branch = selectedItem?.branchName?.takeIf { !it.equals("null", true) } ?: ""
+        Log.d("@@","@@ branch"+branch)
         productName = selectedItem?.productName.toString()
         itemCode = selectedItem?.itemCode.toString()
         totalWt = selectedItem?.totalWt.toString()
@@ -400,16 +412,16 @@ fun OrderDetailsDialogEditAndDisplay(
                             if (branchList.isEmpty()) {
                                 //Text("Loading branches...", modifier = Modifier.padding(8.dp))
                             } else {
+
                                 DropdownMenuFieldDisplay(
-                                    label = "Branch",
-                                    options = branchList,
-                                    selectedValue = branch,
-                                    expanded = expandedBranch,
-                                    onValueChange = { branch = it },
-                                    onExpandedChange = { expandedBranch = it },
-                                    labelColor = Color.Black,
-                                    getOptionLabel = { it.BranchName },
-                                    enabled = false
+                                    "Branch",
+                                    branchList,
+                                    branch,
+                                    expandedBranch,
+                                    { branch = it },
+                                    { expandedBranch = it },
+                                    getOptionLabel = { it. BranchName},
+                                    enabled = true
                                 )
                             }
                         }
