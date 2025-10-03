@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalMinimumInteractiveComponentEnforcement
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,6 +50,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -77,7 +80,11 @@ import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.ProductListViewModel
+import com.loyalstring.rfid.viewmodel.ScanDisplayViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -102,10 +109,14 @@ private const val MENU_SEARCH = "SEARCH"
 @SuppressLint("UnrememberedMutableState")
 @Composable
 fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
+    val scope = rememberCoroutineScope()
     val singleProductViewModel: SingleProductViewModel = hiltViewModel()
     val productListViewModel: ProductListViewModel = hiltViewModel()
     val bulkViewModel: BulkViewModel = hiltViewModel()
+    val scanDisplayViewModel: ScanDisplayViewModel = hiltViewModel()
     val context: Context = LocalContext.current
+    val emailStatus by scanDisplayViewModel.emailStatus.collectAsState()
+
 
     var showRfidDialog by remember { mutableStateOf(false) }
     if (showRfidDialog) {
@@ -168,20 +179,15 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
             }
         }
     }
-    /*  remember(allItems, filterTypeName, filterValue) {
-          if (filterTypeName.isNullOrEmpty() || filterValue.isNullOrEmpty()) {
-              allItems
-          } else {
-              when (filterTypeName.lowercase()) {
-                  "box" -> allItems.filter { it.boxName == filterValue }
-                  "counter" -> allItems.filter { it.counterName == filterValue }
-                  "branch" -> allItems.filter { it.branchName == filterValue }
-                  "branch" -> allItems.filter { it.branchName == filterValue }
-                  "exhibition" -> allItems.filter { it.branchType == filterTypeName && it.branchName == filterValue }
-                  else -> allItems
-              }
-          }
-      }*/
+
+    LaunchedEffect(emailStatus) {
+        when (emailStatus) {
+            "success" -> Toast.makeText(context, "Email sent!", Toast.LENGTH_LONG).show()
+            null -> Unit
+            else -> Toast.makeText(context, emailStatus ?: "Error", Toast.LENGTH_LONG).show()
+        }
+    }
+
 
     // Multi-select filters
     val selectedCategories = remember { mutableStateListOf<String>() }
@@ -239,6 +245,16 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     var selectedPower by remember { mutableIntStateOf(30) }
     var isScanning by remember { mutableStateOf(false) }
 
+    var showEmailDialog by remember { mutableStateOf(false) }
+    var savedEmails by remember { mutableStateOf<List<String>>(emptyList()) }
+    var selectedEmail by remember { mutableStateOf<String?>(null) }
+    var newEmail by remember { mutableStateOf("") }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+
+
+    LaunchedEffect(Unit) {
+        savedEmails = scanDisplayViewModel.getAllEmails()
+    }
 
     val scannedFiltered by bulkViewModel.scannedFilteredItems
     // scopeItems overlay scanned status on filtered base set
@@ -382,8 +398,7 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
                         }
                     },
                     onEmail = {
-
-
+                        showEmailDialog = true
                     },
                     onReset = {
                         bulkViewModel.stopScanningAndCompute()
@@ -526,6 +541,141 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
             // -----------------------------------------------------------------------------------
         }
     }
+
+
+    if (showEmailDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmailDialog = false },
+            title = { Text("Send Report", fontFamily = poppins) },
+            text = {
+                Column {
+                    if (savedEmails.isNotEmpty()) {
+                        Text("Saved Emails:", fontFamily = poppins)
+                        savedEmails.forEach { email ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedEmail = email }
+                                    .background(
+                                        if (selectedEmail == email) Color.LightGray else Color.Transparent
+                                    )
+                                    .padding(8.dp)
+                            ) {
+                                Text(email, fontFamily = poppins)
+                            }
+                        }
+                        Spacer(Modifier.height(12.dp))
+                    }
+                    OutlinedTextField(
+                        value = newEmail,
+                        onValueChange = { newEmail = it },
+                        label = { Text("Add New Email", fontFamily = poppins) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val finalEmail = when {
+                        newEmail.isNotBlank() -> newEmail
+                        !selectedEmail.isNullOrBlank() -> selectedEmail
+                        else -> null
+                    }
+                    if (finalEmail.isNullOrBlank()) {
+                        Toast.makeText(
+                            context,
+                            "Please enter or select an email",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@Button
+                    }
+
+                    scope.launch(Dispatchers.IO) {
+                        // save new email
+
+                        if (newEmail.isNotBlank()) {
+                            scanDisplayViewModel.saveEmail(newEmail)
+                            savedEmails = scanDisplayViewModel.getAllEmails()
+                            selectedEmail = newEmail
+                            newEmail = ""
+                        }
+                        try {
+                            val summaryList = scanDisplayViewModel.buildSummary(displayItems)
+                            val (matched, unmatched) = scanDisplayViewModel.buildDetailedLists(
+                                displayItems
+                            )
+
+                            val pdfFile = scanDisplayViewModel.generateScanReportPdf(
+                                context,
+                                summaryList,
+                                matched,
+                                unmatched
+                            )
+
+                            println("=== Trying to send email to $finalEmail ===")
+
+                            scanDisplayViewModel.sendEmailHostinger(
+                                sendEmail = "android@loyalstring.com",
+                                sendPass = "Loyal@123",
+                                recipients = listOf(finalEmail),
+                                subject = "Inventory Scan Report",
+                                body = "<h2>Here is your scan report</h2><p>Details attached.</p>",
+                                type = "text/html",
+                                attachments = mapOf(pdfFile.name to pdfFile.absolutePath)
+                            )
+
+                            println("=== Email sent successfully ===")
+
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    context,
+                                    "Report sent to $finalEmail",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+
+                        } catch (e: Exception) {
+                            println("=== Email send failed: ${e.message} ===")
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Failed: ${e.message}", Toast.LENGTH_LONG)
+                                    .show()
+                            }
+                        }
+                    }
+
+                    // build lists
+
+                    // showSuccessDialog = true
+
+
+                    showEmailDialog = false
+                }) {
+                    Text("Send", fontFamily = poppins)
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showEmailDialog = false }) {
+                    Text("Cancel", fontFamily = poppins)
+                }
+            }
+        )
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text("Success", fontFamily = poppins) },
+            text = { Text("Email sent successfully!", fontFamily = poppins) },
+            confirmButton = {
+                GradientButton(
+                    text = "OK",
+                    onClick = { showSuccessDialog = false }
+                )
+            }
+        )
+    }
+
 
     // ---------- Filter Dialog ----------
     if (showDialog) {
@@ -692,7 +842,110 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     if (showItemDialog && selectedItem != null) {
         ItemDetailsDialog(item = selectedItem!!, onDismiss = { showItemDialog = false })
     }
+
+    if (showEmailDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmailDialog = false },
+            title = { Text("Select or Add Email") },
+            text = {
+                Column {
+                    if (savedEmails.isNotEmpty()) {
+                        Text("Saved Emails:")
+                        savedEmails.forEach { emailEntity ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(4.dp)
+                                    .background(
+                                        if (selectedEmail == emailEntity) Color.LightGray else Color.Transparent
+                                    )
+                                    .clickable {
+                                        selectedEmail = emailEntity
+                                        newEmail = emailEntity // ✅ populate text field
+                                    }
+                            ) {
+                                Text(emailEntity, modifier = Modifier.padding(8.dp))
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+
+                    OutlinedTextField(
+                        value = newEmail,
+                        onValueChange = { newEmail = it },
+                        label = { Text("Add New Email") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                GradientButton(
+                    text = "Send",
+                    onClick = {
+                        val finalEmail = when {
+                            newEmail.isNotBlank() -> newEmail
+                            !selectedEmail.isNullOrBlank() -> selectedEmail
+                            else -> null
+                        }
+                        if (finalEmail.isNullOrBlank()) {
+                            Toast.makeText(
+                                context,
+                                "Please enter or select an email",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@GradientButton
+                        }
+
+                        scope.launch {
+                            // save email if new
+                            if (newEmail.isNotBlank() && !savedEmails.contains(newEmail)) {
+                                scanDisplayViewModel.saveEmail(newEmail)
+                                savedEmails = scanDisplayViewModel.getAllEmails()
+                                selectedEmail = newEmail
+                            }
+
+                            // generate + send
+                            val summaryList = scanDisplayViewModel.buildSummary(displayItems)
+                            val (matched, unmatched) = scanDisplayViewModel.buildDetailedLists(
+                                displayItems
+                            )
+
+                            val pdfFile = scanDisplayViewModel.generateScanReportPdf(
+                                context,
+                                summaryList,
+                                matched,
+                                unmatched
+                            )
+
+                            scanDisplayViewModel.sendEmailHostinger(
+                                sendEmail = "android@loyalstring.com",
+                                sendPass = "Loyal@123",
+                                recipients = listOf(finalEmail),
+                                subject = "Inventory Scan Report",
+                                body = "<h2>Here is your inventory scan report</h2><p>Details attached.</p>",
+                                type = "text/html",
+                                attachments = mapOf(pdfFile.name to pdfFile.absolutePath)
+                            )
+                        }
+
+                        showEmailDialog = false
+                    }
+                )
+            },
+            dismissButton = {
+                GradientButton(
+                    text = "Cancel",
+                    onClick = { showEmailDialog = false }
+                )
+            }
+        )
+    }
+
+
 }
+
+
 
 @Composable
 fun FilterRow(
@@ -1108,6 +1361,7 @@ fun MenuCard(item: MenuItem, onClick: () -> Unit) {
         }
     }
 }
+
 
 fun parseWeightToBigDecimal(weight: String?): BigDecimal {
     if (weight.isNullOrBlank()) return BigDecimal.ZERO

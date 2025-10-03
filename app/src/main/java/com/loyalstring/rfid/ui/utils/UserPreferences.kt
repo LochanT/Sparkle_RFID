@@ -2,22 +2,20 @@ package com.loyalstring.rfid.ui.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.google.gson.Gson
+import com.loyalstring.rfid.data.model.login.Clients
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
-import androidx.core.content.edit
-import com.loyalstring.rfid.data.model.login.Clients
 
 class UserPreferences @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
-
     companion object {
         private const val PREF_NAME = "user_prefs"
         private const val KEY_TOKEN = "token"
         private const val KEY_EMPLOYEE = "employee"
-        // private const val KEY_USERNAME = "username"
 
         private const val KEY_USERNAME = "remember_username"
         private const val KEY_PASSWORD = "remember_password"
@@ -25,6 +23,13 @@ class UserPreferences @Inject constructor(
         private const val KEY_LOGGED_IN = "logged_in"
         private const val KEY_SHEET_URL = "sheet_url"
         private const val KEY_CLIENT = "client"
+
+        // ✅ New Keys for Counters
+        const val KEY_PRODUCT_COUNT = "product_count"
+        const val KEY_INVENTORY_COUNT = "inventory_count"
+        const val KEY_SEARCH_COUNT = "search_count"
+        const val KEY_TRANSACTION_COUNT = "orders_count"
+        const val KEY_STOCK_TRANSFER_COUNT = "stock_transfer_count"
 
         private val gson = Gson()
 
@@ -36,29 +41,34 @@ class UserPreferences @Inject constructor(
                 instance ?: UserPreferences(context.applicationContext).also { instance = it }
             }
         }
-
     }
 
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
+    // ---------------- TOKEN ----------------
     fun saveToken(token: String) {
-        prefs.edit() { putString(KEY_TOKEN, token) }
-    }
-
-    fun saveUserName(username: String) {
-        prefs.edit() { putString(KEY_USERNAME, username) }
-
+        prefs.edit { putString(KEY_TOKEN, token) }
     }
 
     fun getToken(): String? {
         return prefs.getString(KEY_TOKEN, null)
     }
 
+    // ---------------- USERNAME ----------------
+    fun saveUserName(username: String) {
+        prefs.edit { putString(KEY_USERNAME, username) }
+    }
 
+    fun getSavedUsername(): String = prefs.getString(KEY_USERNAME, "") ?: ""
+
+    // ---------------- PASSWORD ----------------
+    fun getSavedPassword(): String = prefs.getString(KEY_PASSWORD, "") ?: ""
+
+    // ---------------- EMPLOYEE ----------------
     fun <T> saveEmployee(employee: T) {
         val json = gson.toJson(employee)
-        prefs.edit() { putString(KEY_EMPLOYEE, json) }
+        prefs.edit { putString(KEY_EMPLOYEE, json) }
     }
 
     fun <T> getEmployee(clazz: Class<T>): T? {
@@ -66,18 +76,7 @@ class UserPreferences @Inject constructor(
         return if (json != null) gson.fromJson(json, clazz) else null
     }
 
-    fun clearAll() {
-        prefs.edit() { clear() }
-    }
-
-    fun saveSheetUrl(url: String) {
-        prefs.edit() { putString(KEY_SHEET_URL, url) }
-    }
-
-    fun getSheetUrl(): String? {
-        return prefs.getString(KEY_SHEET_URL, "")
-    }
-
+    // ---------------- LOGIN / LOGOUT ----------------
     fun saveLoginCredentials(username: String, password: String, rememberMe: Boolean) {
         prefs.edit().apply {
             putBoolean(KEY_REMEMBER_ME, rememberMe)
@@ -92,18 +91,16 @@ class UserPreferences @Inject constructor(
         }
     }
 
-    fun getSavedUsername(): String = prefs.getString(KEY_USERNAME, "") ?: ""
-    fun getSavedPassword(): String = prefs.getString(KEY_PASSWORD, "") ?: ""
     fun isRememberMe(): Boolean = prefs.getBoolean(KEY_REMEMBER_ME, false)
 
     fun setLoggedIn(loggedIn: Boolean) {
-        prefs.edit() { putBoolean(KEY_LOGGED_IN, loggedIn) }
+        prefs.edit { putBoolean(KEY_LOGGED_IN, loggedIn) }
     }
 
     fun isLoggedIn(): Boolean = prefs.getBoolean(KEY_LOGGED_IN, false)
 
     fun logout() {
-        prefs.edit() { clear() }
+        prefs.edit { clear() }
         prefs.edit()
             .remove(KEY_USERNAME)
             .remove(KEY_PASSWORD)
@@ -111,6 +108,7 @@ class UserPreferences @Inject constructor(
             .apply()
     }
 
+    // ---------------- CLIENT ----------------
     fun saveClient(client: Clients) {
         val json = gson.toJson(client)
         prefs.edit { putString(KEY_CLIENT, json) }
@@ -119,5 +117,28 @@ class UserPreferences @Inject constructor(
     fun getClient(): Clients? {
         val json = prefs.getString(KEY_CLIENT, null)
         return if (json != null) gson.fromJson(json, Clients::class.java) else null
+    }
+
+    // ---------------- SHEET URL ----------------
+    fun saveSheetUrl(url: String) {
+        prefs.edit { putString(KEY_SHEET_URL, url) }
+    }
+
+    fun getSheetUrl(): String? {
+        return prefs.getString(KEY_SHEET_URL, "")
+    }
+
+    // ---------------- GENERIC CLEAR ----------------
+    fun clearAll() {
+        prefs.edit { clear() }
+    }
+
+    // ---------------- INT HELPERS (for counters) ----------------
+    fun saveInt(key: String, value: Int) {
+        prefs.edit { putInt(key, value) }
+    }
+
+    fun getInt(key: String, default: Int = 0): Int {
+        return prefs.getInt(key, default)
     }
 }

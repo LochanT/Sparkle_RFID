@@ -36,6 +36,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -163,6 +164,10 @@ class BulkViewModel @Inject constructor(
 
     private var syncedRFIDMap: Map<String, String>? = null
 
+    private val _dbRFIDMap = MutableStateFlow<Map<String, String>>(emptyMap())
+    val dbRFIDMap: StateFlow<Map<String, String>> = _dbRFIDMap
+
+
 
 
     // ✅ function to update value at a specific index
@@ -216,6 +221,9 @@ class BulkViewModel @Inject constructor(
     private val _stickyUnmatchedIds = mutableStateListOf<String>()
     val stickyUnmatchedIds: List<String> get() = _stickyUnmatchedIds
 
+    val allTagsFlow: Flow<List<EpcDto>> = bulkRepository.getAllTagsFlow()
+
+
     fun rememberUnmatched(items: List<BulkItem>) {
         val ids = items.mapNotNull { it.epc?.trim()?.uppercase() }
         _stickyUnmatchedIds.addAll(ids.filterNot { _stickyUnmatchedIds.contains(it) })
@@ -234,6 +242,18 @@ class BulkViewModel @Inject constructor(
                 _scannedFilteredItems.value = items
             }
         }
+
+
+        // collect local tags from DB
+        viewModelScope.launch(Dispatchers.IO) {
+            allTagsFlow.collect { tags ->
+                _dbRFIDMap.value = tags.associate { dto ->
+                    dto.BarcodeNumber.orEmpty().trim().uppercase() to dto.TidValue.orEmpty().trim()
+                        .uppercase()
+                }
+            }
+        }
+
     }
     fun toggleScanningInventory(selectedPower: Int) {
         if (_isScanning.value) {
@@ -957,71 +977,91 @@ class BulkViewModel @Inject constructor(
     fun syncItems() {
         viewModelScope.launch {
             try {
-                Log.d("Sync", "syncItems called")
                 _isLoading.value = true
+                _syncStatusText.value = "Downloading data from server..."
                 _syncProgress.value = 0f
-                _syncStatusText.value = "Starting sync..."
 
                 val clientCode = employee?.clientCode ?: return@launch
                 val request = ClientCodeRequest(clientCode)
 
-                _syncStatusText.value = "Fetching data..."
-                val response = bulkRepository.syncBulkItemsFromServer(request)
+                // Stage 1: Download (takes ~1.6 min)
+                val response = withContext(Dispatchers.IO) {
+                    bulkRepository.syncBulkItemsFromServer(request)
+                }
+
+                // Stage 2: Process
                 val bulkItems = response
                     .filter { (it.status == "ApiActive" || it.status == "Active") && !it.rfidCode.isNullOrBlank() }
                     .map { it.toBulkItem() }
 
                 val total = bulkItems.size
-                bulkRepository.clearAllItems()
+                withContext(Dispatchers.IO) { bulkRepository.clearAllItems() }
 
+                // true item-wise progress
                 bulkItems.forEachIndexed { index, item ->
-                    val result = bulkRepository.insertSingleItem(item)
-                    Log.d("Insert", "Inserted item with EPC ${item.epc}, result = $result")
-                    _syncProgress.value = (index + 1f) / total
-                    _syncStatusText.value = "Syncing... ${index + 1} of $total"
-                    delay(100)
+                    if (item.epc.isNullOrBlank()) {
+                        item.epc = item.rfid?.let { syncAndMapRow(it) }
+                    }
+
+                    withContext(Dispatchers.IO) {
+                        bulkRepository.insertSingleItem(item)
+                    }
+
+                    val processed = index + 1
+                    _syncStatusText.value = "Syncing $processed of $total"
+                    _syncProgress.value = processed.toFloat() / total
                 }
-                Log.d("ToastEmit", "Emitting toast")
+
                 _toastMessage.emit("Synced $total items successfully!")
-                _syncStatusText.value = "Sync completed successfully!"
+                _syncStatusText.value = "Sync completed!"
 
             } catch (e: Exception) {
                 _syncStatusText.value = "Sync failed: ${e.localizedMessage}"
-                Log.d("ToastEmit", "Emitting toast")
                 _toastMessage.emit("Sync failed: ${e.localizedMessage}")
-                Log.e("Sync", "Error: ${e.localizedMessage}")
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    fun syncAndMapRow(itemCode: String): String {
-        return syncedRFIDMap?.get(itemCode) ?: ""
-    }
 
+    fun syncAndMapRow(itemCode: String): String {
+        val key = itemCode.trim().uppercase()
+        return syncedRFIDMap?.get(key)
+            ?: dbRFIDMap.value[key]
+            ?: ""
+    }
     val rfidList: StateFlow<List<EpcDto>> =
         bulkRepository.getAllRFIDTags()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    suspend fun syncRFIDDataIfNeeded(context: Context) = withContext(Dispatchers.IO) {
-        if (syncedRFIDMap != null) return@withContext
+    suspend fun syncRFIDDataIfNeeded(context: Context) {
+        if (syncedRFIDMap != null) return
 
         val employee = userPreferences.getEmployee(Employee::class.java)
-        val clientCode = employee?.clientCode ?: return@withContext
+        val clientCode = employee?.clientCode ?: return
 
         val response = bulkRepository.syncRFIDItemsFromServer(ClientCodeRequest(clientCode))
 
-        // Save in DB
+        /*   if (response.isNullOrEmpty()) {
+               // ❌ No RFID data found
+               android.widget.Toast.makeText(
+                   context,
+                   "RFID sheet is not uploaded. Please upload it first.",
+                   android.widget.Toast.LENGTH_LONG
+               ).show()
+               return
+           }*/
+
+        // ✅ Save in DB
         bulkRepository.insertRFIDTags(response)
 
-        // Build RFID → EPC map
+        // ✅ Build RFID → EPC map
         syncedRFIDMap = response.associateBy(
             { it.BarcodeNumber.orEmpty().trim().uppercase() },
             { it.TidValue.orEmpty().trim().uppercase() }
         )
     }
-
 
 
 

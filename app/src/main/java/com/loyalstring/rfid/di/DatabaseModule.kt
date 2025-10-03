@@ -2,6 +2,7 @@ package com.loyalstring.rfid.di
 
 import android.content.Context
 import com.loyalstring.rfid.data.local.dao.BulkItemDao
+import com.loyalstring.rfid.data.local.dao.CustomerEmailDao
 import com.loyalstring.rfid.data.local.dao.DropdownDao
 import com.loyalstring.rfid.data.local.dao.EpcDao
 import com.loyalstring.rfid.data.local.dao.OrderItemDao
@@ -47,5 +48,10 @@ object DatabaseModule {
     @Provides
     fun provideEpcDao(db: AppDatabase): EpcDao {
         return db.epcDao()
+    }
+
+    @Provides
+    fun provideCustomerEmailDao(db: AppDatabase): CustomerEmailDao {
+        return db.customerEmailDao()
     }
 }
