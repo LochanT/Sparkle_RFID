@@ -25,6 +25,8 @@ import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
+import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesReq
+import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesResponse
 import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
 import com.loyalstring.rfid.data.remote.data.DeleteOrderResponse
 import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
@@ -185,7 +187,12 @@ interface RetrofitInterface {
     /*daily rate*/
 
     @POST("/api/ProductMaster/GetAllDailyRate")
-    suspend fun getDailyDailyRate(@Body request: ClientCodeRequest): Response<List<DailyRateResponse>>
+    suspend fun getDailyRate(@Body request: ClientCodeRequest): Response<List<DailyRateResponse>>
+
+    /*update Daily rates*/
+    @POST("/api/ProductMaster/UpdateDailyRates")
+    suspend fun updateDailyRate(@Body request: List<UpdateDailyRatesReq>): Response<List<UpdateDailyRatesResponse>>
+
 
 
 }

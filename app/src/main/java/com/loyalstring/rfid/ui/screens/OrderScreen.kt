@@ -142,6 +142,7 @@ import java.text.DecimalFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import androidx.compose.runtime.*
+import kotlinx.coroutines.coroutineScope
 
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -162,8 +163,6 @@ fun OrderScreen(
     singleProductViewModel: SingleProductViewModel
 ) {
 
-
-
     val context = LocalContext.current
     val employee =
         remember { UserPreferences.getInstance(context).getEmployee(Employee::class.java) }
@@ -176,10 +175,8 @@ fun OrderScreen(
 
     LaunchedEffect(customerSuggestions) {
         if (customerSuggestions is UiState.Success) {
-
             val data = (customerSuggestions as UiState.Success<List<EmployeeList>>).data
             Log.d("CustomerList", Gson().toJson(data))
-
         }
     }
 
@@ -190,26 +187,16 @@ fun OrderScreen(
 
     LaunchedEffect(editOrder) {
         if (editOrder != null) {
-
             selectedCustomer = editOrder.Customer?.toEmployeeList()
-
-
-            // ✅ remove after consuming so it won’t run again
-
         }
     }
 
     LaunchedEffect(employee?.clientCode) {
         employee?.clientCode?.let { clientCode ->
-            withContext(Dispatchers.IO) {
-                orderViewModel.getAllEmpList(clientCode)
-                orderViewModel.getAllItemCodeList(ClientCodeRequest(clientCode))
-                singleProductViewModel.getAllBranches(ClientCodeRequest(clientCode))
-                singleProductViewModel.getAllPurity(ClientCodeRequest(clientCode))
-                singleProductViewModel.getAllSKU(ClientCodeRequest(clientCode))
-            }
+            orderViewModel.prefetchClientData(clientCode)
         }
     }
+
 
     Scaffold(
         topBar = {
@@ -346,10 +333,6 @@ fun OrderScreenContent(
     }
 
     Log.d("localItemList","localItemList"+localItemList)
-
-
-
-
 
     val df = DecimalFormat("#.00")
 // Retrieve logged-in employee from preferences
@@ -691,9 +674,6 @@ fun OrderScreenContent(
 
             // 🔄 Reset ViewModel state
             orderViewModel.clearUpdateResponse()
-            /*  orderViewModel.clearOrderItems()
-              orderViewModel.clearOrderResponse()
-              orderViewModel.clearOrderRequest()*/
 
             // 🔄 Remove editOrder so it won’t prefill next time
             navController.previousBackStackEntry
@@ -803,9 +783,7 @@ fun OrderScreenContent(
         }
     }
 
-    var searchQuery by remember { mutableStateOf("") }
 
-   // var searchQuery by remember { mutableStateOf("") }
     var filteredBulkList by remember { mutableStateOf<List<BulkItem>>(emptyList()) }
     var isFiltering by remember { mutableStateOf(false) }
 
@@ -891,10 +869,6 @@ fun OrderScreenContent(
     val filteredList: List<ItemCodeResponse> =
         filteredApiList.value +
                 filteredBulkList.map { it.toItemCodeResponse() }
-
-    Log.d("itemcode list","size"+filteredList.size)
-
-
 
 
     LaunchedEffect(tags) {
@@ -1157,11 +1131,7 @@ fun OrderScreenContent(
 
 
             )
-            //   productList.add(newProduct) // Add to productList if it doesn't already exist
-            Log.d(
-                "Added to Product List",
-                "Product added: ${newProduct.productName}"
-            )
+
 
             // Insert the new product into the database
             if ((!newProduct.itemCode.isNullOrBlank() && newProduct.itemCode != "null") ||

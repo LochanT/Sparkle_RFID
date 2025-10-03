@@ -49,7 +49,8 @@ class SingleProductViewModel @Inject constructor(
     private val bulkRepository: BulkRepository,
     private val readerManager: RFIDReaderManager,
     internal val barcodeReader: BarcodeReader,
-    private  val dropdownRepository: DropdownRepository
+    private  val dropdownRepository: DropdownRepository,
+
 
 
     ) : ViewModel() {
