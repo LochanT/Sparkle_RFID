@@ -18,8 +18,8 @@ android {
         applicationId = "com.loyalstring.rfid"
         minSdk = 26
         targetSdk = 35
-        versionCode = 25
-        versionName = "1.25"
+        versionCode = 27
+        versionName = "1.27"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -48,6 +48,13 @@ android {
     }
     kapt {
         correctErrorTypes = true
+    }
+    packaging {
+        resources {
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/LICENSE-notice.md"
+            excludes += "META-INF/NOTICE.md"
+        }
     }
 }
 
@@ -128,7 +135,10 @@ dependencies {
     implementation ("androidx.fragment:fragment-ktx:1.8.2")
     implementation("com.opencsv:opencsv:5.9")
     implementation("com.itextpdf:itext7-core:7.2.5")
-
+    implementation("com.itextpdf:kernel:7.x.y")
+    implementation("com.itextpdf:layout:7.x.y")
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
 
     //LiveData
     implementation(libs.androidx.lifecycle.livedata.ktx)// or latest

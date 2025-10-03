@@ -950,6 +950,7 @@ fun ScanBottomBarInventory(
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
+
                     fontFamily = poppins
                 )
             }
