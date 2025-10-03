@@ -30,10 +30,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,12 +48,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.loyalstring.rfid.data.model.ClientCodeRequest
+import com.loyalstring.rfid.data.model.login.Employee
+import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesReq
+import com.loyalstring.rfid.data.remote.data.DailyRateResponse
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.GradientButton
 import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
+import com.loyalstring.rfid.viewmodel.OrderViewModel
 import com.loyalstring.rfid.viewmodel.SettingsViewModel
+
+import com.loyalstring.rfid.viewmodel.UiState1
+import java.util.Locale
 
 // ---------------- MENU ITEM TYPES ----------------
 sealed class SettingType {
@@ -75,9 +87,52 @@ fun SettingsScreen(
     userPreferences: UserPreferences
 ) {
     val viewModel: SettingsViewModel = hiltViewModel()
+    val orderViewModel: OrderViewModel = hiltViewModel()
     var showSheetInput by remember { mutableStateOf(false) }
     var sheetUrl by remember { mutableStateOf(userPreferences.getSheetUrl()) }
+
+    var showRatesEditor  by remember { mutableStateOf(false) }
+    var dailyRate by remember { mutableStateOf(userPreferences.getSheetUrl()) }
+
+    val dailyRates = viewModel.getAllDailyRate.collectAsState()
+    val updateState = viewModel.updateDailyRatesState.collectAsState()
+
     val context: Context = LocalContext.current
+    val employee = remember {
+        // get your logged-in employee so we have ClientCode/EmployeeCode
+        UserPreferences.getInstance(context).getEmployee(Employee::class.java)
+    }
+    LaunchedEffect(Unit) {
+        employee?.clientCode?.let { cc ->
+            viewModel.getDailyRate(ClientCodeRequest(cc))
+        }
+    }
+
+    LaunchedEffect(updateState.value) {
+        when (val s = updateState.value) {
+            is UiState1.Success -> {
+                ToastUtils.showToast(context, "Rates updated successfully")
+                // refresh list
+                val emp = UserPreferences.getInstance(context)
+                    .getEmployee(Employee::class.java)
+                emp?.clientCode?.let { cc ->
+                    viewModel.getDailyRate(ClientCodeRequest(cc))
+                }
+                // close dialog & reset state
+                showRatesEditor = false
+                viewModel.resetUpdateState()
+            }
+            is UiState1.Failure -> { // If your UiState still uses Error, change to UiState.Error
+                ToastUtils.showToast(context, s.message)
+                viewModel.resetUpdateState()
+            }
+            UiState1.Loading, UiState1.Idle -> Unit
+            else -> {}
+        }
+    }
+
+
+
 
     val menuItems = listOf(
         // Counters (first 5)
@@ -113,8 +168,8 @@ fun SettingsScreen(
             SettingType.Action,
             subtitle = "Add/Update rates"
         ) {
-            //  navController.navigate(Screens.Rates.route)
-        },
+            showRatesEditor  = true
+          },
         SettingsMenuItem(
             "account",
             "Account",
@@ -253,6 +308,29 @@ fun SettingsScreen(
             )
         }
     }
+
+
+    if (showRatesEditor) {
+        DailyRatesEditorDialog(
+            rates = dailyRates.value,                // current fetched rates
+            onDismiss = { showRatesEditor = false },
+            onSave = { edited ->
+                val req: List<UpdateDailyRatesReq> = edited.map {
+                    UpdateDailyRatesReq(
+                        categoryId     = it.CategoryId ?: 0,
+                        categoryName   = it.CategoryName.orEmpty(),
+                        clientCode     = it.ClientCode.orEmpty(),
+                        employeeCode   = it.EmployeeCode.orEmpty(),
+                        finePercentage = it.FinePercentage.orEmpty(),
+                        purityId       = it.PurityId ?: 0,
+                        purityName     = it.PurityName.orEmpty(),
+                        rate           = it.Rate.orEmpty()
+                    )
+                }
+                viewModel.updateDailyRates(req)
+            }
+        )
+    }
 }
 
 // ---------------- MENU ROW ----------------
@@ -381,3 +459,144 @@ fun SheetInputDialog(
         }
     )
 }
+
+/*--------------------- Daily rate dialog----------------------*/
+@Composable
+fun DailyRatesEditorDialog(
+    rates: List<DailyRateResponse>,
+    onDismiss: () -> Unit,
+    onSave: (List<DailyRateResponse>) -> Unit
+) {
+    // Keep a local editable copy
+    val editable = remember(rates) {
+        rates.map { it.copy() }.toMutableStateList()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        title = { Text("Edit Daily Rates",  fontWeight = FontWeight.Bold,fontFamily = poppins, fontSize = 16.sp) },
+        text = {
+            Column(Modifier.fillMaxWidth()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(360.dp)
+                ) {
+                    items(editable) { row ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                // Purity & Category readonly labels
+                                Text(
+                                    text = "${row.CategoryName.orEmpty()} ( ${row.PurityName.orEmpty()})",
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                Spacer(Modifier.width(12.dp))
+
+                                // Editable Rate
+                                OutlinedTextField(
+                                    value = row.Rate.orEmpty(),
+                                    onValueChange = { new ->
+                                        val idx = editable.indexOf(row)
+                                        if (idx != -1) {
+                                            // First update the edited row so the user sees their input immediately
+                                            editable[idx] = row.copy(Rate = new)
+
+                                            // If this row belongs to a known (category, purity) pair, recompute the whole category
+                                            if (percentFor(row.CategoryName, row.PurityName) != null) {
+                                                recomputeCategoryRates(editable, editable[idx], new)
+                                            }
+                                        }
+                                    },
+                                    label = { Text("Rate") },
+                                    singleLine = true,
+                                    modifier = Modifier.width(140.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    GradientButton(
+                        text = "Cancel",
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    GradientButton(
+                        text = "Update",
+                        onClick = { onSave(editable.toList()) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    )
+}
+
+private fun recomputeCategoryRates(
+    editable: SnapshotStateList<DailyRateResponse>,
+    changedRow: DailyRateResponse,
+    newRateStr: String
+) {
+    val newRate = newRateStr.toDoubleOrNull() ?: return
+    val editedPct = percentFor(changedRow.CategoryName, changedRow.PurityName) ?: return
+    val base = newRate / (editedPct / 100.0) // infer base metal value
+
+    for (i in editable.indices) {
+        val r = editable[i]
+        if (!r.CategoryName.equals(changedRow.CategoryName, ignoreCase = true)) continue
+        val pct = percentFor(r.CategoryName, r.PurityName) ?: continue
+        val computed = base * (pct / 100.0)
+        editable[i] = r.copy(Rate = String.format(Locale.US, "%.2f", computed))
+    }
+}
+
+
+// % maps per category (as given)
+private val GOLD_PERC = mapOf(
+    "24CT" to 100.0,
+    "22CT" to 91.6,
+    "18CT" to 75.08,
+    "14CT" to 58.36,
+    "9CT"  to 37.54
+)
+
+private val SILVER_PERC = mapOf(
+    "SL958" to 95.90,
+    "SL925" to 92.59,
+    "SL80"  to 80.08
+)
+
+private val PLATINUM_PERC = mapOf(
+    "PL950" to 95.10,
+    "PL900" to 90.09,
+    "PL850" to 85.09
+)
+
+// Get the correct % table for a category
+private fun categoryPercMap(categoryName: String?): Map<String, Double>? = when (categoryName?.trim()?.uppercase()) {
+    "GOLD"      -> GOLD_PERC
+    "SILVER"    -> SILVER_PERC
+    "PLATINUM"  -> PLATINUM_PERC
+    else        -> null
+}
+
+// % for a specific (category, purity)
+private fun percentFor(categoryName: String?, purityName: String?): Double? {
+    val map = categoryPercMap(categoryName) ?: return null
+    val key = purityName?.trim()?.uppercase() ?: return null
+    return map[key]
+}
+

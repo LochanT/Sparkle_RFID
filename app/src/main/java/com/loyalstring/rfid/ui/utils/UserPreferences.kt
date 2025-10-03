@@ -23,6 +23,7 @@ class UserPreferences @Inject constructor(
         private const val KEY_LOGGED_IN = "logged_in"
         private const val KEY_SHEET_URL = "sheet_url"
         private const val KEY_CLIENT = "client"
+        private const val KEY_RFIDTYPE = "remember_rfidType"
 
         // ✅ New Keys for Counters
         const val KEY_PRODUCT_COUNT = "product_count"
@@ -77,15 +78,18 @@ class UserPreferences @Inject constructor(
     }
 
     // ---------------- LOGIN / LOGOUT ----------------
-    fun saveLoginCredentials(username: String, password: String, rememberMe: Boolean) {
+    fun saveLoginCredentials(username: String, password: String, rememberMe: Boolean,rfidtype:String) {
         prefs.edit().apply {
             putBoolean(KEY_REMEMBER_ME, rememberMe)
             if (rememberMe) {
                 putString(KEY_USERNAME, username)
                 putString(KEY_PASSWORD, password)
+                putString(KEY_RFIDTYPE,rfidtype)
+
             } else {
                 remove(KEY_USERNAME)
                 remove(KEY_PASSWORD)
+                remove(KEY_RFIDTYPE)
             }
             apply()
         }
