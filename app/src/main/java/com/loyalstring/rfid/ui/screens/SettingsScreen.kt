@@ -43,11 +43,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.loyalstring.rfid.R
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesReq
@@ -163,10 +165,10 @@ fun SettingsScreen(
         // Actions
         SettingsMenuItem(
             "rates",
-            "Rates",
+            stringResource(id = R.string.menu_rates_title),
             Icons.Default.Settings,
             SettingType.Action,
-            subtitle = "Add/Update rates"
+            subtitle = stringResource(id = R.string.menu_rates_subtitle)
         ) {
             showRatesEditor  = true
           },
@@ -475,7 +477,12 @@ fun DailyRatesEditorDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {},
-        title = { Text("Edit Daily Rates",  fontWeight = FontWeight.Bold,fontFamily = poppins, fontSize = 16.sp) },
+        title = {  Text(
+            text = stringResource(R.string.dialog_edit_daily_rates_title),
+            fontWeight = FontWeight.Bold,
+            fontFamily = poppins,
+            fontSize = 16.sp
+        ) },
         text = {
             Column(Modifier.fillMaxWidth()) {
                 LazyColumn(
@@ -495,7 +502,11 @@ fun DailyRatesEditorDialog(
                             ) {
                                 // Purity & Category readonly labels
                                 Text(
-                                    text = "${row.CategoryName.orEmpty()} ( ${row.PurityName.orEmpty()})",
+                                    text = stringResource(
+                                        id = R.string.daily_rate_category_purity,
+                                        row.CategoryName.orEmpty(),
+                                        row.PurityName.orEmpty()
+                                    ),
                                     fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier.weight(1f)
                                 )
@@ -517,7 +528,7 @@ fun DailyRatesEditorDialog(
                                             }
                                         }
                                     },
-                                    label = { Text("Rate") },
+                                    label = { Text(stringResource(R.string.label_rate)) },
                                     singleLine = true,
                                     modifier = Modifier.width(140.dp)
                                 )
@@ -529,13 +540,13 @@ fun DailyRatesEditorDialog(
                 Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     GradientButton(
-                        text = "Cancel",
+                        text = stringResource(R.string.button_cancel),
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(12.dp))
                     GradientButton(
-                        text = "Update",
+                        text = stringResource(R.string.button_update),
                         onClick = { onSave(editable.toList()) },
                         modifier = Modifier.weight(1f)
                     )

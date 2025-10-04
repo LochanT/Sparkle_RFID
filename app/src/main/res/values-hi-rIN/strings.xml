@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">स्पार्कल RFID</string>
+    <string name="menu_rates_title">दरें</string>
+    <string name="menu_rates_subtitle">दरें जोड़ें/अपडेट करें</string>
+
+    <!-- Daily Rates Editor Dialog -->
+    <string name="dialog_edit_daily_rates_title">दैनिक दरें संपादित करें</string>
+    <string name="label_rate">दर</string>
+    <string name="button_cancel">रद्द करें</string>
+    <string name="button_update">अपडेट करें</string>
+    <string name="daily_rate_category_purity">%1$s (%2$s)</string>
+</resources>
