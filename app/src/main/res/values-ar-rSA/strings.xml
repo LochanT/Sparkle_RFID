@@ -9,4 +9,7 @@
     <string name="button_cancel">إلغاء</string>
     <string name="button_update">تحديث</string>
     <string name="daily_rate_category_purity">%1$s (%2$s)</string>
+
+    <string name="menu_apis_title">واجهات برمجة التطبيقات المخصصة</string>
+    <string name="menu_apis_subtitle">واجهات برمجة التطبيقات المخصصة</string>
 </resources>

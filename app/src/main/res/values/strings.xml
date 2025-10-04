@@ -8,4 +8,11 @@
     <string name="button_cancel">Cancel</string>
     <string name="button_update">Update</string>
     <string name="daily_rate_category_purity">%1$s (%2$s)</string>
+
+    <string name="menu_apis_title">Custom APIs</string>
+    <string name="menu_apis_subtitle">Custom APIs</string>
+
+    <string name="dialog_custom_api_title">Set Custom API</string>
+    <string name="hint_custom_api">Enter Custom API</string>
+    <string name="button_save">Save</string>
 </resources>

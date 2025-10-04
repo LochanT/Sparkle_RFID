@@ -9,4 +9,7 @@
     <string name="button_cancel">रद्द करें</string>
     <string name="button_update">अपडेट करें</string>
     <string name="daily_rate_category_purity">%1$s (%2$s)</string>
+
+    <string name="menu_apis_title">कस्टम एपीआई</string>
+    <string name="menu_apis_subtitle">कस्टम एपीआई</string>
 </resources>

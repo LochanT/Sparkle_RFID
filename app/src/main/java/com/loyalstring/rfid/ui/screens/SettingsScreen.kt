@@ -99,6 +99,9 @@ fun SettingsScreen(
     val dailyRates = viewModel.getAllDailyRate.collectAsState()
     val updateState = viewModel.updateDailyRatesState.collectAsState()
 
+    var showCustomApiDialog by remember { mutableStateOf(false) }
+    var customApi by remember { mutableStateOf("") }
+
     val context: Context = LocalContext.current
     val employee = remember {
         // get your logged-in employee so we have ClientCode/EmployeeCode
@@ -236,13 +239,13 @@ fun SettingsScreen(
             // navController.navigate(Screens.Branches.route)
         },
         SettingsMenuItem(
-            "apis",
-            "Custom APIs",
-            Icons.Default.Settings,
-            SettingType.Action,
-            subtitle = "Custom APIs"
+            key = "apis",
+            title = stringResource(id = R.string.menu_apis_title),
+            icon = Icons.Default.Settings,
+            type = SettingType.Action,
+            subtitle = stringResource(id = R.string.menu_apis_subtitle)
         ) {
-            // navController.navigate(Screens.CustomApis.route)
+            showCustomApiDialog = true
         },
         SettingsMenuItem(
             "sheet_url",
@@ -311,6 +314,20 @@ fun SettingsScreen(
         }
     }
 
+    if (showCustomApiDialog) {
+        CustomApiDialog(
+            currentApi = customApi,
+            onDismiss = { showCustomApiDialog = false },
+            onSave = { newApi ->
+                customApi = newApi
+                // Save in UserPreferences or DB
+               // userPreferences.saveCustomApi(newApi)
+                ToastUtils.showToast(context, "Custom API saved!")
+                showCustomApiDialog = false
+            }
+        )
+    }
+
 
     if (showRatesEditor) {
         DailyRatesEditorDialog(
@@ -333,6 +350,51 @@ fun SettingsScreen(
             }
         )
     }
+}
+
+@Composable
+fun CustomApiDialog(
+    currentApi: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var input by remember { mutableStateOf(currentApi) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        title = {
+            Text(
+                text = stringResource(R.string.dialog_custom_api_title),
+                fontSize = 16.sp,
+                fontFamily = poppins,
+                fontWeight = FontWeight.Bold,
+            )
+        },
+        text = {
+            Column(Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    label = {   Text(
+                        text = stringResource(R.string.hint_custom_api),
+                        fontSize = 14.sp,
+                        fontFamily = poppins
+                    ) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                GradientButton(
+                    text = stringResource(R.string.button_save),
+                    onClick = { onSave(input) },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+        }
+    )
 }
 
 // ---------------- MENU ROW ----------------
@@ -508,6 +570,7 @@ fun DailyRatesEditorDialog(
                                         row.PurityName.orEmpty()
                                     ),
                                     fontWeight = FontWeight.SemiBold,
+                                    fontFamily = poppins,
                                     modifier = Modifier.weight(1f)
                                 )
 
