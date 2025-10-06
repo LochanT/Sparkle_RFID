@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -89,7 +90,7 @@ fun DailyRatesEditorScreen(
     Scaffold(
         topBar = {
             GradientTopBar(
-                title = "Edit Daily Rates",
+                title = stringResource(R.string.title_edit_daily_rates),
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
@@ -108,7 +109,7 @@ fun DailyRatesEditorScreen(
                 .background(Color.White)
                 .padding(padding)
         ) {
-            if (purityList.isEmpty() || dailyRates.value.isEmpty()) {
+            if (purityList.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
@@ -147,6 +148,7 @@ private fun DailyRatesContent(
     onSave: (List<DailyRateResponse>) -> Unit,
     onCancel: () -> Unit
 ) {
+    // ✅ Always build from purityList; rates can be empty
     val combinedRates = remember(rateList, purityList) {
         purityList.map { purity ->
             val match = rateList.find { it.PurityId == purity.Id }
@@ -158,7 +160,7 @@ private fun DailyRatesContent(
                 FinePercentage = purity.FinePercentage.toString(),
                 PurityId = purity.Id,
                 PurityName = purity.PurityName,
-                Rate = match?.Rate ?: "0.00"
+                Rate = match?.Rate ?: "0.00" // 🔹 Default rate if no match
             )
         }.toMutableStateList()
     }
@@ -178,7 +180,7 @@ private fun DailyRatesContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Category",
+                text = stringResource(R.string.label_category),
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 fontFamily = poppins,
@@ -187,7 +189,7 @@ private fun DailyRatesContent(
                     .padding(start = 4.dp)
             )
             Text(
-                text = "Purity",
+                text =stringResource(R.string.label_purity),
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 fontFamily = poppins,
@@ -196,19 +198,19 @@ private fun DailyRatesContent(
                     .padding(start = 8.dp)
             )
             Text(
-                text = "Today's Rate / Gm",
+                text = stringResource(R.string.label_todays_rate),
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 fontFamily = poppins,
                 modifier = Modifier
-                    .width(160.dp) // ⬅️ More space for rate
+                    .width(160.dp)
                     .padding(start = 16.dp)
             )
         }
 
         Divider(thickness = 1.dp, color = Color.Gray.copy(alpha = 0.4f))
 
-        // 🔹 Rates List
+        // 🔹 Even if rateList empty, still show purity list
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
@@ -264,7 +266,7 @@ private fun DailyRatesContent(
                             }
                         },
                         modifier = Modifier
-                            .width(150.dp) // ⬅️ More space for input
+                            .width(150.dp)
                             .padding(start = 12.dp)
                     )
                 }
@@ -279,7 +281,7 @@ private fun DailyRatesContent(
                 .padding(horizontal = 8.dp)
         ) {
             GradientButtonIcon(
-                text = "Cancel",
+                text = stringResource(R.string.button_cancel),
                 onClick = onCancel,
                 modifier = Modifier
                     .weight(1f)
@@ -293,7 +295,7 @@ private fun DailyRatesContent(
             Spacer(Modifier.width(8.dp))
 
             GradientButtonIcon(
-                text = "Update",
+                text = stringResource(R.string.button_update),
                 onClick = { onSave(combinedRates.toList()) },
                 modifier = Modifier
                     .weight(1f)
@@ -306,6 +308,7 @@ private fun DailyRatesContent(
         }
     }
 }
+
 
 @Composable
 fun CompactEditableField(
