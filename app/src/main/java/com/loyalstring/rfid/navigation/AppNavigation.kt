@@ -11,6 +11,7 @@ import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.ui.screens.AddProductScreen
 import com.loyalstring.rfid.ui.screens.BulkProductScreen
+import com.loyalstring.rfid.ui.screens.DailyRatesEditorScreen
 import com.loyalstring.rfid.ui.screens.EditProductScreen
 import com.loyalstring.rfid.ui.screens.HomeScreen
 import com.loyalstring.rfid.ui.screens.ImportExcelScreen
@@ -171,6 +172,12 @@ fun AppNavigation(
                 onBack = { navController.popBackStack() },
                 navController,
                 userPreferences
+            )
+        }
+
+        composable(Screens.DailyRatesEditorScreen.route) {
+            DailyRatesEditorScreen(
+                navController = navController
             )
         }
 
