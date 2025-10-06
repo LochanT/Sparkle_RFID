@@ -12,6 +12,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
 @HiltWorker
+
 class SyncDataWorker @AssistedInject constructor(
     @Assisted private val appContext: Context,
     @Assisted private val params: WorkerParameters,
@@ -29,4 +30,9 @@ class SyncDataWorker @AssistedInject constructor(
             Result.retry()
         }
     }
+
+    companion object {
+        const val SYNC_DATA_WORKER = "sync_data_worker"
+    }
+
 }

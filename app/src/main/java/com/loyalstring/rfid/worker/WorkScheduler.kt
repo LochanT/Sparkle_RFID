@@ -21,7 +21,7 @@ fun schedulePeriodicSync(context: Context, intervalMinutes: Long) {
         .build()
 
     WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-        "autosync_worker",
+        SyncDataWorker.SYNC_DATA_WORKER,
         ExistingPeriodicWorkPolicy.REPLACE,
         request
     )
@@ -29,5 +29,5 @@ fun schedulePeriodicSync(context: Context, intervalMinutes: Long) {
 
 // ✅ cancels worker if user turns off auto-sync
 fun cancelPeriodicSync(context: Context) {
-    WorkManager.getInstance(context).cancelUniqueWork("autosync_worker")
+    WorkManager.getInstance(context).cancelUniqueWork(SyncDataWorker.SYNC_DATA_WORKER)
 }
