@@ -2,15 +2,21 @@ package com.loyalstring.rfid
 
 import android.app.Application
 import android.util.Log
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import com.rscja.deviceapi.RFIDWithUHFUART
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 
 @HiltAndroidApp
-class SparkleRFIDApplication : Application() {
+class SparkleRFIDApplication : Application(), Configuration.Provider {
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+
     var mReader: RFIDWithUHFUART? = null
 
     override fun onCreate() {
@@ -31,6 +37,10 @@ class SparkleRFIDApplication : Application() {
             }
         }
     }
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
+
 }
 
 /*@HiltAndroidApp

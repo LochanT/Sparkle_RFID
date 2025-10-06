@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.navigation.GradientTopBar
+import com.loyalstring.rfid.ui.utils.AutoSyncSetting
 import com.loyalstring.rfid.ui.utils.GradientButton
 import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.UserPreferences
@@ -76,6 +77,7 @@ fun SettingsScreen(
 ) {
     val viewModel: SettingsViewModel = hiltViewModel()
     var showSheetInput by remember { mutableStateOf(false) }
+    var showAutoSyncDialog by remember { mutableStateOf(false) }
     var sheetUrl by remember { mutableStateOf(userPreferences.getSheetUrl()) }
     val context: Context = LocalContext.current
 
@@ -112,99 +114,77 @@ fun SettingsScreen(
             Icons.Default.Settings,
             SettingType.Action,
             subtitle = "Add/Update rates"
-        ) {
-            //  navController.navigate(Screens.Rates.route)
-        },
+        ),
         SettingsMenuItem(
             "account",
             "Account",
             Icons.Default.Settings,
             SettingType.Action,
             subtitle = "Username & Password"
-        ) {
-            /// navController.navigate(Screens.Account.route)
-        },
+        ),
         SettingsMenuItem(
             "permissions",
             "Users and permissions",
             Icons.Default.Settings,
             SettingType.Action,
-            subtitle = "permissions"
-        ) {
-            //navController.navigate(Screens.Permissions.route)
-        },
+            subtitle = "Manage permissions"
+        ),
         SettingsMenuItem(
             "email",
             "Email",
             Icons.Default.Attachment,
             SettingType.Action,
-            subtitle = "Email"
-        ) {
-
-        },
+            subtitle = "Email configuration"
+        ),
         SettingsMenuItem(
             "backup",
-            "BackUp",
+            "Backup",
             Icons.Default.Settings,
             SettingType.Action,
-            subtitle = "Backup"
-        ) {
-            //navController.navigate(Screens.Backup.route)
-        },
+            subtitle = "Data Backup"
+        ),
         SettingsMenuItem(
             "autosync",
             "Auto Sync",
             Icons.Default.Settings,
             SettingType.Action,
-            subtitle = "Auto Sync"
-        ) {
-            // open auto sync toggle
-        },
+            subtitle = "Enable automatic sync"
+        ),
         SettingsMenuItem(
             "notifications",
             "Notifications",
             Icons.Default.Settings,
             SettingType.Action,
-            subtitle = "Notifications"
-        ) {
-            // navController.navigate(Screens.Notifications.route)
-        },
+            subtitle = "Notification settings"
+        ),
         SettingsMenuItem(
             "branches",
             "Branches",
             Icons.Default.Settings,
             SettingType.Action,
-            subtitle = "Branches"
-        ) {
-            // navController.navigate(Screens.Branches.route)
-        },
+            subtitle = "Branch management"
+        ),
         SettingsMenuItem(
             "apis",
             "Custom APIs",
             Icons.Default.Settings,
             SettingType.Action,
-            subtitle = "Custom APIs"
-        ) {
-            // navController.navigate(Screens.CustomApis.route)
-        },
+            subtitle = "API configuration"
+        ),
         SettingsMenuItem(
             "sheet_url",
-            "Sheet url",
+            "Sheet URL",
             Icons.Default.Settings,
             SettingType.Action,
-            subtitle = "sheet URI"
-        ) {
-            showSheetInput = true
-        },
+            subtitle = "Set Google Sheet URL"
+        ),
         SettingsMenuItem(
             "stock_transfer_url",
-            "Stock transfer url",
+            "Stock Transfer URL",
             Icons.Default.Settings,
             SettingType.Action,
-            subtitle = "stock transfer URI"
-        ) {
-            // open stock transfer url dialog
-        }
+            subtitle = "Stock Transfer API URL"
+        )
     )
 
     Scaffold(
@@ -233,11 +213,17 @@ fun SettingsScreen(
                 .padding(padding)
         ) {
             items(menuItems) { item ->
-                MenuItemRow(item = item, userPreferences = userPreferences)
+                MenuItemRow(
+                    item = item,
+                    userPreferences = userPreferences,
+                    onAutoSyncClick = { showAutoSyncDialog = true },
+                    onSheetUrlClick = { showSheetInput = true }
+                )
             }
         }
     }
 
+    // ✅ Sheet URL Dialog
     if (showSheetInput) {
         sheetUrl?.let {
             SheetInputDialog(
@@ -253,11 +239,28 @@ fun SettingsScreen(
             )
         }
     }
+
+    // ✅ Auto Sync Dialog
+    if (showAutoSyncDialog) {
+        AlertDialog(
+            onDismissRequest = { showAutoSyncDialog = false },
+            title = { Text("Auto Sync Settings") },
+            text = {
+                AutoSyncSetting(userPref = userPreferences)
+            },
+            confirmButton = {}
+        )
+    }
 }
 
 // ---------------- MENU ROW ----------------
 @Composable
-fun MenuItemRow(item: SettingsMenuItem, userPreferences: UserPreferences) {
+fun MenuItemRow(
+    item: SettingsMenuItem,
+    userPreferences: UserPreferences,
+    onAutoSyncClick: () -> Unit,
+    onSheetUrlClick: () -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
     var selectedValue by remember {
         mutableStateOf(userPreferences.getInt(item.key, item.defaultValue ?: 0))
@@ -267,9 +270,11 @@ fun MenuItemRow(item: SettingsMenuItem, userPreferences: UserPreferences) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp)
-            .clickable(enabled = item.type is SettingType.Action) {
-                if (item.type is SettingType.Action) {
-                    item.onClick?.invoke()
+            .clickable {
+                when (item.key) {
+                    "autosync" -> onAutoSyncClick()
+                    "sheet_url" -> onSheetUrlClick()
+                    else -> item.onClick?.invoke()
                 }
             },
         shape = RoundedCornerShape(8.dp),
@@ -292,9 +297,16 @@ fun MenuItemRow(item: SettingsMenuItem, userPreferences: UserPreferences) {
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // ✅ Counter goes here, just after icon
-            if (item.type is SettingType.Counter) {
-                Box {
+            Text(
+                text = item.title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f),
+                color = Color.Black
+            )
+
+            when (item.type) {
+                is SettingType.Counter -> {
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -309,9 +321,8 @@ fun MenuItemRow(item: SettingsMenuItem, userPreferences: UserPreferences) {
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
                         modifier = Modifier
-                            .background(Color.White)
                             .height(300.dp)
-                            .width(80.dp) // bit wider for clarity
+                            .width(60.dp)
                     ) {
                         (1..30).forEach { count ->
                             DropdownMenuItem(
@@ -326,26 +337,13 @@ fun MenuItemRow(item: SettingsMenuItem, userPreferences: UserPreferences) {
                     }
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
-            }
-
-            // Title in the middle
-            Text(
-                text = item.title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-                color = Color.Black
-            )
-
-            // Subtitle (for action items)
-            if (item.type is SettingType.Action) {
-                Text(item.subtitle ?: "", color = Color.Gray)
+                is SettingType.Action -> {
+                    Text(item.subtitle ?: "", color = Color.Gray, fontSize = 13.sp)
+                }
             }
         }
     }
 }
-
 
 // ---------------- SHEET URL DIALOG ----------------
 @Composable

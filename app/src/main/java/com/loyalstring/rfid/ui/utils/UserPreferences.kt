@@ -30,6 +30,8 @@ class UserPreferences @Inject constructor(
         const val KEY_SEARCH_COUNT = "search_count"
         const val KEY_TRANSACTION_COUNT = "orders_count"
         const val KEY_STOCK_TRANSFER_COUNT = "stock_transfer_count"
+        const val KEY_AUTOSYNC_ENABLED = "autosync_enabled"
+        const val KEY_AUTOSYNC_INTERVAL_MIN = "autosync_interval_min"
 
         private val gson = Gson()
 
@@ -119,6 +121,14 @@ class UserPreferences @Inject constructor(
         return if (json != null) gson.fromJson(json, Clients::class.java) else null
     }
 
+    fun saveBoolean(key: String, value: Boolean) {
+        prefs.edit { putBoolean(key, value) }
+    }
+
+    fun getBoolean(key: String, default: Boolean = false): Boolean {
+        return prefs.getBoolean(key, default)
+    }
+
     // ---------------- SHEET URL ----------------
     fun saveSheetUrl(url: String) {
         prefs.edit { putString(KEY_SHEET_URL, url) }
@@ -142,3 +152,4 @@ class UserPreferences @Inject constructor(
         return prefs.getInt(key, default)
     }
 }
+
