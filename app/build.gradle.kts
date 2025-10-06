@@ -33,16 +33,13 @@ android {
             )
         }
     }
-
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
-
     buildFeatures {
         compose = true
     }
@@ -129,16 +126,20 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose) // For Compose Navigation integration
     kapt(libs.hilt.compiler)
     implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.compose.runtime.livedata)
     implementation(libs.androidx.material.icons.extended)
-    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation ("androidx.fragment:fragment-ktx:1.8.2")
     implementation("com.opencsv:opencsv:5.9")
     implementation("com.itextpdf:itext7-core:7.2.5")
-    implementation("com.itextpdf:kernel:7.x.y")
-    implementation("com.itextpdf:layout:7.x.y")
+    implementation("com.itextpdf:kernel:7.2,5")
+    implementation("com.itextpdf:layout:7.2.5")
     implementation("com.sun.mail:android-mail:1.6.7")
     implementation("com.sun.mail:android-activation:1.6.7")
+
+// WorkManager (periodic background tasks)
+
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    kapt(libs.androidx.hilt.compiler)
 
     //LiveData
     implementation(libs.androidx.lifecycle.livedata.ktx)// or latest
