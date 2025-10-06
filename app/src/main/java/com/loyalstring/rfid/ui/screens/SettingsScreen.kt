@@ -361,7 +361,7 @@ fun CustomApiDialog(
     )
 
     // ✅ Auto Sync Dialog
-    if (showAutoSyncDialog) {
+/*    if (showAutoSyncDialog) {
         AlertDialog(
             onDismissRequest = { showAutoSyncDialog = false },
             title = { Text("Auto Sync Settings") },
@@ -370,7 +370,7 @@ fun CustomApiDialog(
             },
             confirmButton = {}
         )
-    }
+    }*/
 }
 
 // ---------------- MENU ROW ----------------

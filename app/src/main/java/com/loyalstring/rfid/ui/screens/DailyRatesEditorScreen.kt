@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -21,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -320,12 +322,21 @@ fun CompactEditableField(
 
     BasicTextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { input ->
+            // 🔹 Allow only digits and one optional decimal point
+            val filtered = input.filter { it.isDigit() || it == '.' }
+            if (filtered.count { it == '.' } <= 1) {
+                onValueChange(filtered)
+            }
+        },
         singleLine = true,
         textStyle = LocalTextStyle.current.copy(
             fontSize = 12.sp,
             color = Color.Black,
             textAlign = TextAlign.Center
+        ),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Decimal // ✅ shows numeric keyboard with "."
         ),
         modifier = modifier
             .height(34.dp)
