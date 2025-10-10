@@ -63,7 +63,8 @@ fun AutoSyncSetting(userPref: UserPreferences) {
             Text(
                 text = "Auto Sync",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                fontFamily = poppins
             )
 
             Switch(
@@ -73,9 +74,7 @@ fun AutoSyncSetting(userPref: UserPreferences) {
                     userPref.saveBoolean(UserPreferences.KEY_AUTOSYNC_ENABLED, newValue)
 
                     if (enabled) {
-
                         schedulePeriodicSync(context, interval.toLong())
-
                     } else {
                         cancelPeriodicSync(context)
                         //cancelAlarmSync(context)
@@ -95,24 +94,23 @@ fun AutoSyncSetting(userPref: UserPreferences) {
             ) {
                 Text(
                     text = "Sync Interval:",
+                    fontFamily = poppins,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
 
                 Box {
                     OutlinedButton(onClick = { expanded = true }) {
-                        Text("$interval min")
+                        Text("$interval min", fontFamily = poppins)
                     }
 
                     DropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
-                        val intervals = listOf(1, 5, 15, 30, 60, 24 * 60) // 24hr = 1440 min
+                        val intervals = listOf(15, 30, 60, 24 * 60) // 24hr = 1440 min
                         intervals.forEach { value ->
                             val label = when (value) {
-                                1 -> "1 min"
-                                5 -> "5 min"
                                 15 -> "15 min"
                                 30 -> "30 min"
                                 60 -> "1 hour"
@@ -121,7 +119,7 @@ fun AutoSyncSetting(userPref: UserPreferences) {
                             }
 
                             DropdownMenuItem(
-                                text = { Text(label) },
+                                text = { Text(label, fontFamily = poppins) },
                                 onClick = {
                                     interval = value
                                     userPref.saveInt(
@@ -129,15 +127,11 @@ fun AutoSyncSetting(userPref: UserPreferences) {
                                         value
                                     )
                                     expanded = false
-
                                     // Re-schedule immediately with new interval
                                     if (enabled) {
-
                                         schedulePeriodicSync(context, interval.toLong())
-
                                     } else {
                                         cancelPeriodicSync(context)
-                                        //cancelAlarmSync(context)
                                     }
                                 }
                             )

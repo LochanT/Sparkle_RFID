@@ -12,7 +12,7 @@ data class Employee(
     @SerializedName("EmployeeCode") val employeeCode: String?,
     @SerializedName("FirstName") val firstName: String?,
     @SerializedName("LastName") val lastName: String?,
-    @SerializedName("EmpEmail") val empEmail: String?,
+    @SerializedName("Email") val empEmail: String?,
     @SerializedName("MobileNumber") val mobileNumber: String?,
     @SerializedName("Town") val town: String?,
     @SerializedName("StreetAddress") val streetAddress: String?,

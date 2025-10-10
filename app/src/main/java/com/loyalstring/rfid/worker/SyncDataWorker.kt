@@ -11,8 +11,11 @@ import com.loyalstring.rfid.ui.utils.UserPreferences
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
+/**
+ * Background worker that runs automatically at the selected Auto Sync interval.
+ * Injected with Hilt so we can use repository, database, or API calls safely.
+ */
 @HiltWorker
-
 class SyncDataWorker @AssistedInject constructor(
     @Assisted private val appContext: Context,
     @Assisted private val params: WorkerParameters,
@@ -27,6 +30,7 @@ class SyncDataWorker @AssistedInject constructor(
             )
             Result.success()
         } catch (e: Exception) {
+            e.printStackTrace()
             Result.retry()
         }
     }
@@ -34,5 +38,5 @@ class SyncDataWorker @AssistedInject constructor(
     companion object {
         const val SYNC_DATA_WORKER = "sync_data_worker"
     }
-
 }
+

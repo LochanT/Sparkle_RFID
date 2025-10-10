@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import androidx.work.WorkManager
 import com.rscja.deviceapi.RFIDWithUHFUART
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -11,9 +12,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
 @HiltAndroidApp
-class SparkleRFIDApplication : Application(), Configuration.Provider {
+class SparkleRFIDApplication : Application() {
+
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
@@ -22,46 +23,33 @@ class SparkleRFIDApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
 
-        // Initialize RFID reader in background
+        // Ensure Hilt injected WorkerFactory is ready before WorkManager starts
+        val config = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .setMinimumLoggingLevel(Log.DEBUG)
+            .build()
+
+        WorkManager.initialize(this, config)
+        Log.d("WORKER_INIT", "WorkManager initialized with HiltWorkerFactory = $workerFactory")
+
+        // ✅ Continue with your RFID initialization
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val reader = RFIDWithUHFUART.getInstance()
                 if (reader != null && reader.init()) {
                     mReader = reader
-                    Log.d("SparkleRFID", "RFID Reader initialized successfully")
+                    Log.d("SparkleRFID", "✅ RFID Reader initialized successfully")
                 } else {
-                    Log.e("SparkleRFID", "Failed to initialize RFID Reader")
+                    Log.e("SparkleRFID", "❌ Failed to initialize RFID Reader")
                 }
             } catch (ex: Exception) {
-                Log.e("SparkleRFID", "Exception initializing RFID: ${ex.message}")
+                Log.e("SparkleRFID", "⚠ Exception initializing RFID: ${ex.message}")
             }
         }
     }
 
-    override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
+
+    // ✅ Use property override (required for WorkManager 2.8+)
+
 
 }
-
-/*@HiltAndroidApp
-class SparkleRFIDApplication : Application() {
-    var mReader: RFIDWithUHFUART? = null
-    init {
-        try {
-            mReader = RFIDWithUHFUART.getInstance()
-        } catch (ex: Exception) {
-            println("exception : $ex")
-        }
-
-        mReader?.init()
-    }
-
-    override fun onCreate() {
-        super.onCreate()
-*//*
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            Log.e("UncaughtException", "App crashed with: ${throwable.message}", throwable)
-        }*//*
-    }
-
-}*/
