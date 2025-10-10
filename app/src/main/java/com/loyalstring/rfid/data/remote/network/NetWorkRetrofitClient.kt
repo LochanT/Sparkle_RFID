@@ -1,9 +1,12 @@
 package com.loyalstring.rfid.data.remote.network
 
+import android.content.Context
 import com.loyalstring.rfid.data.remote.api.RetrofitInterface
+import com.loyalstring.rfid.ui.utils.UserPreferences
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -40,7 +43,7 @@ object NetWorkRetrofitClient {
     }
 
 
-    @Provides
+  /*  @Provides
     @Singleton
     fun provideRetrofit(
         okHttpClient: OkHttpClient,
@@ -52,7 +55,31 @@ object NetWorkRetrofitClient {
             .addConverterFactory(GsonConverterFactory.create()) // or MoshiConverterFactory.create()
             .client(okHttpClient)
             .build()
-    }
+    }*/
+  @Provides
+  @Singleton
+  fun provideRetrofit(
+      @ApplicationContext context: Context,
+      okHttpClient: OkHttpClient,
+      defaultBaseUrl: String
+  ): Retrofit {
+
+      val userPrefs = UserPreferences.getInstance(context)
+      val customBaseUrl = userPrefs.getCustomApi()   // ✅ Fetch custom base URL if set
+
+      // ✅ Use custom URL if exists, else fallback to default
+      val baseUrl = if (!customBaseUrl.isNullOrEmpty()) {
+          if (!customBaseUrl.endsWith("/")) "$customBaseUrl/" else customBaseUrl
+      } else {
+          defaultBaseUrl
+      }
+
+      return Retrofit.Builder()
+          .baseUrl(baseUrl)
+          .addConverterFactory(GsonConverterFactory.create())
+          .client(okHttpClient)
+          .build()
+  }
 
     @Provides
     @Singleton

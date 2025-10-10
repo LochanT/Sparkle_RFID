@@ -33,6 +33,7 @@ class UserPreferences @Inject constructor(
         const val KEY_STOCK_TRANSFER_COUNT = "stock_transfer_count"
         const val KEY_AUTOSYNC_ENABLED = "autosync_enabled"
         const val KEY_AUTOSYNC_INTERVAL_MIN = "autosync_interval_min"
+        const val KEY_CUSTOM_API_URL="custom_api_url";
 
         private val gson = Gson()
 
@@ -155,5 +156,11 @@ class UserPreferences @Inject constructor(
     fun getInt(key: String, default: Int = 0): Int {
         return prefs.getInt(key, default)
     }
+
+    fun saveCustomApi(url: String) {
+        prefs.edit().putString(KEY_CUSTOM_API_URL, url).apply()
+    }
+
+    fun getCustomApi(): String? = prefs.getString(KEY_CUSTOM_API_URL, null)
 }
 
