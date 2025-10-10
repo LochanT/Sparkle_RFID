@@ -37,14 +37,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -58,7 +55,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.R
-import com.loyalstring.rfid.data.local.db.AppDatabase
 import com.loyalstring.rfid.data.model.ClientCodeRequest
 
 import com.loyalstring.rfid.data.model.login.Employee
@@ -75,25 +71,17 @@ import com.loyalstring.rfid.utils.BackupUtils
 import com.loyalstring.rfid.viewmodel.SettingsViewModel
 import com.loyalstring.rfid.viewmodel.UiState1
 import kotlinx.coroutines.launch
-import android.content.Intent
 
 import android.os.Environment
 import android.util.Log
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.FileProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.io.File
 
 import android.Manifest
-import android.content.ActivityNotFoundException
 
-import android.content.ContextWrapper
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -396,8 +384,8 @@ fun SettingsScreen(
     if (showBackupDialog) {
         BackupDialogExample(
             onDismiss = { showBackupDialog = false },
-            scope = scope
-            // userPreferences:userPreferences
+            scope = scope,
+             userPreferences=userPreferences
         )
     }
 
@@ -483,7 +471,8 @@ fun SettingsScreen(
 @Composable
 fun BackupDialogExample(
     onDismiss: () -> Unit,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    userPreferences: UserPreferences
 ) {
     val context = LocalContext.current
     var showEmailDialog by remember { mutableStateOf(false) }
@@ -646,12 +635,13 @@ fun BackupDialogExample(
                         return@TextButton
                     }
 
-                    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                    inputEmail = prefs.getString("backup_email", "") ?: ""
+                    // ✅ Always fetch fresh from SharedPreferences each time
+                    inputEmail = UserPreferences.getInstance(context).getBackupEmail().orEmpty()
                     showEmailDialog = true
                 }) {
                     Text("📧 Send via Email")
                 }
+
 
                 // 🔄 Restore Backup
                 TextButton(onClick = {
@@ -676,8 +666,9 @@ fun BackupDialogExample(
                         confirmButton = {
                             TextButton(onClick = {
                                 if (android.util.Patterns.EMAIL_ADDRESS.matcher(inputEmail).matches()) {
-                                    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                                    prefs.edit().putString("backup_email", inputEmail).apply()
+                                    val userPreferences = UserPreferences.getInstance(context)
+                                    userPreferences.saveBackupEmail(inputEmail) // ✅ Save using your preference helper
+
                                     savedEmail = inputEmail
                                     showEmailDialog = false
                                     ToastUtils.showToast(context, "📤 Sending backup…")

@@ -33,7 +33,8 @@ class UserPreferences @Inject constructor(
         const val KEY_STOCK_TRANSFER_COUNT = "stock_transfer_count"
         const val KEY_AUTOSYNC_ENABLED = "autosync_enabled"
         const val KEY_AUTOSYNC_INTERVAL_MIN = "autosync_interval_min"
-        const val KEY_CUSTOM_API_URL="custom_api_url";
+        const val KEY_CUSTOM_API_URL="custom_api_url"
+        private  val KEY_BACKUP_EMAIL = "backup_email"
 
         private val gson = Gson()
 
@@ -162,5 +163,16 @@ class UserPreferences @Inject constructor(
     }
 
     fun getCustomApi(): String? = prefs.getString(KEY_CUSTOM_API_URL, null)
+
+    // ---------------- BACKUP EMAIL ----------------
+
+
+    fun saveBackupEmail(email: String) {
+        prefs.edit { putString(KEY_BACKUP_EMAIL, email) }
+    }
+
+    fun getBackupEmail(): String? {
+        return prefs.getString(KEY_BACKUP_EMAIL, "")
+    }
 }
 
