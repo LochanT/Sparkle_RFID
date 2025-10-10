@@ -1,6 +1,7 @@
 package com.loyalstring.rfid.worker
 
 import android.content.Context
+import android.util.Log
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
@@ -10,7 +11,7 @@ import java.util.concurrent.TimeUnit
 
 fun schedulePeriodicSync(context: Context, intervalMinutes: Long) {
     val request = PeriodicWorkRequestBuilder<SyncDataWorker>(
-        intervalMinutes.coerceAtLeast(15), // min 15min
+        intervalMinutes.coerceAtLeast(intervalMinutes), // min 15min
         TimeUnit.MINUTES
     )
         .setConstraints(
@@ -20,14 +21,16 @@ fun schedulePeriodicSync(context: Context, intervalMinutes: Long) {
         )
         .build()
 
-    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-        "autosync_worker",
+    WorkManager.getInstance(context.applicationContext).enqueueUniquePeriodicWork(
+        SyncDataWorker.SYNC_DATA_WORKER,
         ExistingPeriodicWorkPolicy.REPLACE,
         request
     )
+    Log.e("SYNC_DATA", "Called")
 }
 
 // ✅ cancels worker if user turns off auto-sync
 fun cancelPeriodicSync(context: Context) {
-    WorkManager.getInstance(context).cancelUniqueWork("autosync_worker")
+    WorkManager.getInstance(context.applicationContext)
+        .cancelUniqueWork(SyncDataWorker.SYNC_DATA_WORKER)
 }

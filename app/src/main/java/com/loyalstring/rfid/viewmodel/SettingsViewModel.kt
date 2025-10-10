@@ -1,9 +1,11 @@
 package com.loyalstring.rfid.viewmodel
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.loyalstring.rfid.data.model.ClientCodeRequest
@@ -12,15 +14,22 @@ import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesResponse
 import com.loyalstring.rfid.data.remote.data.DailyRateResponse
 import com.loyalstring.rfid.repository.OrderRepository
 import com.loyalstring.rfid.repository.SettingRepository
+import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavHostController
+import com.loyalstring.rfid.data.local.db.AppDatabase
+import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Response
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 // ✅ Use sealed class + rename Error -> Failure to avoid KAPT stub error
@@ -107,4 +116,36 @@ class SettingsViewModel @Inject constructor(
     fun resetUpdateState() {
         _updateDailyRatesState.value = UiState1.Idle
     }
+
+    fun clearAllData(context: Context, navController: NavHostController) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // 1. Clear Room Database
+                AppDatabase.getDatabase(context).clearAllTables()
+
+                // 2. Clear SharedPreferences
+                context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                    .edit { clear() }
+
+                // 3. Clear cache
+                context.cacheDir.deleteRecursively()
+
+                withContext(Dispatchers.Main) {
+                    ToastUtils.showToast(context, "All data cleared. Please login again.")
+
+                    // 4. Navigate to Login Screen
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true } // ✅ clears entire backstack
+                        launchSingleTop = true          // prevent multiple copies
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    ToastUtils.showToast(context, "Error clearing data: ${e.message}")
+                }
+            }
+        }
+    }
+
+
 }

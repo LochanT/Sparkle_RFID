@@ -3,6 +3,7 @@ package com.loyalstring.rfid.ui.screens
 import android.app.Activity
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -22,7 +23,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Attachment
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -38,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -51,6 +52,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -61,6 +63,7 @@ import com.loyalstring.rfid.data.model.ClientCodeRequest
 
 import com.loyalstring.rfid.data.model.login.Employee
 
+import com.loyalstring.rfid.data.model.login.Employee
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.AutoSyncSetting
@@ -139,6 +142,8 @@ fun SettingsScreen(
 
     var showBackupDialog by remember { mutableStateOf(false) }
 
+    var showClearDataConfirm by remember { mutableStateOf(false) }
+    var showPasswordDialog by remember { mutableStateOf(false) }
     val context: Context = LocalContext.current
     val employee = remember {
         // get your logged-in employee so we have ClientCode/EmployeeCode
@@ -176,6 +181,11 @@ fun SettingsScreen(
 
 
     val scope = rememberCoroutineScope()
+    val employee =
+        remember { UserPreferences.getInstance(context).getEmployee(Employee::class.java) }
+
+    Log.d("EMPLOYEE", employee.toString())
+    employee?.empEmail?.let { Log.d("EMAIL ", it) }
 
     val menuItems = listOf(
         // Counters (first 5)
@@ -233,9 +243,11 @@ fun SettingsScreen(
         SettingsMenuItem(
             "email",
             "Email",
-            Icons.Default.Attachment,
+            Icons.Default.Settings,
             SettingType.Action,
-            subtitle = "Email configuration"
+            subtitle = employee?.empEmail
+
+
         ),
         SettingsMenuItem(
             "backup",
@@ -306,6 +318,13 @@ fun SettingsScreen(
             Icons.Default.Settings,
             SettingType.Action,
             subtitle = "Stock Transfer API URL"
+        ),
+        SettingsMenuItem(
+            "clear_data",
+            "Clear Data",
+            Icons.Default.Settings,
+            SettingType.Action,
+            subtitle = "Clear data"
         )
     )
 
@@ -339,7 +358,8 @@ fun SettingsScreen(
                     item = item,
                     userPreferences = userPreferences,
                     onAutoSyncClick = { showAutoSyncDialog = true },
-                    onSheetUrlClick = { showSheetInput = true }
+                    onSheetUrlClick = { showSheetInput = true },
+                    onClearDataClick = { showClearDataConfirm = true }
                 )
             }
         }
@@ -747,6 +767,85 @@ fun CustomApiDialog(
             }
         }
     )
+    // ✅ Auto Sync Dialog
+    if (showAutoSyncDialog) {
+        AlertDialog(
+            onDismissRequest = { showAutoSyncDialog = false },
+            title = { Text("Auto Sync Settings") },
+            text = {
+                AutoSyncSetting(userPref = userPreferences)
+            },
+            confirmButton = {}
+        )
+    }
+
+    // ✅ Clear Data Confirmation Dialog
+    if (showClearDataConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearDataConfirm = false },
+            title = { Text("Confirm Clear Data", fontFamily = poppins) },
+            text = {
+                Text(
+                    "This will permanently delete all app data from this device. Continue?",
+                    fontFamily = poppins
+                )
+            },
+            confirmButton = {
+                GradientButton(
+                    text = "Yes, Clear Data",
+                    onClick = {
+                        showClearDataConfirm = false
+                        showPasswordDialog = true
+                    },
+                )
+            },
+            dismissButton = {
+                GradientButton(
+                    text = "Cancel",
+                    onClick = {
+                        showClearDataConfirm = false
+                    },
+                )
+            }
+        )
+    }
+    if (showPasswordDialog) {
+        var password by remember { mutableStateOf("") }
+        val correctPassword =
+            userPreferences.getSavedPassword() // You can define this in UserPreferences
+
+        AlertDialog(
+            onDismissRequest = { showPasswordDialog = false },
+            title = { Text("Password Verification", fontFamily = poppins) },
+            text = {
+                Column {
+                    Text("Enter your password to confirm data wipe:")
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Password", fontFamily = poppins) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+
+                GradientButton("Confirm", onClick = {
+                    if (password == correctPassword) {
+                        showPasswordDialog = false
+                        viewModel.clearAllData(context, navController)
+                    } else {
+                        ToastUtils.showToast(context, "Incorrect password")
+                    }
+                })
+            },
+            dismissButton = {
+                GradientButton("Cancel", onClick = { showPasswordDialog = false })
+            }
+        )
+    }
+
 }
 
 
@@ -756,11 +855,12 @@ fun MenuItemRow(
     item: SettingsMenuItem,
     userPreferences: UserPreferences,
     onAutoSyncClick: () -> Unit,
-    onSheetUrlClick: () -> Unit
+    onSheetUrlClick: () -> Unit,
+    onClearDataClick: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedValue by remember {
-        mutableStateOf(userPreferences.getInt(item.key, item.defaultValue ?: 0))
+        mutableIntStateOf(userPreferences.getInt(item.key, item.defaultValue ?: 0))
     }
 
     Surface(
@@ -771,6 +871,7 @@ fun MenuItemRow(
                 when (item.key) {
                     "autosync" -> onAutoSyncClick()
                     "sheet_url" -> onSheetUrlClick()
+                    "clear_data" -> onClearDataClick()
                     else -> item.onClick?.invoke()
                 }
             },
@@ -880,17 +981,3 @@ fun SheetInputDialog(
 
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
