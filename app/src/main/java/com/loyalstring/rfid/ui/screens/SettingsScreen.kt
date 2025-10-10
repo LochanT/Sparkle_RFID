@@ -3,7 +3,7 @@ package com.loyalstring.rfid.ui.screens
 import android.app.Activity
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
-import android.util.Log
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -63,7 +63,7 @@ import com.loyalstring.rfid.data.model.ClientCodeRequest
 
 import com.loyalstring.rfid.data.model.login.Employee
 
-import com.loyalstring.rfid.data.model.login.Employee
+
 import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.AutoSyncSetting
@@ -135,6 +135,8 @@ fun SettingsScreen(
 
     var showRatesEditor by remember { mutableStateOf(false) }
 
+
+
     val updateState = viewModel.updateDailyRatesState.collectAsState()
 
     var showCustomApiDialog by remember { mutableStateOf(false) }
@@ -145,10 +147,7 @@ fun SettingsScreen(
     var showClearDataConfirm by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
     val context: Context = LocalContext.current
-    val employee = remember {
-        // get your logged-in employee so we have ClientCode/EmployeeCode
-        UserPreferences.getInstance(context).getEmployee(Employee::class.java)
-    }
+
 
     var showEmailDialog by remember { mutableStateOf(false) }
     var inputEmail by remember { mutableStateOf("") }
@@ -399,6 +398,85 @@ fun SettingsScreen(
             onDismiss = { showBackupDialog = false },
             scope = scope
             // userPreferences:userPreferences
+        )
+    }
+
+    // ✅ Auto Sync Dialog
+    if (showAutoSyncDialog) {
+        AlertDialog(
+            onDismissRequest = { showAutoSyncDialog = false },
+            title = { Text("Auto Sync Settings") },
+            text = {
+                AutoSyncSetting(userPref = userPreferences)
+            },
+            confirmButton = {}
+        )
+    }
+
+    // ✅ Clear Data Confirmation Dialog
+    if (showClearDataConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearDataConfirm = false },
+            title = { Text("Confirm Clear Data", fontFamily = poppins) },
+            text = {
+                Text(
+                    "This will permanently delete all app data from this device. Continue?",
+                    fontFamily = poppins
+                )
+            },
+            confirmButton = {
+                GradientButton(
+                    text = "Yes, Clear Data",
+                    onClick = {
+                        showClearDataConfirm = false
+                        showPasswordDialog = true
+                    },
+                )
+            },
+            dismissButton = {
+                GradientButton(
+                    text = "Cancel",
+                    onClick = {
+                        showClearDataConfirm = false
+                    },
+                )
+            }
+        )
+    }
+    if (showPasswordDialog) {
+        var password by remember { mutableStateOf("") }
+        val correctPassword =
+            userPreferences.getSavedPassword() // You can define this in UserPreferences
+
+        AlertDialog(
+            onDismissRequest = { showPasswordDialog = false },
+            title = { Text("Password Verification", fontFamily = poppins) },
+            text = {
+                Column {
+                    Text("Enter your password to confirm data wipe:")
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Password", fontFamily = poppins) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+
+                GradientButton("Confirm", onClick = {
+                    if (password == correctPassword) {
+                        showPasswordDialog = false
+                        viewModel.clearAllData(context, navController)
+                    } else {
+                        ToastUtils.showToast(context, "Incorrect password")
+                    }
+                })
+            },
+            dismissButton = {
+                GradientButton("Cancel", onClick = { showPasswordDialog = false })
+            }
         )
     }
 }
@@ -767,86 +845,10 @@ fun CustomApiDialog(
             }
         }
     )
-    // ✅ Auto Sync Dialog
-    if (showAutoSyncDialog) {
-        AlertDialog(
-            onDismissRequest = { showAutoSyncDialog = false },
-            title = { Text("Auto Sync Settings") },
-            text = {
-                AutoSyncSetting(userPref = userPreferences)
-            },
-            confirmButton = {}
-        )
-    }
-
-    // ✅ Clear Data Confirmation Dialog
-    if (showClearDataConfirm) {
-        AlertDialog(
-            onDismissRequest = { showClearDataConfirm = false },
-            title = { Text("Confirm Clear Data", fontFamily = poppins) },
-            text = {
-                Text(
-                    "This will permanently delete all app data from this device. Continue?",
-                    fontFamily = poppins
-                )
-            },
-            confirmButton = {
-                GradientButton(
-                    text = "Yes, Clear Data",
-                    onClick = {
-                        showClearDataConfirm = false
-                        showPasswordDialog = true
-                    },
-                )
-            },
-            dismissButton = {
-                GradientButton(
-                    text = "Cancel",
-                    onClick = {
-                        showClearDataConfirm = false
-                    },
-                )
-            }
-        )
-    }
-    if (showPasswordDialog) {
-        var password by remember { mutableStateOf("") }
-        val correctPassword =
-            userPreferences.getSavedPassword() // You can define this in UserPreferences
-
-        AlertDialog(
-            onDismissRequest = { showPasswordDialog = false },
-            title = { Text("Password Verification", fontFamily = poppins) },
-            text = {
-                Column {
-                    Text("Enter your password to confirm data wipe:")
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Password", fontFamily = poppins) },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-
-                GradientButton("Confirm", onClick = {
-                    if (password == correctPassword) {
-                        showPasswordDialog = false
-                        viewModel.clearAllData(context, navController)
-                    } else {
-                        ToastUtils.showToast(context, "Incorrect password")
-                    }
-                })
-            },
-            dismissButton = {
-                GradientButton("Cancel", onClick = { showPasswordDialog = false })
-            }
-        )
-    }
-
 }
+
+
+
 
 
 // ---------------- MENU ROW ----------------
