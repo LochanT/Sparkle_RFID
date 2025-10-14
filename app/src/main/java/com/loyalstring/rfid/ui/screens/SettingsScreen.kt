@@ -260,8 +260,8 @@ fun SettingsScreen(
             SettingType.Action,
             subtitle = stringResource(id = R.string.menu_rates_subtitle)
         ) {
-            //showRatesEditor  = true
-            navController.navigate(Screens.DailyRatesEditorScreen.route)
+          ///  showRatesEditor  = true
+          //  navController.navigate(Screens.DailyRatesEditorScreen.route)
         },
         SettingsMenuItem(
             "account",
@@ -341,9 +341,9 @@ fun SettingsScreen(
             icon = Icons.Default.Settings,
             type = SettingType.Action,
             subtitle = stringResource(id = R.string.menu_apis_subtitle)
-        ) {
+        ) /*{
             showCustomApiDialog = true
-        },
+        }*/,
         SettingsMenuItem(
             "sheet_url",
             "Sheet URL",
@@ -412,7 +412,10 @@ fun SettingsScreen(
                     userPreferences = userPreferences,
                     onAutoSyncClick = { showAutoSyncDialog = true },
                     onSheetUrlClick = { showSheetInput = true },
-                    onClearDataClick = { showClearDataConfirm = true }
+                    onCustomApiClick = { showCustomApiDialog = true },
+                    onClearDataClick = { showClearDataConfirm = true },
+                    onRatesClick={showRatesEditor=true},
+                    onBackupClick={showBackupDialog=true}
                 )
             }
         }
@@ -432,6 +435,9 @@ fun SettingsScreen(
                 }
             )
         }
+    }
+    if (showRatesEditor) {
+        navController.navigate(Screens.DailyRatesEditorScreen.route)
     }
 
     if (showCustomApiDialog) {
@@ -808,9 +814,6 @@ fun BackupDialogExample(
     )
 }
 
-
-
-
 // ---------------------------------------------------------
 // 🔹 Restore Function — Reads Backup CSV → Restores to DB
 // ---------------------------------------------------------
@@ -965,7 +968,10 @@ fun MenuItemRow(
     userPreferences: UserPreferences,
     onAutoSyncClick: () -> Unit,
     onSheetUrlClick: () -> Unit,
-    onClearDataClick: () -> Unit
+    onCustomApiClick:()-> Unit,
+    onClearDataClick: () -> Unit,
+    onRatesClick: () -> Unit,
+    onBackupClick: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedValue by remember {
@@ -981,6 +987,9 @@ fun MenuItemRow(
                     "autosync" -> onAutoSyncClick()
                     "sheet_url" -> onSheetUrlClick()
                     "clear_data" -> onClearDataClick()
+                    "apis"->onCustomApiClick()
+                    "rates"->onRatesClick()
+                    "backup"->onBackupClick()
                     else -> item.onClick?.invoke()
                 }
             },

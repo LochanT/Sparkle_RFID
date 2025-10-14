@@ -159,7 +159,7 @@ private fun DailyRatesContent(
                 CategoryName = purity.CategoryName,
                 ClientCode = match?.ClientCode.orEmpty(),
                 EmployeeCode = match?.EmployeeCode.orEmpty(),
-                FinePercentage = purity.FinePercentage.toString(),
+                FinePercentage = purity.FinePercentage?.toString() ?: "0",
                 PurityId = purity.Id,
                 PurityName = purity.PurityName,
                 Rate = match?.Rate ?: "0.00" // 🔹 Default rate if no match
