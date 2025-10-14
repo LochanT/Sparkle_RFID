@@ -26,3 +26,12 @@ data class UpdateDailyRatesReq(
 }
 
 
+data class UserPermissionResponse(
+    val IsSuccess: Boolean,
+    val Branches: List<Branch>?
+)
+
+data class Branch(
+    val BranchId: Int,
+    val BranchName: String
+)

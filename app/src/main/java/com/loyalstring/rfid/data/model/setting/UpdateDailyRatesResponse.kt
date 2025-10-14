@@ -17,3 +17,8 @@ data class UpdateDailyRatesResponse(
     @SerializedName("LastUpdated")   val lastUpdated: String,
     @SerializedName("StatusType")    val statusType: Boolean
 )
+
+data class UserPermissionRequest(
+    val ClientCode: String,
+    val UserId: Int
+)

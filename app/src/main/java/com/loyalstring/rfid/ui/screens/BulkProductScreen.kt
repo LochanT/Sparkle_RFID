@@ -1,4 +1,3 @@
-
 package com.loyalstring.rfid.ui.screens
 
 import android.annotation.SuppressLint
@@ -379,14 +378,13 @@ fun BulkProductScreen(
                                     fontFamily = poppins
                                 )
                             }
-
 // Item Code
                           Box(
                                 modifier = Modifier
                                     .width(150.dp)
                                     .height(36.dp),
                                 contentAlignment = Alignment.Center
-                            ) {
+                          ) {
                               val rfid = rfidMap[index]
                               rfid != null
                               rfid ?: ""

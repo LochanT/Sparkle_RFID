@@ -26,15 +26,14 @@ import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
 import com.loyalstring.rfid.data.model.setting.LocationGetRequest
-import com.loyalstring.rfid.data.model.setting.LocationGetResponse
 import com.loyalstring.rfid.data.model.setting.LocationItem
 import com.loyalstring.rfid.data.model.setting.LocationSyncRequest
 import com.loyalstring.rfid.data.model.setting.LocationSyncResponse
 import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesReq
 import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesResponse
+import com.loyalstring.rfid.data.model.setting.UserPermissionRequest
+import com.loyalstring.rfid.data.model.setting.UserPermissionResponse
 import com.loyalstring.rfid.data.model.stockTransfer.StockTransferResponse
-import com.loyalstring.rfid.data.remote.api.requests.UserPermissionRequest
-import com.loyalstring.rfid.data.remote.api.response.UserPermissionResponse
 import com.loyalstring.rfid.data.remote.data.DailyRateResponse
 import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
 import com.loyalstring.rfid.data.remote.data.DeleteOrderResponse
