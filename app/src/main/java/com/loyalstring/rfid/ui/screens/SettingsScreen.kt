@@ -102,6 +102,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import com.google.android.gms.location.LocationServices
+import com.loyalstring.rfid.data.local.db.AppDatabase
 import java.util.concurrent.TimeUnit
 
 
@@ -296,7 +297,7 @@ fun SettingsScreen(
             subtitle = "Data Backup"
         ) {
 
-            showBackupDialog = true
+           // showBackupDialog = true
             /*  scope.launch {
                 try {
                     val dbFile = context.getDatabasePath("app_db")
@@ -621,48 +622,7 @@ fun BackupDialogExample(
         }
     }
 
-    // ----------------------------------------
-    // ✅ Restore Function
-    // ----------------------------------------
-    fun restoreBackupFromCsv(context: Context, csvFile: File) {
-        try {
-            val dbFile = context.getDatabasePath("app_db")
-            val db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
 
-            val lines = csvFile.readLines()
-            if (lines.isEmpty()) {
-                ToastUtils.showToast(context, "⚠️ Backup file is empty.")
-                db.close()
-                return
-            }
-
-            val headers = lines.first().split(",")
-            val data = lines.drop(1)
-
-            db.beginTransaction()
-            db.delete("items", null, null) // clear table before restore
-
-            val insertQuery =
-                "INSERT INTO items (${headers.joinToString(",")}) VALUES (${headers.joinToString(",") { "?" }})"
-
-            val stmt = db.compileStatement(insertQuery)
-            data.forEach { row ->
-                val values = row.split(",")
-                stmt.clearBindings()
-                values.forEachIndexed { i, v ->
-                    stmt.bindString(i + 1, v.trim())
-                }
-                stmt.executeInsert()
-            }
-
-            db.setTransactionSuccessful()
-            db.endTransaction()
-            db.close()
-            ToastUtils.showToast(context, "✅ Data restored successfully.")
-        } catch (e: Exception) {
-            ToastUtils.showToast(context, "❌ Restore failed: ${e.message}")
-        }
-    }
 
     // ----------------------------------------
     // ✅ Email Sending Function
@@ -817,7 +777,7 @@ fun BackupDialogExample(
 // ---------------------------------------------------------
 // 🔹 Restore Function — Reads Backup CSV → Restores to DB
 // ---------------------------------------------------------
-fun restoreBackupFromCsv(context: Context, csvFile: File) {
+/*fun restoreBackupFromCsv(context: Context, csvFile: File) {
     try {
         val dbFile = context.getDatabasePath("app_db")
         val db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
@@ -860,7 +820,38 @@ fun restoreBackupFromCsv(context: Context, csvFile: File) {
     } catch (e: Exception) {
         ToastUtils.showToast(context, "❌ Restore failed: ${e.message}")
     }
+}*/
+
+fun restoreBackupFromCsv(context: Context, backupFile: File) {
+    try {
+        val dbFile = context.getDatabasePath("app_db")
+
+        // Step 1: Close the existing Room instance if open
+        try {
+            AppDatabase.closeInstance() // custom helper below
+        } catch (_: Exception) {
+        }
+
+        // Step 2: Ensure backup file exists
+        if (!backupFile.exists()) {
+            ToastUtils.showToast(context, "⚠️ Backup file not found.")
+            return
+        }
+
+        // Step 3: Replace database file
+        dbFile.delete()
+        backupFile.copyTo(dbFile, overwrite = true)
+
+        // Step 4: Reopen Room DB to refresh connection
+        AppDatabase.getDatabase(context)
+
+        ToastUtils.showToast(context, "✅ Database restored successfully! Please restart the app.")
+
+    } catch (e: Exception) {
+        ToastUtils.showToast(context, "❌ Restore failed: ${e.message}")
+    }
 }
+
 
 
 
@@ -975,7 +966,12 @@ fun MenuItemRow(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedValue by remember {
-        mutableIntStateOf(userPreferences.getInt(item.key, item.defaultValue ?: 0))
+        try {
+            mutableIntStateOf(userPreferences.getInt(item.key, item.defaultValue ?: 0))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            mutableIntStateOf(item.defaultValue ?: 0) // fallback to default
+        }
     }
 
     Surface(
@@ -1059,12 +1055,15 @@ fun MenuItemRow(
                 }
 
                 is SettingType.Action -> {
-                    Text(
-                        item.subtitle ?: "",
-                        color = Color.Gray,
-                        fontSize = 13.sp,
-                        fontFamily = poppins
-                    )
+                    // ✅ If hasToggle is true → show switch instead of subtitle
+                    if (item.hasToggle) {
+                        Switch(
+                            checked = item.isToggled,
+                            onCheckedChange = { newValue -> item.onToggleChange?.invoke(newValue) }
+                        )
+                    } else {
+                        Text(item.subtitle ?: "", color = Color.Gray, fontSize = 13.sp)
+                    }
                 }
             }
         }
