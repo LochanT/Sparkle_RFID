@@ -37,7 +37,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Checkbox
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.RadioButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -122,6 +121,7 @@ import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.ui.utils.GradientButtonIcon
 import com.loyalstring.rfid.ui.utils.NetworkUtils
 import com.loyalstring.rfid.ui.utils.UserPreferences
+import com.loyalstring.rfid.ui.utils.UserPreferences.Companion.KEY_ORDER_COUNT
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.OrderViewModel
@@ -133,22 +133,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.time.debounce
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URL
 import java.text.DecimalFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import androidx.compose.runtime.*
-
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.onEach
-
-import kotlinx.coroutines.withContext
 
 
 @RequiresApi(Build.VERSION_CODES.R)
@@ -169,7 +161,11 @@ fun OrderScreen(
         remember { UserPreferences.getInstance(context).getEmployee(Employee::class.java) }
 
     val bulkViewModel: BulkViewModel = hiltViewModel()
-    var selectedPower by remember { mutableStateOf(30) }
+    var selectedPower by remember {
+        mutableStateOf(
+            UserPreferences.getInstance(context).getInt(KEY_ORDER_COUNT, 30)
+        )
+    }
     var selectedCustomer by remember { mutableStateOf<EmployeeList?>(null) }
     //val itemCodeList by orderViewModel.itemCodeResponse.collectAsState()
     val customerSuggestions by orderViewModel.empListFlow.collectAsState(UiState.Loading)
@@ -351,7 +347,7 @@ fun OrderScreenContent(
 
 
 
-    val df = DecimalFormat("#.00")
+    DecimalFormat("#.00")
 // Retrieve logged-in employee from preferences
     val employee = UserPreferences.getInstance(context).getEmployee(Employee::class.java)
     var isEditMode by remember { mutableStateOf(false) }
@@ -803,9 +799,7 @@ fun OrderScreenContent(
         }
     }
 
-    var searchQuery by remember { mutableStateOf("") }
-
-   // var searchQuery by remember { mutableStateOf("") }
+    // var searchQuery by remember { mutableStateOf("") }
     var filteredBulkList by remember { mutableStateOf<List<BulkItem>>(emptyList()) }
     var isFiltering by remember { mutableStateOf(false) }
 
@@ -964,12 +958,10 @@ fun OrderScreenContent(
                                         ((extraMakingPercent / 100.0) * netWt) +
                                         fixWastage
 
-                            val totalStoneAmount =
-                                selectedItem?.TotalStoneAmount?.toDoubleOrNull() ?: 0.0
-                            val diamondAmount =
-                                selectedItem?.DiamondPurchaseAmount?.toDoubleOrNull() ?: 0.0
-                            val safeMetalAmt = metalAmt
-                            val safeMakingAmt = makingAmt
+                            selectedItem?.TotalStoneAmount?.toDoubleOrNull() ?: 0.0
+                            selectedItem?.DiamondPurchaseAmount?.toDoubleOrNull() ?: 0.0
+                            metalAmt
+                            makingAmt
                             val rate = dailyRates.find { it.PurityName.equals(selectedItem?.PurityName, ignoreCase = true) }?.Rate?.toDoubleOrNull() ?: 0.0
 
                             val itemAmt: Double = (selectedItem?.NetWt?.toDoubleOrNull() ?: 0.0) * rate
@@ -1247,13 +1239,11 @@ fun OrderScreenContent(
                                     ((extraMakingPercent / 100.0) * netWt) +
                                     fixWastage
 
-                        val totalStoneAmount =
-                            selectedItem?.TotalStoneAmount?.toDoubleOrNull() ?: 0.0
-                        val diamondAmount =
-                            selectedItem?.DiamondPurchaseAmount?.toDoubleOrNull()
-                                ?: 0.0
-                        val safeMetalAmt = metalAmt
-                        val safeMakingAmt = makingAmt
+                        selectedItem?.TotalStoneAmount?.toDoubleOrNull() ?: 0.0
+                        selectedItem?.DiamondPurchaseAmount?.toDoubleOrNull()
+                            ?: 0.0
+                        metalAmt
+                        makingAmt
                         val rate = dailyRates.find { it.PurityName.equals(selectedItem?.PurityName, ignoreCase = true) }?.Rate?.toDoubleOrNull() ?: 0.0
 
                         val itemAmt: Double = (selectedItem?.NetWt?.toDoubleOrNull() ?: 0.0) * rate
@@ -2116,9 +2106,9 @@ fun OrderScreenContent(
                         if (!alreadyExists) {
 
                             val netWt = orderItem.nWt?.toDoubleOrNull() ?: 0.0
-                            val stoneAmt = orderItem.stoneAmt?.toDoubleOrNull() ?: 0.0
-                            val diamondAmt = orderItem.diamondAmt?.toDoubleOrNull() ?: 0.0
-                            val makingAmt = orderItem.makingPerGram?.toDoubleOrNull() ?: 0.0
+                            orderItem.stoneAmt?.toDoubleOrNull() ?: 0.0
+                            orderItem.diamondAmt?.toDoubleOrNull() ?: 0.0
+                            orderItem.makingPerGram?.toDoubleOrNull() ?: 0.0
                             val rate = dailyRates.find { it.PurityName.equals(orderItem?.purity, ignoreCase = true) }?.Rate?.toDoubleOrNull() ?: 0.0
 
                             val calculatedAmt = (netWt * rate)
@@ -2840,7 +2830,7 @@ fun OrderItemTableScreen(
 ) {
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberLazyListState()
-    val selectedIndex = remember { mutableStateOf(-1) }
+    remember { mutableStateOf(-1) }
 
     // Shared column definitions
     val columnDefinitions = listOf(

@@ -25,13 +25,15 @@ import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
+import com.loyalstring.rfid.data.model.stockTransfer.StockTransferResponse
+import com.loyalstring.rfid.data.remote.api.requests.UserPermissionRequest
+import com.loyalstring.rfid.data.remote.api.response.UserPermissionResponse
+import com.loyalstring.rfid.data.remote.data.DailyRateResponse
 import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
 import com.loyalstring.rfid.data.remote.data.DeleteOrderResponse
+import com.loyalstring.rfid.data.remote.data.EditDataRequest
 import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
 import com.loyalstring.rfid.data.remote.data.ProductDeleteResponse
-import com.loyalstring.rfid.data.model.stockTransfer.StockTransferResponse
-import com.loyalstring.rfid.data.remote.data.DailyRateResponse
-import com.loyalstring.rfid.data.remote.data.EditDataRequest
 import com.loyalstring.rfid.data.remote.data.StockTransferRequest
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.MultipartBody
@@ -186,6 +188,13 @@ interface RetrofitInterface {
 
     @POST("/api/ProductMaster/GetAllDailyRate")
     suspend fun getDailyDailyRate(@Body request: ClientCodeRequest): Response<List<DailyRateResponse>>
+
+    /*getAllUserPermission to get Accessible branches*/
+    @POST("/api/RoleManagement/GetAllUserPermissions-Optimized")
+    suspend fun getUserBranches(
+        @Body request: UserPermissionRequest
+    ): Response<UserPermissionResponse>
+
 
 
 }

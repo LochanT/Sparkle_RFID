@@ -391,6 +391,7 @@ fun MenuItemRow(
                 text = item.title,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
+                fontFamily = poppins,
                 modifier = Modifier.weight(1f),
                 color = Color.Black
             )
@@ -404,7 +405,11 @@ fun MenuItemRow(
                             .clickable { expanded = true },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(selectedValue.toString(), fontWeight = FontWeight.Bold)
+                        Text(
+                            selectedValue.toString(),
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = poppins
+                        )
                     }
 
                     DropdownMenu(
@@ -416,7 +421,7 @@ fun MenuItemRow(
                     ) {
                         (1..30).forEach { count ->
                             DropdownMenuItem(
-                                text = { Text(count.toString()) },
+                                text = { Text(count.toString(), fontFamily = poppins) },
                                 onClick = {
                                     selectedValue = count
                                     userPreferences.saveInt(item.key, count)
@@ -428,7 +433,12 @@ fun MenuItemRow(
                 }
 
                 is SettingType.Action -> {
-                    Text(item.subtitle ?: "", color = Color.Gray, fontSize = 13.sp)
+                    Text(
+                        item.subtitle ?: "",
+                        color = Color.Gray,
+                        fontSize = 13.sp,
+                        fontFamily = poppins
+                    )
                 }
             }
         }
