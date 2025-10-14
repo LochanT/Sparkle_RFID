@@ -1145,7 +1145,7 @@ class BulkViewModel @Inject constructor(
 
         val response = bulkRepository.syncRFIDItemsFromServer(ClientCodeRequest(clientCode))
 
-        /*   if (response.isNullOrEmpty()) {
+        /*if (response.isNullOrEmpty()) {
                // ❌ No RFID data found
                android.widget.Toast.makeText(
                    context,

@@ -46,7 +46,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,6 +76,7 @@ import com.loyalstring.rfid.navigation.GradientTopBar
 import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.GradientButton
 import com.loyalstring.rfid.ui.utils.UserPreferences
+import com.loyalstring.rfid.ui.utils.UserPreferences.Companion.KEY_INVENTORY_COUNT
 import com.loyalstring.rfid.ui.utils.poppins
 import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.ProductListViewModel
@@ -242,7 +242,12 @@ fun ScanDisplayScreen(onBack: () -> Unit, navController: NavHostController) {
     var showItemDialog by remember { mutableStateOf(false) }
 
 
-    var selectedPower by remember { mutableIntStateOf(30) }
+    var selectedPower by remember {
+        mutableStateOf(
+            UserPreferences.getInstance(context).getInt(KEY_INVENTORY_COUNT, 30)
+        )
+    }
+
     var isScanning by remember { mutableStateOf(false) }
 
     var showEmailDialog by remember { mutableStateOf(false) }

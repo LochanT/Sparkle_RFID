@@ -85,7 +85,6 @@ import com.loyalstring.rfid.navigation.Screens
 import com.loyalstring.rfid.ui.utils.GradientButton
 import com.loyalstring.rfid.ui.utils.UserPreferences
 import com.loyalstring.rfid.ui.utils.poppins
-import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.ProductListViewModel
 import com.loyalstring.rfid.viewmodel.SingleProductViewModel
 import java.io.File
@@ -98,7 +97,6 @@ fun ProductListScreen(
 ) {
     var isScanning by remember { mutableStateOf(false) }
     val viewModel: ProductListViewModel = hiltViewModel()
-    val bulkViewModel: BulkViewModel = hiltViewModel()
     val singleproductViewModel: SingleProductViewModel = hiltViewModel()
     val searchQuery = remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
@@ -114,6 +112,7 @@ fun ProductListScreen(
     //var deletingItemId by remember { mutableStateOf<Int?>(null) }
     var isEditMode by remember { mutableStateOf(false) }
     val deleteResponse by singleproductViewModel.productDeleetResponse.observeAsState()
+
 
     LaunchedEffect(deleteResponse) {
         when (deleteResponse) {
@@ -538,7 +537,7 @@ fun ProductListScreen(
                                 }
                             }, modifier = Modifier.width(30.dp)) {
                                 Icon(
-                                    painter = painterResource(id = com.loyalstring.rfid.R.drawable.ic_edit_svg),
+                                    painter = painterResource(id = R.drawable.ic_edit_svg),
                                     contentDescription = "Edit",
                                     tint = Color.DarkGray
                                 )
@@ -554,7 +553,7 @@ fun ProductListScreen(
                                 modifier = Modifier.width(50.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(id = com.loyalstring.rfid.R.drawable.ic_delete_svg),
+                                    painter = painterResource(id = R.drawable.ic_delete_svg),
                                     contentDescription = "Delete",
                                     tint = Color.DarkGray
                                 )

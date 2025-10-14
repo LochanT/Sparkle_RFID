@@ -32,13 +32,15 @@ import com.loyalstring.rfid.data.model.setting.LocationSyncRequest
 import com.loyalstring.rfid.data.model.setting.LocationSyncResponse
 import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesReq
 import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesResponse
+import com.loyalstring.rfid.data.model.stockTransfer.StockTransferResponse
+import com.loyalstring.rfid.data.remote.api.requests.UserPermissionRequest
+import com.loyalstring.rfid.data.remote.api.response.UserPermissionResponse
+import com.loyalstring.rfid.data.remote.data.DailyRateResponse
 import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
 import com.loyalstring.rfid.data.remote.data.DeleteOrderResponse
+import com.loyalstring.rfid.data.remote.data.EditDataRequest
 import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
 import com.loyalstring.rfid.data.remote.data.ProductDeleteResponse
-import com.loyalstring.rfid.data.model.stockTransfer.StockTransferResponse
-import com.loyalstring.rfid.data.remote.data.DailyRateResponse
-import com.loyalstring.rfid.data.remote.data.EditDataRequest
 import com.loyalstring.rfid.data.remote.data.StockTransferRequest
 import com.loyalstring.rfid.data.remote.response.AlllabelResponse
 import okhttp3.MultipartBody
@@ -204,6 +206,13 @@ interface RetrofitInterface {
 
     @POST("/api/ClientOnboarding/GetClientLocations")
     suspend fun getLocation(@Body request: LocationGetRequest): Response<List<LocationItem>>
+
+
+    /*getAllUserPermission to get Accessible branches*/
+    @POST("/api/RoleManagement/GetAllUserPermissions-Optimized")
+    suspend fun getUserBranches(
+        @Body request: UserPermissionRequest
+    ): Response<UserPermissionResponse>
 
 
 

@@ -168,7 +168,11 @@ fun OrderScreen(
         remember { UserPreferences.getInstance(context).getEmployee(Employee::class.java) }
 
     val bulkViewModel: BulkViewModel = hiltViewModel()
-    var selectedPower by remember { mutableStateOf(30) }
+    var selectedPower by remember {
+        mutableStateOf(
+            UserPreferences.getInstance(context).getInt(KEY_ORDER_COUNT, 30)
+        )
+    }
     var selectedCustomer by remember { mutableStateOf<EmployeeList?>(null) }
     //val itemCodeList by orderViewModel.itemCodeResponse.collectAsState()
     val customerSuggestions by orderViewModel.empListFlow.collectAsState(UiState.Loading)
@@ -784,6 +788,7 @@ fun OrderScreenContent(
     }
 
 
+    // var searchQuery by remember { mutableStateOf("") }
     var filteredBulkList by remember { mutableStateOf<List<BulkItem>>(emptyList()) }
     var isFiltering by remember { mutableStateOf(false) }
 

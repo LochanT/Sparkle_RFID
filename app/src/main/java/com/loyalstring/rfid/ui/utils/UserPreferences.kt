@@ -29,7 +29,7 @@ class UserPreferences @Inject constructor(
         const val KEY_PRODUCT_COUNT = "product_count"
         const val KEY_INVENTORY_COUNT = "inventory_count"
         const val KEY_SEARCH_COUNT = "search_count"
-        const val KEY_TRANSACTION_COUNT = "orders_count"
+        const val KEY_ORDER_COUNT = "orders_count"
         const val KEY_STOCK_TRANSFER_COUNT = "stock_transfer_count"
         const val KEY_AUTOSYNC_ENABLED = "autosync_enabled"
         const val KEY_AUTOSYNC_INTERVAL_MIN = "autosync_interval_min"
