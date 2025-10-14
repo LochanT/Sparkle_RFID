@@ -25,6 +25,11 @@ import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
+import com.loyalstring.rfid.data.model.setting.LocationGetRequest
+import com.loyalstring.rfid.data.model.setting.LocationGetResponse
+import com.loyalstring.rfid.data.model.setting.LocationItem
+import com.loyalstring.rfid.data.model.setting.LocationSyncRequest
+import com.loyalstring.rfid.data.model.setting.LocationSyncResponse
 import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesReq
 import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesResponse
 import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
@@ -192,6 +197,13 @@ interface RetrofitInterface {
     /*update Daily rates*/
     @POST("/api/ProductMaster/UpdateDailyRates")
     suspend fun updateDailyRate(@Body request: List<UpdateDailyRatesReq>): Response<List<UpdateDailyRatesResponse>>
+
+    /*update Daily rates*/
+    @POST("/api/ClientOnboarding/AddClientLocation")
+    suspend fun addLocation(@Body request: LocationSyncRequest): Response<LocationSyncResponse>
+
+    @POST("/api/ClientOnboarding/GetClientLocations")
+    suspend fun getLocation(@Body request: LocationGetRequest): Response<List<LocationItem>>
 
 
 

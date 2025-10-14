@@ -1,11 +1,13 @@
 package com.loyalstring.rfid.viewmodel
 
+import android.app.Application
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.edit
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.loyalstring.rfid.data.model.ClientCodeRequest
@@ -17,8 +19,14 @@ import com.loyalstring.rfid.repository.SettingRepository
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.loyalstring.rfid.data.local.db.AppDatabase
+import com.loyalstring.rfid.data.model.setting.LocationGetRequest
+import com.loyalstring.rfid.data.model.setting.LocationGetResponse
+import com.loyalstring.rfid.data.model.setting.LocationItem
+import com.loyalstring.rfid.data.model.setting.LocationSyncResponse
+import com.loyalstring.rfid.repository.SettingRepositoryImpl
 import com.loyalstring.rfid.ui.utils.ToastUtils
 import com.loyalstring.rfid.ui.utils.UserPreferences
+import dagger.hilt.android.internal.Contexts.getApplication
 import dagger.hilt.android.lifecycle.HiltViewModel
 
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,8 +36,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Response
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.bouncycastle.oer.its.EndEntityType.app
 import javax.inject.Inject
 
 // ✅ Use sealed class + rename Error -> Failure to avoid KAPT stub error
@@ -41,10 +51,11 @@ sealed class UiState1<out T> {
 }
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    application: Application,
     private val userPreferences: UserPreferences,
     private val orderRepository: OrderRepository,
-    private val settingRepository: SettingRepository
-) : ViewModel() {
+    private val settingRepository: SettingRepositoryImpl
+) : AndroidViewModel(application) {
 
     companion object {
         private const val TAG = "SettingsViewModel"
@@ -60,6 +71,14 @@ class SettingsViewModel @Inject constructor(
 
     var sheetUrl by mutableStateOf(userPreferences.getSheetUrl().orEmpty())
         private set
+
+    private val _locationResponse = MutableStateFlow<List<LocationItem>>(emptyList())
+    val locationResponse: StateFlow<List<LocationItem>> = _locationResponse
+    private val _locationError = MutableStateFlow<String?>(null)
+    val locationError: StateFlow<String?> = _locationError
+
+    private val _localLocations = MutableStateFlow<List<LocationItem>>(emptyList())
+    val localLocations: StateFlow<List<LocationItem>> = _localLocations
 
     fun updateSheetUrl(newUrl: String) {
         sheetUrl = newUrl
@@ -78,7 +97,8 @@ class SettingsViewModel @Inject constructor(
                     Log.d(TAG, "DailyRate loaded: ${_getAllDailyRate.value.size} rows")
                 } else {
                     _getAllDailyRate.value = emptyList()
-                    val err = withContext(Dispatchers.IO) { response.errorBody()?.string() }.orEmpty()
+                    val err =
+                        withContext(Dispatchers.IO) { response.errorBody()?.string() }.orEmpty()
                     Log.e(TAG, "DailyRate error ${response.code()}: $err")
                 }
             } catch (e: Exception) {
@@ -147,5 +167,39 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun fetchLocation(locationRequest: LocationGetRequest) {
+        viewModelScope.launch {
+            try {
+                delay(1000)
+                val response = settingRepository.getLocation(locationRequest)
+                if (response.isSuccessful) {
+                    // Flatten and remove nulls
+                    _locationResponse.value = response.body().orEmpty()
+                    _locationError.value = null
+                    Log.d("@@","@@"+ _locationResponse.value)
+                } else {
+                    _locationError.value =
+                        "Error ${response.code()}: ${response.errorBody()?.string().orEmpty()}"
+                    _locationResponse.value = emptyList()
+                }
+            } catch (e: Exception) {
+                _locationError.value = e.message
+                _locationResponse.value = emptyList()
+            }
+        }
+    }
+
+    fun fetchLocationsFromDb() {
+        viewModelScope.launch {
+            val db = AppDatabase.getDatabase(getApplication()) // make sure ViewModel has Application context if needed
+            val list = db.locationDao().getAll() // DAO function to get all locations
+            _localLocations.value = list
+        }
+    }
+
 
 }
+
+
+
+

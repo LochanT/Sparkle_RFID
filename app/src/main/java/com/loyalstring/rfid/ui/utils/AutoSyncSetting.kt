@@ -30,6 +30,7 @@ import com.loyalstring.rfid.worker.schedulePeriodicSync
 @Composable
 fun AutoSyncSetting(userPref: UserPreferences) {
     val context = LocalContext.current
+    val SYNC_DATA_WORKER = "sync_data_worker"
 
     var enabled by remember {
         mutableStateOf(
@@ -74,9 +75,9 @@ fun AutoSyncSetting(userPref: UserPreferences) {
                     userPref.saveBoolean(UserPreferences.KEY_AUTOSYNC_ENABLED, newValue)
 
                     if (enabled) {
-                        schedulePeriodicSync(context, interval.toLong())
+                        schedulePeriodicSync(context,SYNC_DATA_WORKER, interval.toLong())
                     } else {
-                        cancelPeriodicSync(context)
+                        cancelPeriodicSync(context,SYNC_DATA_WORKER)
                         //cancelAlarmSync(context)
                     }
 
@@ -129,9 +130,9 @@ fun AutoSyncSetting(userPref: UserPreferences) {
                                     expanded = false
                                     // Re-schedule immediately with new interval
                                     if (enabled) {
-                                        schedulePeriodicSync(context, interval.toLong())
+                                        schedulePeriodicSync(context, SYNC_DATA_WORKER,interval.toLong())
                                     } else {
-                                        cancelPeriodicSync(context)
+                                        cancelPeriodicSync(context,SYNC_DATA_WORKER)
                                     }
                                 }
                             )

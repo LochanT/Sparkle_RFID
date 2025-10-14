@@ -17,6 +17,7 @@ import com.loyalstring.rfid.ui.screens.HomeScreen
 import com.loyalstring.rfid.ui.screens.ImportExcelScreen
 import com.loyalstring.rfid.ui.screens.InventoryMenuScreen
 import com.loyalstring.rfid.ui.screens.InvoiceScreen
+import com.loyalstring.rfid.ui.screens.LocationListScreen
 import com.loyalstring.rfid.ui.screens.LoginScreen
 import com.loyalstring.rfid.ui.screens.OrderLisrScreen
 import com.loyalstring.rfid.ui.screens.OrderScreen
@@ -177,6 +178,13 @@ fun AppNavigation(
 
         composable(Screens.DailyRatesEditorScreen.route) {
             DailyRatesEditorScreen(
+                navController = navController
+            )
+        }
+
+        composable(Screens.LocationListScreen.route) {
+            LocationListScreen(
+                onBack = { navController.popBackStack() },
                 navController = navController
             )
         }

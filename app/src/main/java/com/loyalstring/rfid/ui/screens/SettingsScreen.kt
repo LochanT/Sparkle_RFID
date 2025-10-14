@@ -80,16 +80,29 @@ import kotlinx.coroutines.delay
 import java.io.File
 
 import android.Manifest
+import android.annotation.SuppressLint
 
 import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.loyalstring.rfid.worker.EmailSender
+import com.loyalstring.rfid.worker.SyncDataWorker
+import com.loyalstring.rfid.worker.cancelPeriodicSync
+import com.loyalstring.rfid.worker.schedulePeriodicSync
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Locale
+import com.google.android.gms.location.LocationServices
+import java.util.concurrent.TimeUnit
 
 
 // ---------------- MENU ITEM TYPES ----------------
@@ -105,7 +118,11 @@ data class SettingsMenuItem(
     val type: SettingType,
     val defaultValue: Int? = null,
     val subtitle: String? = null,
-    val onClick: (() -> Unit)? = null
+    val onClick: (() -> Unit)? = null,
+    val hasToggle: Boolean = false,              // ✅ new
+    val isToggled: Boolean = false,              // ✅ new
+    val onToggleChange: ((Boolean) -> Unit)? = null, // ✅ new
+
 )
 
 // ---------------- SETTINGS SCREEN ----------------
@@ -124,6 +141,8 @@ fun SettingsScreen(
     var showRatesEditor by remember { mutableStateOf(false) }
 
 
+     val LOCATION_SYNC_DATA_WORKER = "loaction_sync_data_worker"
+
 
     val updateState = viewModel.updateDailyRatesState.collectAsState()
 
@@ -136,10 +155,10 @@ fun SettingsScreen(
     var showPasswordDialog by remember { mutableStateOf(false) }
     val context: Context = LocalContext.current
 
-
-    var showEmailDialog by remember { mutableStateOf(false) }
-    var inputEmail by remember { mutableStateOf("") }
-    var savedEmail by remember { mutableStateOf<String?>(null) }
+    var locationAutoSyncEnabled by remember {
+        mutableStateOf(userPreferences.isAutoSyncEnabled() ?: true)
+    }
+    var showLocationList by remember { mutableStateOf(false) }
 
     LaunchedEffect(updateState.value) {
         when (val s = updateState.value) {
@@ -173,6 +192,39 @@ fun SettingsScreen(
 
     Log.d("EMPLOYEE", employee.toString())
     employee?.empEmail?.let { Log.d("EMAIL ", it) }
+
+    if (locationAutoSyncEnabled) {
+        getCurrentLocation(context) { latitude, longitude, address ->
+            val locationData = Data.Builder()
+                .putString("task_type", SyncDataWorker.LOCATION_SYNC_DATA_WORKER)
+                .putString("latitude", latitude)
+                .putString("longitude", longitude)
+                .putString("address", address)
+                .build()
+
+          /*  schedulePeriodicSync(
+                context,
+                SyncDataWorker.LOCATION_SYNC_DATA_WORKER,
+                2,
+                locationData
+            )*/
+
+            val request = OneTimeWorkRequestBuilder<SyncDataWorker>()
+                .setInputData(locationData)
+                .setInitialDelay(1, TimeUnit.MINUTES) // repeat every 1 minute
+                .addTag(SyncDataWorker.LOCATION_SYNC_DATA_WORKER)
+                .build()
+
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(
+                    SyncDataWorker.LOCATION_SYNC_DATA_WORKER,
+                    ExistingWorkPolicy.REPLACE,
+                    request
+                )
+        }
+    } else {
+        cancelPeriodicSync(context,LOCATION_SYNC_DATA_WORKER)
+    }
 
     val menuItems = listOf(
         // Counters (first 5)
@@ -312,6 +364,20 @@ fun SettingsScreen(
             Icons.Default.Settings,
             SettingType.Action,
             subtitle = "Clear data"
+        ),
+        SettingsMenuItem(
+            key = "Location",
+            title = "Location",
+            icon = Icons.Default.Settings,
+            type = SettingType.Action,
+            hasToggle = true,
+            isToggled = locationAutoSyncEnabled,
+            onToggleChange = { newValue ->
+                locationAutoSyncEnabled = newValue
+                userPreferences.setAutoSyncEnabled(newValue)
+                ToastUtils.showToast(context, if (newValue) "Auto Sync Enabled" else "Auto Sync Disabled")
+            },
+            onClick = {  navController.navigate(Screens.LocationListScreen.route) }
         )
     )
 
@@ -468,6 +534,56 @@ fun SettingsScreen(
         )
     }
 }
+
+@SuppressLint("MissingPermission")
+fun getCurrentLocation(activity: Context, onLocationFetched: (String, String, String) -> Unit) {
+    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(activity)
+
+    if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) !=
+        PackageManager.PERMISSION_GRANTED &&
+        ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) !=
+        PackageManager.PERMISSION_GRANTED
+    ) {
+        // Request permissions directly
+        ActivityCompat.requestPermissions(
+            activity as Activity,
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ),
+            100
+        )
+        return
+    }
+
+    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+        if (location != null) {
+            val latitude = location.latitude.toString()
+            val longitude = location.longitude.toString()
+
+            val geocoder = Geocoder(activity, Locale.getDefault())
+            val addressInfo = geocoder.getFromLocation(location.latitude, location.longitude, 1)?.firstOrNull()
+
+            val area = addressInfo?.subLocality ?: ""      // Area or neighborhood
+            val city = addressInfo?.locality
+                ?: addressInfo?.subAdminArea          // fallback (district/taluka level)
+                ?: addressInfo?.featureName           // sometimes contains village or town name
+                ?: ""        // City or town
+            val state = addressInfo?.adminArea ?: ""       // State
+            val pinCode = addressInfo?.postalCode ?: ""    // Pincode
+
+// Combine only non-empty parts
+            val address = listOf(area, city, state, pinCode)
+                .filter { it.isNotEmpty() }
+                .joinToString(", ")
+
+            onLocationFetched(latitude, longitude, address)
+        } else {
+            Toast.makeText(activity, "Failed to get location", Toast.LENGTH_SHORT).show()
+        }
+    }
+}
+
 @Composable
 fun BackupDialogExample(
     onDismiss: () -> Unit,
@@ -929,7 +1045,15 @@ fun MenuItemRow(
                 }
 
                 is SettingType.Action -> {
-                    Text(item.subtitle ?: "", color = Color.Gray, fontSize = 13.sp)
+                    // ✅ If hasToggle is true → show switch instead of subtitle
+                    if (item.hasToggle) {
+                        Switch(
+                            checked = item.isToggled,
+                            onCheckedChange = { newValue -> item.onToggleChange?.invoke(newValue) }
+                        )
+                    } else {
+                        Text(item.subtitle ?: "", color = Color.Gray, fontSize = 13.sp)
+                    }
                 }
             }
         }

@@ -18,8 +18,8 @@ android {
         applicationId = "com.loyalstring.rfid"
         minSdk = 26
         targetSdk = 35
-        versionCode = 27
-        versionName = "1.27"
+        versionCode = 28
+        versionName = "1.28"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -135,6 +135,7 @@ dependencies {
     implementation("com.sun.mail:android-mail:1.6.7")
     implementation("com.sun.mail:android-activation:1.6.7")
 
+    implementation ("com.google.android.gms:play-services-location:21.3.0")
 // WorkManager (periodic background tasks)
 
     implementation(libs.androidx.work.runtime.ktx)

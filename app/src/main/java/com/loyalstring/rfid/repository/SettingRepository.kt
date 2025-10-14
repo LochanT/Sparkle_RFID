@@ -1,29 +1,21 @@
 package com.loyalstring.rfid.repository
 
-import android.util.Log
-import androidx.lifecycle.viewModelScope
-import com.example.sparklepos.models.loginclasses.customerBill.AddEmployeeRequest
-import com.example.sparklepos.models.loginclasses.customerBill.EmployeeResponse
-import com.loyalstring.rfid.data.local.dao.OrderItemDao
-import com.loyalstring.rfid.data.model.ClientCodeRequest
-import com.loyalstring.rfid.data.model.order.CustomOrderRequest
-import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
+import com.loyalstring.rfid.data.model.setting.LocationGetRequest
+import com.loyalstring.rfid.data.model.setting.LocationGetResponse
+import com.loyalstring.rfid.data.model.setting.LocationItem
+import com.loyalstring.rfid.data.model.setting.LocationSyncRequest
+import com.loyalstring.rfid.data.model.setting.LocationSyncResponse
 import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesReq
 import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesResponse
-import com.loyalstring.rfid.data.remote.api.RetrofitInterface
-import kotlinx.coroutines.launch
 import retrofit2.Response
 
+/**
+ * Defines the contract for Settings-related API operations.
+ */
+interface SettingRepository {
 
-import javax.inject.Inject
-
-class SettingRepository @Inject constructor(
-    private val apiService: RetrofitInterface,
-
-) {
-    /*update order*/
-    suspend fun updateDailyRates(updateDailyRatesReq: List<UpdateDailyRatesReq>): Response<List<UpdateDailyRatesResponse>> {
-        return apiService.updateDailyRate(updateDailyRatesReq)
-    }
+    suspend fun updateDailyRates(updateDailyRatesReq: List<UpdateDailyRatesReq>): Response<List<UpdateDailyRatesResponse>>
+    suspend fun addLocation(locationSyncRequest: LocationSyncRequest): Response<LocationSyncResponse>
+    suspend fun getLocation(locationGetRequest: LocationGetRequest): Response<List<LocationItem>>
 
 }

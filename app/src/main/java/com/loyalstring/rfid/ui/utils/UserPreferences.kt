@@ -34,7 +34,10 @@ class UserPreferences @Inject constructor(
         const val KEY_AUTOSYNC_ENABLED = "autosync_enabled"
         const val KEY_AUTOSYNC_INTERVAL_MIN = "autosync_interval_min"
         const val KEY_CUSTOM_API_URL="custom_api_url"
-        private  val KEY_BACKUP_EMAIL = "backup_email"
+        const  val KEY_BACKUP_EMAIL = "backup_email"
+        const  val KEY_LOCATION_SYNC = "location_sync"
+        const val KEY_USER_ID="user_id"
+        const val KEY_BRANCH_ID="branch_id"
 
         private val gson = Gson()
 
@@ -82,18 +85,23 @@ class UserPreferences @Inject constructor(
     }
 
     // ---------------- LOGIN / LOGOUT ----------------
-    fun saveLoginCredentials(username: String, password: String, rememberMe: Boolean,rfidtype:String) {
+    fun saveLoginCredentials(username: String, password: String, rememberMe: Boolean,rfidtype:String, userId: Int, branchId: Int) {
         prefs.edit().apply {
             putBoolean(KEY_REMEMBER_ME, rememberMe)
             if (rememberMe) {
                 putString(KEY_USERNAME, username)
                 putString(KEY_PASSWORD, password)
                 putString(KEY_RFIDTYPE,rfidtype)
+                putInt(KEY_USER_ID,userId)
+                putInt(KEY_BRANCH_ID,branchId)
 
             } else {
                 remove(KEY_USERNAME)
                 remove(KEY_PASSWORD)
                 remove(KEY_RFIDTYPE)
+                remove(KEY_USER_ID)
+                remove(KEY_BRANCH_ID)
+
             }
             apply()
         }
@@ -173,6 +181,16 @@ class UserPreferences @Inject constructor(
 
     fun getBackupEmail(): String? {
         return prefs.getString(KEY_BACKUP_EMAIL, "")
+    }
+
+    fun isAutoSyncEnabled(): Boolean? {
+        return if (prefs.contains(KEY_LOCATION_SYNC)) {
+            prefs.getBoolean(KEY_LOCATION_SYNC, true)
+        } else null
+    }
+
+    fun setAutoSyncEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_LOCATION_SYNC, enabled).apply()
     }
 }
 

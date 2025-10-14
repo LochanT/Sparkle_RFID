@@ -100,7 +100,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltVi
                 userPrefs.saveClient(response.employee?.clients!!)
                 response.employee.empEmail?.let { scanDisplayViewModel.saveEmail(it) }
 
-                userPrefs.saveLoginCredentials(username, password, rememberMe,response.employee.clients.rfidType.toString())
+                userPrefs.saveLoginCredentials(username, password, rememberMe,response.employee.clients.rfidType.toString(),response.employee.id,response.employee.defaultBranchId)
 
                 launch {
                     bulkviewmodel.syncRFIDDataIfNeeded(context)
@@ -202,7 +202,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = hiltVi
                         }
 
                         viewModel.login(LoginRequest(username, password), rememberMe)
-                        userPrefs.saveLoginCredentials(username, password, rememberMe,"")
+                        userPrefs.saveLoginCredentials(username, password, rememberMe,"",0,0)
 
                     },
                 contentAlignment = Alignment.Center
