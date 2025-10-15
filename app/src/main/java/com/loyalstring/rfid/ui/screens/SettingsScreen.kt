@@ -81,6 +81,7 @@ import java.io.File
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 
 import android.content.pm.PackageManager
 import android.location.Geocoder
@@ -564,31 +565,37 @@ fun getCurrentLocation(activity: Context, onLocationFetched: (String, String, St
     }
 
     fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-        if (location != null) {
-            val latitude = location.latitude.toString()
-            val longitude = location.longitude.toString()
+        try {
+            if (location != null) {
+                val latitude = location.latitude.toString()
+                val longitude = location.longitude.toString()
 
-            val geocoder = Geocoder(activity, Locale.getDefault())
-            val addressInfo = geocoder.getFromLocation(location.latitude, location.longitude, 1)?.firstOrNull()
+                val geocoder = Geocoder(activity, Locale.getDefault())
+                val addressInfo = geocoder.getFromLocation(location.latitude, location.longitude, 1)?.firstOrNull()
 
-            val area = addressInfo?.subLocality ?: ""      // Area or neighborhood
-            val city = addressInfo?.locality
-                ?: addressInfo?.subAdminArea          // fallback (district/taluka level)
-                ?: addressInfo?.featureName           // sometimes contains village or town name
-                ?: ""        // City or town
-            val state = addressInfo?.adminArea ?: ""       // State
-            val pinCode = addressInfo?.postalCode ?: ""    // Pincode
+                val area = addressInfo?.subLocality ?: "" // Area or neighborhood
+                val city = addressInfo?.locality
+                    ?: addressInfo?.subAdminArea           // fallback (district/taluka level)
+                    ?: addressInfo?.featureName            // sometimes contains village or town name
+                    ?: ""
+                val state = addressInfo?.adminArea ?: ""   // State
+                val pinCode = addressInfo?.postalCode ?: "" // Pincode
 
-// Combine only non-empty parts
-            val address = listOf(area, city, state, pinCode)
-                .filter { it.isNotEmpty() }
-                .joinToString(", ")
+                // Combine only non-empty parts
+                val address = listOf(area, city, state, pinCode)
+                    .filter { it.isNotEmpty() }
+                    .joinToString(", ")
 
-            onLocationFetched(latitude, longitude, address)
-        } else {
-            Toast.makeText(activity, "Failed to get location", Toast.LENGTH_SHORT).show()
+                onLocationFetched(latitude, longitude, address)
+            } else {
+                Toast.makeText(activity, "Failed to get location", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(activity, "⚠️ Error while fetching address: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
+
 }
 
 @Composable
@@ -821,36 +828,36 @@ fun BackupDialogExample(
         ToastUtils.showToast(context, "❌ Restore failed: ${e.message}")
     }
 }*/
-
 fun restoreBackupFromCsv(context: Context, backupFile: File) {
-    try {
-        val dbFile = context.getDatabasePath("app_db")
 
-        // Step 1: Close the existing Room instance if open
         try {
-            AppDatabase.closeInstance() // custom helper below
-        } catch (_: Exception) {
+            val dbFile = context.getDatabasePath("app_db")
+            AppDatabase.closeInstance()
+
+            File(dbFile.absolutePath + "-shm").delete()
+            File(dbFile.absolutePath + "-wal").delete()
+            dbFile.delete()
+
+            backupFile.copyTo(dbFile, overwrite = true)
+
+            ToastUtils.showToast(context, "✅ Database restored successfully!")
+
+            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+            context.startActivity(mainIntent)
+            Runtime.getRuntime().exit(0)
+        } catch (e: Exception) {
+            Log.e("DB_RESTORE", "Restore failed", e)
+            ToastUtils.showToast(context, "❌ Restore failed: ${e.message}")
         }
-
-        // Step 2: Ensure backup file exists
-        if (!backupFile.exists()) {
-            ToastUtils.showToast(context, "⚠️ Backup file not found.")
-            return
-        }
-
-        // Step 3: Replace database file
-        dbFile.delete()
-        backupFile.copyTo(dbFile, overwrite = true)
-
-        // Step 4: Reopen Room DB to refresh connection
-        AppDatabase.getDatabase(context)
-
-        ToastUtils.showToast(context, "✅ Database restored successfully! Please restart the app.")
-
-    } catch (e: Exception) {
-        ToastUtils.showToast(context, "❌ Restore failed: ${e.message}")
     }
-}
+
+
+
+
+
+
+
 
 
 
