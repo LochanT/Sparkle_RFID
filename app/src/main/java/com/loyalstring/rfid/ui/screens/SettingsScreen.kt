@@ -618,11 +618,11 @@ fun BackupDialogExample(
         uri?.let {
             try {
                 val inputStream = context.contentResolver.openInputStream(uri)
-                val tempFile = File(context.cacheDir, "restore_temp.csv")
+                val tempFile = File(context.cacheDir, "restore_temp.db")
                 inputStream?.use { input ->
                     tempFile.outputStream().use { output -> input.copyTo(output) }
                 }
-                restoreBackupFromCsv(context, tempFile)
+                restoreBackupFromDb(context, tempFile)
             } catch (e: Exception) {
                 ToastUtils.showToast(context, "❌ Restore failed: ${e.message}")
             }
@@ -642,36 +642,47 @@ fun BackupDialogExample(
     ) {
         scope.launch(Dispatchers.IO) {
             try {
+                // 1️⃣ Prepare export directory
                 val exportDir = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
                     "DatabaseBackup"
                 )
                 if (!exportDir.exists()) exportDir.mkdirs()
 
-                val file = File(exportDir, "Backup_All.csv")
+                // 2️⃣ Export CSV
+                val csvFile = File(exportDir, "Backup_All.csv")
                 val dbFile = context.getDatabasePath("app_db")
                 val db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
                 BackupUtils.exportRoomDatabaseToCsv(context, db)
                 db.close()
-                delay(1500)
 
-                if (!file.exists() || file.length() == 0L) {
+                // 3️⃣ Prepare DB file (copy original DB to export folder)
+                val dbBackupFile = File(exportDir, "app_db_backup.db")
+                dbFile.copyTo(dbBackupFile, overwrite = true)
+
+                // 4️⃣ Check files exist
+                if ((!csvFile.exists() || csvFile.length() == 0L) && !dbBackupFile.exists()) {
                     withContext(Dispatchers.Main) {
-                        ToastUtils.showToast(context, "⚠️ Backup file not found or empty.")
+                        ToastUtils.showToast(context, "⚠️ Backup files not found or empty.")
                     }
                     return@launch
                 }
 
+                // 5️⃣ Send email with both attachments
                 EmailSender.sendEmailWithAttachment(
                     toEmails = listOf(recipientEmail),
                     subject = "SparkleERP Backup",
-                    body = "Here’s your latest backup file.",
-                    attachments = mapOf("Backup_All.csv" to file)
+                    body = "Here’s your latest backup files (CSV + Database).",
+                    attachments = mapOf(
+                        "Backup_All.csv" to csvFile,
+                        "app_db_backup.db" to dbBackupFile
+                    )
                 )
 
                 withContext(Dispatchers.Main) {
                     ToastUtils.showToast(context, "✅ Backup email sent successfully to $recipientEmail")
                 }
+
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     ToastUtils.showToast(context, "❌ Failed: ${e.message}")
@@ -681,6 +692,7 @@ fun BackupDialogExample(
             }
         }
     }
+
 
     // ----------------------------------------
     // ✅ UI
@@ -697,16 +709,19 @@ fun BackupDialogExample(
                         scope.launch {
                             try {
                                 val dbFile = context.getDatabasePath("app_db")
-                                val db = SQLiteDatabase.openDatabase(
-                                    dbFile.absolutePath,
-                                    null,
-                                    SQLiteDatabase.OPEN_READONLY
+
+                                // Create /backup directory inside app-specific external files
+                                val backupDir = File(context.getExternalFilesDir(null), "backup")
+                                if (!backupDir.exists()) backupDir.mkdirs()
+
+                                // Copy the Room .db file to backup folder
+                                val backupFile = File(backupDir, "app_db_backup.db")
+                                dbFile.copyTo(backupFile, overwrite = true)
+
+                                ToastUtils.showToast(
+                                    context,
+                                    "✅ Database backup saved at:\n${backupFile.absolutePath}"
                                 )
-
-                                BackupUtils.exportRoomDatabaseToCsv(context, db)
-                                db.close()
-
-                                ToastUtils.showToast(context, "✅ Backup saved locally.")
                             } catch (e: Exception) {
                                 ToastUtils.showToast(context, "❌ Backup failed: ${e.message}")
                             } finally {
@@ -715,6 +730,8 @@ fun BackupDialogExample(
                         }
                     }
                 ) { Text("📂 Save to Device") }
+
+
 
                 // 📧 Send via Email
                 TextButton(onClick = {
@@ -734,7 +751,7 @@ fun BackupDialogExample(
 
                 // 🔄 Restore Backup
                 TextButton(onClick = {
-                    restoreFileLauncher.launch("text/*")
+                    restoreFileLauncher.launch("*/*")
                 }) {
                     Text("🔄 Restore Backup")
                 }
@@ -828,29 +845,39 @@ fun BackupDialogExample(
         ToastUtils.showToast(context, "❌ Restore failed: ${e.message}")
     }
 }*/
-fun restoreBackupFromCsv(context: Context, backupFile: File) {
+fun restoreBackupFromDb(context: Context, backupFile: File) {
 
-        try {
-            val dbFile = context.getDatabasePath("app_db")
-            AppDatabase.closeInstance()
-
-            File(dbFile.absolutePath + "-shm").delete()
-            File(dbFile.absolutePath + "-wal").delete()
-            dbFile.delete()
-
-            backupFile.copyTo(dbFile, overwrite = true)
-
-            ToastUtils.showToast(context, "✅ Database restored successfully!")
-
-            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-            val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-            context.startActivity(mainIntent)
-            Runtime.getRuntime().exit(0)
-        } catch (e: Exception) {
-            Log.e("DB_RESTORE", "Restore failed", e)
-            ToastUtils.showToast(context, "❌ Restore failed: ${e.message}")
+    try {
+        if (!backupFile.exists()) {
+            ToastUtils.showToast(context, "❌ Backup file not found!")
+            return
         }
+
+        val dbFile = context.getDatabasePath("app_db")
+        AppDatabase.closeInstance()
+
+        // Remove old DB + WAL/SHM files
+        File(dbFile.absolutePath + "-shm").delete()
+        File(dbFile.absolutePath + "-wal").delete()
+        dbFile.delete()
+
+        // Copy backup into place
+        backupFile.copyTo(dbFile, overwrite = true)
+
+        ToastUtils.showToast(context, "✅ Database restored successfully!")
+
+        // Restart app to reload DB
+        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+        val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+        context.startActivity(mainIntent)
+        Runtime.getRuntime().exit(0)
+
+    } catch (e: Exception) {
+        Log.e("DB_RESTORE", "Restore failed", e)
+        ToastUtils.showToast(context, "❌ Restore failed: ${e.message}")
     }
+}
+    
 
 
 
