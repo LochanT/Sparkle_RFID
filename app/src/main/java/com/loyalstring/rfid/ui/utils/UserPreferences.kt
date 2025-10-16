@@ -121,6 +121,7 @@ class UserPreferences @Inject constructor(
             .remove(KEY_USERNAME)
             .remove(KEY_PASSWORD)
             .remove(KEY_REMEMBER_ME)
+            .remove(KEY_CUSTOM_API_URL)
             .apply()
     }
 
