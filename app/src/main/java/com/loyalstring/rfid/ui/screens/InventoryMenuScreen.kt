@@ -76,7 +76,7 @@ fun InventoryMenuScreen(
     val bulkViewModel: BulkViewModel = hiltViewModel()
     val scope = rememberCoroutineScope()
     var shouldNavigateBack by remember { mutableStateOf(false) }
-    
+
     // Handle back navigation with delay to allow ripple animation to complete
     LaunchedEffect(shouldNavigateBack) {
         if (shouldNavigateBack) {
@@ -84,12 +84,12 @@ fun InventoryMenuScreen(
             onBack()
         }
     }
-    
+
     // Lazy load filters only when needed
     LaunchedEffect(Unit) {
         bulkViewModel.ensureFiltersLoaded()
     }
-    
+
     // Use remember to avoid recreating on recomposition
     val counters by remember { bulkViewModel.counters }.collectAsState()
     val branches by remember { bulkViewModel.branches }.collectAsState()
@@ -158,7 +158,7 @@ fun InventoryMenuScreen(
                         "Scan Counter" -> {
                             // 🔥 Load data in background, then open dialog
                             //CoroutineScope(Dispatchers.IO).launch {
-                                scope.launch(Dispatchers.IO) {
+                            scope.launch(Dispatchers.IO) {
                                 withContext(Dispatchers.Main) {
                                     if (counters.isEmpty()) {
                                         ToastUtils.showToast(
@@ -185,7 +185,7 @@ fun InventoryMenuScreen(
 
                         "Scan Branch" -> {
                             //CoroutineScope(Dispatchers.IO).launch {
-                                scope.launch(Dispatchers.IO) {
+                            scope.launch(Dispatchers.IO) {
                                 withContext(Dispatchers.Main) {
                                     if (branches.isEmpty()) {
                                         ToastUtils.showToast(

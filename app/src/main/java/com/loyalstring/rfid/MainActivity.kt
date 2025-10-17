@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
@@ -101,10 +103,10 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject
     lateinit var userPreferences: UserPreferences
-    //private val viewModel: BulkViewModel by viewModels()
-    //lateinit var networkMonitor: NetworkMonitor
+    private val viewModel: BulkViewModel by viewModels()
+    lateinit var networkMonitor: NetworkMonitor
 
-    // Removed: defer ViewModel creation to destination screens to speed up first frame
+    val orderViewModel: OrderViewModel by viewModels()
     private var scanKeyListener: ScanKeyListener? = null
 
 
@@ -213,232 +215,240 @@ private fun SetupNavigation(
         }
     }
 
-    var drawerReady by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        withFrameNanos { _ -> }
-        drawerReady = true
-    }
-
-    val navigationBody: @Composable () -> Unit = {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            AppNavigation(navController, drawerState, scope, userPreferences, startDestination)
+        var drawerReady by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            withFrameNanos { _ -> }
+            drawerReady = true
         }
-    }
 
-    if (!drawerReady) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            navigationBody()
+        val navigationBody: @Composable () -> Unit = {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                AppNavigation(navController, drawerState, scope, userPreferences, startDestination)
+            }
         }
-    } else {
-        ModalNavigationDrawer(
-            drawerContent = {
-                ModalDrawerSheet(
-                    modifier = Modifier.background(Color.White),
-                    drawerContainerColor = Color.White,
-                    drawerShape = RectangleShape
-                ) {
-                    Column {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.8f)
-                                .background(BackgroundGradient)
-                        ) {
-                            Row(
+
+        if (!drawerReady) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                navigationBody()
+            }
+        } else {
+            ModalNavigationDrawer(
+                drawerContent = {
+                    ModalDrawerSheet(
+                        modifier = Modifier.background(Color.White),
+                        drawerContainerColor = Color.White,
+                        drawerShape = RectangleShape
+                    ) {
+                        Column {
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .fillMaxWidth(0.8f)
+                                    .background(BackgroundGradient)
                             ) {
-                                Image(
-                                    painter = painterResource(R.drawable.ic_user),
-                                    contentDescription = "Default User",
+                                Row(
                                     modifier = Modifier
-                                        .size(50.dp)
-                                        .padding(8.dp)
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    text = employeeState.value?.username.orEmpty(),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontWeight = FontWeight.Normal,
-                                        color = Color.White
-                                    ),
-                                    fontFamily = poppins
-                                )
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_user),
+                                        contentDescription = "Default User",
+                                        modifier = Modifier
+                                            .size(50.dp)
+                                            .padding(8.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Text(
+                                        text = employeeState.value?.username.orEmpty(),
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontWeight = FontWeight.Normal,
+                                            color = Color.White
+                                        ),
+                                        fontFamily = poppins
+                                    )
+                                }
                             }
-                        }
 
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                        ) {
-                            itemsIndexed(
-                                items = listOfNavItems,
-                                key = { index, item -> item.route + index }
-                            ) { index, navigationItem ->
-                                NavigationDrawerItem(
-                                    modifier = Modifier
-                                        .fillMaxWidth(0.7f),
-                                    label = {
-                                        Text(
-                                            text = navigationItem.title,
-                                            fontSize = 16.sp,
-                                            fontFamily = poppins,
-                                            color = Color.DarkGray,
-                                        )
-                                    },
-                                    selected = index == selectedItemIndex,
-                                    onClick = {
-                                        selectedItemIndex = index
-                                        if (selectedItemIndex >= 4) {
-                                            when (navigationItem.route) {
-                                                "login" -> {
-                                                    userPreferences.logout()
-                                                    navController.navigate("login") {
-                                                        popUpTo(0) { inclusive = true }
-                                                        launchSingleTop = true
-                                                    }
-                                                    scope.launch { drawerState.close() }
-                                                    navController.navigate("login") {
-                                                        popUpTo(navController.graph.startDestinationId) {
-                                                            inclusive = true
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                            ) {
+                                itemsIndexed(
+                                    items = listOfNavItems,
+                                    key = { index, item -> item.route + index }
+                                ) { index, navigationItem ->
+                                    NavigationDrawerItem(
+                                        modifier = Modifier
+                                            .fillMaxWidth(0.7f),
+                                        label = {
+                                            Text(
+                                                text = navigationItem.title,
+                                                fontSize = 16.sp,
+                                                fontFamily = poppins,
+                                                color = Color.DarkGray,
+                                            )
+                                        },
+                                        selected = index == selectedItemIndex,
+                                        onClick = {
+                                            selectedItemIndex = index
+                                            if (selectedItemIndex >= 4) {
+                                                when (navigationItem.route) {
+                                                    "login" -> {
+                                                        userPreferences.logout()
+                                                        navController.navigate("login") {
+                                                            popUpTo(0) { inclusive = true }
+                                                            launchSingleTop = true
                                                         }
-                                                        launchSingleTop = true
+                                                        scope.launch { drawerState.close() }
+                                                        navController.navigate("login") {
+                                                            popUpTo(navController.graph.startDestinationId) {
+                                                                inclusive = true
+                                                            }
+                                                            launchSingleTop = true
+                                                        }
+                                                    }
+
+                                                    Screens.SettingsScreen.route,
+                                                    Screens.OrderScreen.route -> {
+                                                        navController.navigate(navigationItem.route)
+                                                    }
+
+                                                    else -> {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Coming soon..",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
                                                     }
                                                 }
-
-                                                Screens.SettingsScreen.route,
-                                                Screens.OrderScreen.route -> {
+                                            } else {
+                                                scope.launch {
+                                                    drawerState.close()
                                                     navController.navigate(navigationItem.route)
                                                 }
-
-                                                else -> {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Coming soon..",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
                                             }
-                                        } else {
-                                            scope.launch {
-                                                drawerState.close()
-                                                navController.navigate(navigationItem.route)
-                                            }
-                                        }
-                                    },
-                                    icon = {
-                                        Icon(
-                                            modifier = Modifier.size(24.dp),
-                                            painter = painterResource(navigationItem.selectedIcon),
-                                            tint = Color.DarkGray,
-                                            contentDescription = navigationItem.title
-                                        )
-                                    },
-                                    colors = NavigationDrawerItemDefaults.colors(
-                                        selectedContainerColor = Color.Transparent,
-                                        unselectedContainerColor = Color.Transparent
-                                    ),
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            drawerState = drawerState
-        ) {
-            Scaffold(
-                modifier = Modifier
-                    .focusable(true)
-                    .onPreviewKeyEvent { event ->
-                        if (event.type == KeyEventType.KeyDown) {
-                            when (event.key.nativeKeyCode) {
-                                293, 280, 139 -> {
-                                    true
+                                        },
+                                        icon = {
+                                            Icon(
+                                                modifier = Modifier.size(24.dp),
+                                                painter = painterResource(navigationItem.selectedIcon),
+                                                tint = Color.DarkGray,
+                                                contentDescription = navigationItem.title
+                                            )
+                                        },
+                                        colors = NavigationDrawerItemDefaults.colors(
+                                            selectedContainerColor = Color.Transparent,
+                                            unselectedContainerColor = Color.Transparent
+                                        ),
+                                    )
                                 }
-
-                                else -> false
-                            }
-                        } else false
-                    },
-                topBar = {
-                    when (currentRoute) {
-                        Screens.HomeScreen.route -> HomeTopBar {
-                            scope.launch {
-                                drawerState.open()
                             }
                         }
-
-                        Screens.ProductManagementScreen.route -> ProductTopBar(navController)
-                        else -> {}
                     }
                 },
-                content = { navigationBody() }
+                drawerState = drawerState
+            ) {
+                Scaffold(
+                    modifier = Modifier
+                        .focusable(true)
+                        .onPreviewKeyEvent { event ->
+                            if (event.type == KeyEventType.KeyDown) {
+                                when (event.key.nativeKeyCode) {
+                                    293, 280, 139 -> {
+                                        true
+                                    }
+
+                                    else -> false
+                                }
+                            } else false
+                        },
+                    topBar = {
+                        when (currentRoute) {
+                            Screens.HomeScreen.route -> HomeTopBar {
+                                scope.launch {
+                                    drawerState.open()
+                                }
+                            }
+
+                            Screens.ProductManagementScreen.route -> ProductTopBar(navController)
+                            else -> {}
+                        }
+                    },
+                    content = { navigationBody() }
+                )
+            }
+        }
+
+        SideEffect {
+            val setupT1 = System.nanoTime()
+            android.util.Log.d(
+                "StartupTrace",
+                "SetupNavigation composed ${(setupT1 - setupT0) / 1_000_000} ms"
             )
         }
     }
 
-    SideEffect {
-        val setupT1 = System.nanoTime()
-        android.util.Log.d("StartupTrace", "SetupNavigation composed ${(setupT1 - setupT0)/1_000_000} ms")
-    }
-}
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun ProductTopBar(navController: NavHostController) {
+        TopAppBar(
+            title = { Text("Product", color = Color.White, fontFamily = poppins) },
+            navigationIcon = {
+                IconButton(onClick = {
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ProductTopBar(navController: NavHostController) {
-    TopAppBar(
-        title = { Text("Product", color = Color.White, fontFamily = poppins) },
-        navigationIcon = {
-            IconButton(onClick = {
+                    navController.navigate(Screens.HomeScreen.route) { // Navigate to HomeScreen
+                        popUpTo(navController.graph.startDestinationId) // Clear back stack up to start destination
+                        launchSingleTop = true // Avoid duplicate instances
+                    }
 
-                navController.navigate(Screens.HomeScreen.route) { // Navigate to HomeScreen
-                    popUpTo(navController.graph.startDestinationId) // Clear back stack up to start destination
-                    launchSingleTop = true // Avoid duplicate instances
+                }) {
+                    Icon(
+                        Icons.AutoMirrored.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
                 }
-
-            }) {
-                Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                Brush.horizontalGradient(
-                    colors = listOf(Color(0xFF5231A7), Color(0xFFD32940))
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(Color(0xFF5231A7), Color(0xFFD32940))
+                    )
                 )
-            )
-    )
+        )
 
-}
+    }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HomeTopBar(onNavigationClick: () -> Unit) {
-    TopAppBar(
-        title = { Text("Home Testing", color = Color.White) },
-        navigationIcon = {
-            IconButton(onClick = {
-                onNavigationClick()
-            }) {
-                Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                Brush.horizontalGradient(
-                    colors = listOf(Color(0xFF5231A7), Color(0xFFD32940))
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun HomeTopBar(onNavigationClick: () -> Unit) {
+        TopAppBar(
+            title = { Text("Home Testing", color = Color.White) },
+            navigationIcon = {
+                IconButton(onClick = {
+                    onNavigationClick()
+                }) {
+                    Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(Color(0xFF5231A7), Color(0xFFD32940))
+                    )
                 )
-            )
-    )
-}
+        )
+    }
+
 
 
 

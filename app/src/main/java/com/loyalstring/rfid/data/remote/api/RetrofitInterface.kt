@@ -25,8 +25,20 @@ import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.CustomOrderUpdateResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
+import com.loyalstring.rfid.data.model.setting.LocationGetRequest
+import com.loyalstring.rfid.data.model.setting.LocationGetResponse
+import com.loyalstring.rfid.data.model.setting.LocationItem
+import com.loyalstring.rfid.data.model.setting.LocationSyncRequest
+import com.loyalstring.rfid.data.model.setting.LocationSyncResponse
+import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesReq
+import com.loyalstring.rfid.data.model.setting.UpdateDailyRatesResponse
+import com.loyalstring.rfid.data.model.stockTransfer.StockTransferResponse
+import com.loyalstring.rfid.data.remote.api.requests.UserPermissionRequest
+import com.loyalstring.rfid.data.remote.api.response.UserPermissionResponse
+import com.loyalstring.rfid.data.remote.data.DailyRateResponse
 import com.loyalstring.rfid.data.remote.data.DeleteOrderRequest
 import com.loyalstring.rfid.data.remote.data.DeleteOrderResponse
+import com.loyalstring.rfid.data.remote.data.EditDataRequest
 import com.loyalstring.rfid.data.remote.data.ProductDeleteModelReq
 import com.loyalstring.rfid.data.remote.data.ProductDeleteResponse
 import com.loyalstring.rfid.data.model.stockTransfer.StockTransferResponse
@@ -185,7 +197,26 @@ interface RetrofitInterface {
     /*daily rate*/
 
     @POST("/api/ProductMaster/GetAllDailyRate")
-    suspend fun getDailyDailyRate(@Body request: ClientCodeRequest): Response<List<DailyRateResponse>>
+    suspend fun getDailyRate(@Body request: ClientCodeRequest): Response<List<DailyRateResponse>>
+
+    /*update Daily rates*/
+    @POST("/api/ProductMaster/UpdateDailyRates")
+    suspend fun updateDailyRate(@Body request: List<UpdateDailyRatesReq>): Response<List<UpdateDailyRatesResponse>>
+
+    /*update Daily rates*/
+    @POST("/api/ClientOnboarding/AddClientLocation")
+    suspend fun addLocation(@Body request: LocationSyncRequest): Response<LocationSyncResponse>
+
+    @POST("/api/ClientOnboarding/GetClientLocations")
+    suspend fun getLocation(@Body request: LocationGetRequest): Response<List<LocationItem>>
+
+
+    /*getAllUserPermission to get Accessible branches*/
+    @POST("/api/RoleManagement/GetAllUserPermissions-Optimized")
+    suspend fun getUserBranches(
+        @Body request: UserPermissionRequest
+    ): Response<UserPermissionResponse>
+
 
 
 }

@@ -562,7 +562,6 @@ fun ProductListScreen(
                                 modifier = Modifier.width(50.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(id = com.loyalstring.rfid.R.drawable.ic_delete_svg),
                                     contentDescription = "Delete",
                                     tint = Color.DarkGray
                                 )

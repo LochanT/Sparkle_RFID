@@ -8,13 +8,16 @@ import androidx.room.TypeConverters
 import com.example.sparklepos.models.loginclasses.customerBill.EmployeeList
 import com.loyalstring.rfid.data.local.converters.UHFTAGInfoConverter
 import com.loyalstring.rfid.data.local.dao.BulkItemDao
+import com.loyalstring.rfid.data.local.dao.CustomerEmailDao
 import com.loyalstring.rfid.data.local.dao.DropdownDao
 import com.loyalstring.rfid.data.local.dao.EpcDao
+import com.loyalstring.rfid.data.local.dao.LocationDao
 import com.loyalstring.rfid.data.local.dao.OrderItemDao
 import com.loyalstring.rfid.data.local.dao.TransferTypeDao
 import com.loyalstring.rfid.data.local.dao.UHFTAGDao
 import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.local.entity.Category
+import com.loyalstring.rfid.data.local.entity.CustomerEmailEntity
 import com.loyalstring.rfid.data.local.entity.Design
 import com.loyalstring.rfid.data.local.entity.EpcDto
 import com.loyalstring.rfid.data.local.entity.OrderItem
@@ -28,6 +31,7 @@ import com.loyalstring.rfid.data.model.order.CustomOrderRequest
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.data.model.order.ItemCodeResponse
 import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
+import com.loyalstring.rfid.data.model.setting.LocationItem
 
 @TypeConverters(UHFTAGInfoConverter::class)
 @Database(
@@ -46,7 +50,9 @@ import com.loyalstring.rfid.data.model.order.LastOrderNoResponse
         CustomOrderResponse::class,
         CustomOrderRequest::class,
         TransferTypeEntity::class,
-        EpcDto::class
+        EpcDto::class,
+        CustomerEmailEntity::class,
+        LocationItem::class
     ],
     version = 1
 )
@@ -57,6 +63,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun orderItemDao(): OrderItemDao
     abstract fun stockTransferDao(): TransferTypeDao
     abstract fun epcDao(): EpcDao
+    abstract fun customerEmailDao(): CustomerEmailDao
+    abstract fun locationDao(): LocationDao
 
 
 
@@ -76,5 +84,10 @@ abstract class AppDatabase : RoomDatabase() {
                     //        .fallbackToDestructiveMigration(false)
                     .build().also { INSTANCE = it }
             }
+
+        fun closeInstance() {
+            INSTANCE?.close()
+            INSTANCE = null
+        }
     }
 }

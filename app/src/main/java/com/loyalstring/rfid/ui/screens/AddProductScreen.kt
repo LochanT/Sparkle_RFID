@@ -536,18 +536,19 @@ fun AddProductScreen(
                             TotalDiamondAmount = dAmt,
                             Status = "Active"
                         )
-                        scope.launch {
-                            val isStockAdded =
-                                viewModel.insertLabelledStock(request)
+                        if (UserPreferences.getInstance(context).getClient()?.rfidType.equals("webreusable", ignoreCase = true)) {
+                            scope.launch {
+                                val isStockAdded =
+                                    viewModel.insertLabelledStock(request)
 
 
 
-                            Log.d("AddProductScreen", "isStockAdded" + isStockAdded)
-                            if (isStockAdded) {
-                                ToastUtils.showToast(context, "Stock Added Successfully!")
-                                bulkViewModel.syncItems()
+                                Log.d("AddProductScreen", "isStockAdded" + isStockAdded)
+                                if (isStockAdded) {
+                                    ToastUtils.showToast(context, "Stock Added Successfully!")
+                                    bulkViewModel.syncItems()
 
-                            }else
+                                }else
                             {
                                 ToastUtils.showToast(context, "Failed to Add Stock")
                             }
@@ -570,6 +571,10 @@ fun AddProductScreen(
                             updateField("Diamond Amount", "")
                             updateField("Stone Weight", "")
 
+                            }
+                        }else
+                        {
+                            ToastUtils.showToast(context, "Please add the stock from RFID Dashboard or Sparkle for Single Use Tag")
                         }
                     } finally {
                         isSaving = false
@@ -958,6 +963,7 @@ fun ScanBottomBarInventory(
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
+
                     fontFamily = poppins
                 )
             }

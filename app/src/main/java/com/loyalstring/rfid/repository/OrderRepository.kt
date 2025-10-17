@@ -158,6 +158,5 @@ class OrderRepository @Inject constructor(
 
     /*update order*/
     suspend fun dailyRate(clientcodeRequest: ClientCodeRequest): Response<List<DailyRateResponse>> {
-        return apiService.getDailyDailyRate(clientcodeRequest)
     }
 }

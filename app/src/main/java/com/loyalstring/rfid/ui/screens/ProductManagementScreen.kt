@@ -70,6 +70,7 @@ import com.loyalstring.rfid.viewmodel.BulkViewModel
 import com.loyalstring.rfid.viewmodel.ImportExcelViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
@@ -289,9 +290,9 @@ fun ProductManagementScreen(
         bottomBar = {
             ScanBottomBar(
                 onSave = { /* TODO */ },
-                onList = { 
+                onList = {
                     viewModel.ensureFiltersLoaded() // Ensure data is loaded before navigating
-                    navController.navigate(Screens.ProductListScreen.route) 
+                    navController.navigate(Screens.ProductListScreen.route)
                 },
                 onScan = { /* TODO */ },
                 onGscan = { /* TODO */ },

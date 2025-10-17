@@ -83,14 +83,6 @@ fun StockTransferScreen(
     val transferTypes by viewModel.transferTypes.collectAsState()
     val filteredItems by viewModel.filteredBulkItems.collectAsState()
     var showBottomBar by remember { mutableStateOf(false) }
-    var shouldNavigateBack by remember { mutableStateOf(false) }
-
-    LaunchedEffect(shouldNavigateBack) {
-        if (shouldNavigateBack) {
-            kotlinx.coroutines.delay(50)
-            onBack()
-        }
-    }
 
     val selectedItems = remember { mutableStateListOf<Int>() }
     val removeSelectedItems = remember { mutableStateListOf<Int>() }
@@ -171,7 +163,7 @@ fun StockTransferScreen(
             GradientTopBar(
                 title = "Stock Transfer",
                 navigationIcon = {
-                    IconButton(onClick = { shouldNavigateBack = true }) {
+                    IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",

@@ -43,14 +43,13 @@ class ImportExcelViewModel @Inject constructor(
     val allTagsFlow: Flow<List<EpcDto>> = repository.getAllTagsFlow()
     private val _dbRFIDMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val dbRFIDMap: StateFlow<Map<String, String>> = _dbRFIDMap
-    
-    private var isRFIDMapLoaded = false
 
+    private var isRFIDMapLoaded = false
     init {
         // Lazy load RFID map - only start collecting when actually needed
         // This prevents blocking the UI on screen navigation
     }
-    
+
     // Call this when RFID map is actually needed (e.g., during import operations)
     fun ensureRFIDMapLoaded() {
         if (!isRFIDMapLoaded) {

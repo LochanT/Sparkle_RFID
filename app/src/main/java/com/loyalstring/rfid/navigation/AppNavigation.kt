@@ -11,11 +11,13 @@ import com.loyalstring.rfid.data.local.entity.BulkItem
 import com.loyalstring.rfid.data.model.order.CustomOrderResponse
 import com.loyalstring.rfid.ui.screens.AddProductScreen
 import com.loyalstring.rfid.ui.screens.BulkProductScreen
+import com.loyalstring.rfid.ui.screens.DailyRatesEditorScreen
 import com.loyalstring.rfid.ui.screens.EditProductScreen
 import com.loyalstring.rfid.ui.screens.HomeScreen
 import com.loyalstring.rfid.ui.screens.ImportExcelScreen
 import com.loyalstring.rfid.ui.screens.InventoryMenuScreen
 import com.loyalstring.rfid.ui.screens.InvoiceScreen
+import com.loyalstring.rfid.ui.screens.LocationListScreen
 import com.loyalstring.rfid.ui.screens.LoginScreen
 import com.loyalstring.rfid.ui.screens.OrderLisrScreen
 import com.loyalstring.rfid.ui.screens.OrderScreen
@@ -41,7 +43,9 @@ fun AppNavigation(
     drawerState: DrawerState,
     scope: CoroutineScope,
     userPreferences: UserPreferences,
-    startDestination: String
+    startDestination: String,
+    orderViewModel1: OrderViewModel,
+    singleProductViewModel: SingleProductViewModel,
 ) {
     android.util.Log.d("StartupTrace", "NavHost start: $startDestination")
     NavHost(navController = navController, startDestination = startDestination) {
@@ -134,8 +138,6 @@ fun AppNavigation(
             )
         }
         composable(Screens.OrderScreen.route) {
-            val orderViewModel1: OrderViewModel = androidx.hilt.navigation.compose.hiltViewModel()
-            val singleProductViewModel: SingleProductViewModel = androidx.hilt.navigation.compose.hiltViewModel()
             OrderScreen(
                 onBack = { navController.popBackStack() },
                 navController,
@@ -175,6 +177,19 @@ fun AppNavigation(
                 onBack = { navController.popBackStack() },
                 navController,
                 userPreferences
+            )
+        }
+
+        composable(Screens.DailyRatesEditorScreen.route) {
+            DailyRatesEditorScreen(
+                navController = navController
+            )
+        }
+
+        composable(Screens.LocationListScreen.route) {
+            LocationListScreen(
+                onBack = { navController.popBackStack() },
+                navController = navController
             )
         }
 

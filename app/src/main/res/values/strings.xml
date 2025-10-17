@@ -1,3 +1,23 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Sparkle RFID</string>
+    <string name="menu_rates_title">Rates</string>
+    <string name="menu_rates_subtitle">Add/Update rates</string>
+    <!-- Daily Rates Editor Dialog -->
+    <string name="dialog_edit_daily_rates_title">Edit Daily Rates</string>
+    <string name="label_rate">Rate</string>
+    <string name="daily_rate_category_purity">%1$s (%2$s)</string>
+    <string name="menu_apis_title">Custom APIs</string>
+    <string name="menu_apis_subtitle">Custom APIs</string>
+    <string name="title_edit_daily_rates">Edit Daily Rates</string>
+    <string name="label_category">Category</string>
+    <string name="label_purity">Purity</string>
+    <string name="label_todays_rate">Today\'s Rate / Gm</string>
+    <string name="button_cancel">Cancel</string>
+    <string name="button_update">Update</string>
+    <string name="toast_rate_updated">Rates updated successfully</string>
+    <string name="error_rate_update_failed">Failed to update rates</string>
+
+    <string name="dialog_custom_api_title">Set Custom API</string>
+    <string name="hint_custom_api">Enter Custom API</string>
+    <string name="button_save">Save</string>
 </resources>
